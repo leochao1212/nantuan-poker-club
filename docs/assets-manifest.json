@@ -1,0 +1,52 @@
+[
+  {
+    "path": "static/assets/clubhouse/tier-1-small.webp",
+    "bytes": 31494,
+    "sha256": "a96f8de22f3db983466a262fdef78a1a72dbcaa3ad910ca9d4a900400207b831"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-1.webp",
+    "bytes": 105036,
+    "sha256": "53765953925669c08d0bd86f544a863a4531e47305e4a9dfba564816132d606e"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-2-small.webp",
+    "bytes": 44342,
+    "sha256": "cf6d613ab3eeceb854ca4c3a9e71fe83b46cff90ecf6bfea753df1bd16f4be06"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-2.webp",
+    "bytes": 147406,
+    "sha256": "1050f23f97b93dd12aebbd77a5505df8cfcae8576fd3751828703b8f58e09949"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-3-small.webp",
+    "bytes": 38920,
+    "sha256": "5c1379a01873f5eadb85f87b842f2da153db8fea9af48fa8e51a58b8777673dc"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-3.webp",
+    "bytes": 128006,
+    "sha256": "5d6853b3b0f3a714d04e783f23a6ed51efa0be374228af7a21599988a0036043"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-4-small.webp",
+    "bytes": 53090,
+    "sha256": "a428a120350f2e8d64f80f051d2da2c44347201f8b2afafb8a91fd9b661a813b"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-4.webp",
+    "bytes": 177824,
+    "sha256": "02ce5a542d8faa2b3a40449ba515cda8632a4f1deadc1aebbf9f62fd1512b957"
+  },
+  {
+    "path": "static/assets/poker-night.webp",
+    "bytes": 70592,
+    "sha256": "94eb53769dbb168accee3f9273368ae841ab253032c53eae952452a632a6e847"
+  },
+  {
+    "path": "static/favicon.svg",
+    "bytes": 235,
+    "sha256": "79d1564dcdd880ab38ce6983ca1b32cbe9b1116441286c44acdfc4f878b06303"
+  }
+]

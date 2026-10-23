@@ -1,0 +1,16 @@
+{
+  "name": "nantuan-poker-club",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frontend development checks for Nantuan Poker Club",
+  "scripts": {
+    "check:js": "node scripts/check-js.cjs",
+    "test:ui": "node tests/browser/smoke.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

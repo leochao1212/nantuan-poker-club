@@ -1,0 +1,69 @@
+# 楠團牌室 · Nantuan Poker Club
+
+私人多人網頁遊戲與會所。這個程式庫供 leochao1212 與 livangvang 協作程式、介面和頁面設計。
+
+交接基準：2026-10-23，對應 estate-mobile-20261023 上線版本。21 個後端執行模組與 33 個前端入口檔案的雜湊見 [來源基準](docs/source-baseline.json)。包含現有 42 個前端檔案與素材、40 個 Python 測試檔；沒有正式資料庫、玩家紀錄、Cookie、密碼、邀請碼或伺服器登入資料。
+
+## 先讀這裡
+
+| 想做的事 | 文件 |
+| --- | --- |
+| 看懂系統、遊戲和即時連線 | [系統架構](docs/ARCHITECTURE.md) |
+| 找到頁面對應程式與樣式 | [前端與頁面地圖](docs/FRONTEND-MAP.md) |
+| 開始畫頁面、改風格或做響應式 | [設計規格](docs/DESIGN-SYSTEM.md)、[頁面設計工作單](docs/PAGE-DESIGN-BRIEF.md) |
+| 理解資料、籌碼與 API | [資料模型](docs/DATA-MODEL.md)、[API 導覽](docs/API.md) |
+| 開分支、提交 PR | [協作流程](CONTRIBUTING.md) |
+| 執行回歸、操作測試 | [測試方法](docs/TESTING.md) |
+| Docker、備份與更新 | [部署與營運](docs/OPERATIONS.md) |
+| 圖片、SVG、動畫來源檔 | [素材清單](docs/ASSETS.md) |
+
+## 本機啟動
+
+使用 Python 3.14 作為驗證基準；後端只用標準庫。前端是原生 HTML/CSS/JavaScript，沒有 React、Vite 或打包步驟。
+
+~~~sh
+python server.py --host 127.0.0.1 --port 8765
+~~~
+
+開啟 http://127.0.0.1:8765 。首次啟動建立本機 data/poker.sqlite3；本機資料與正式服務分開。註冊自己的開發帳號；第一位註冊後可在大廳取得本機邀請碼。不要使用正式帳密測試。
+
+Docker 開發環境：
+
+~~~sh
+docker compose up --build -d
+docker compose logs -f poker
+~~~
+
+本程式庫的 Compose 特別採用開發專用名稱與資料卷，只綁 localhost。它不是既有正式服務的 Compose，不能直接覆蓋正式主機設定。
+
+## 功能範圍
+
+十一款遊戲：德州撲克、大老二、21 點、台灣 16 張麻將、歐式輪盤、百家樂、Dice 骰寶、拉霸、射龍門、尋寶礦區、爬塔。另有錢包轉帳、每日／每小時補給、資金水位、排行榜、個人資料、稱號特效、每日任務、會所收益、員工派遣、好友包廂、重播、文字與語音、管理後台。
+
+只使用遊戲虛擬點數。帳號數不限；牌桌容量依遊戲設定，並非全站只有六個帳號。
+
+## 目前的重要行為
+
+- 操作經 HTTP POST，遊戲／大廳狀態經 SSE；語音另走 WSS PCM 中繼，沒有把音訊放進 SQLite。
+- 一般牌桌已取消通用「全員準備」步驟。21 點另有每局各自確認下注，最後一人確認即一起發牌。
+- 同桌 21 點手牌直接顯示；莊家底牌仍依規則隱藏。
+- 切換 App 後會重新同步；短暫離開保留座位 120 秒，回頁面會自動恢復。
+- 手機會所的名稱／等級在圖片上方，升級按鈕在圖片下方；不要重新疊回房子上。
+- 派彩與部分機率可由管理員設定，開局保存當局設定快照。舊回合按舊快照結算。
+
+## 測試
+
+~~~sh
+python -m unittest discover -v
+node scripts/check-js.cjs
+~~~
+
+選用的瀏覽器 smoke test：
+
+~~~sh
+npm ci
+npx playwright install chromium
+npm run test:ui
+~~~
+
+瀏覽器測試只用臨時 SQLite 與合成帳號。正式部署由擁有者另行執行；推送 GitHub 不會自動更新正式網站。

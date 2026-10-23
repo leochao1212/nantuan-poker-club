@@ -1,0 +1,32 @@
+const {chromium}=require('playwright');
+const {spawn}=require('node:child_process'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),net=require('node:net'),assert=require('node:assert/strict');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms)),root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/browser');
+async function freePort(){const s=net.createServer();await new Promise((r,j)=>s.once('error',j).listen(0,'127.0.0.1',r));const port=s.address().port;await new Promise(r=>s.close(r));return port;}
+(async()=>{fs.mkdirSync(out,{recursive:true});const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'nantuan-smoke-')),db=path.join(tmp,'isolated.sqlite3'),port=await freePort(),base='http://127.0.0.1:'+port,errors=[],checks=[];let browser,logs='';
+const proc=spawn(process.env.PYTHON||'python',['server.py','--host','127.0.0.1','--port',String(port)],{cwd:root,windowsHide:true,env:{...process.env,POKER_DB:db,POKER_REQUIRE_INVITE:'0',POKER_SECURE_COOKIE:'0',POKER_PUBLIC_ORIGIN:'',PYTHONIOENCODING:'utf-8'}});proc.on('error',e=>logs+=String(e));proc.stdout.on('data',d=>logs+=d);proc.stderr.on('data',d=>logs+=d);
+try{browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{})});
+const contexts=[await browser.newContext({viewport:{width:1366,height:900}}),await browser.newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true})];
+const api=async(c,p,d)=>{const r=d?await c.request.post(base+p,{headers:{'X-Requested-With':'PokerClub'},data:d}):await c.request.get(base+p);assert.equal(r.status(),200,p+' '+await r.text());return r.json();};
+let ready=false;for(let i=0;i<100;i++){try{await api(contexts[0],'/api/bootstrap');ready=true;break;}catch{await sleep(100);}}assert.ok(ready,'Isolated server did not start');
+await api(contexts[0],'/api/register',{username:'smoke_desktop',nickname:'設計測試甲',password:'SyntheticPreview123'});const invite=(await api(contexts[0],'/api/state')).invite_code;
+await api(contexts[1],'/api/register',{username:'smoke_phone',nickname:'設計測試乙',password:'SyntheticPreview123',invite_code:invite});
+const open=async(c,route)=>{const p=await c.newPage();p.on('pageerror',e=>errors.push(e.message));p.on('response',r=>{if(['script','stylesheet','image'].includes(r.request().resourceType())&&r.status()>=400)errors.push(r.url()+' '+r.status());});await p.goto(base+'/#'+route);await p.waitForFunction(()=>lobby&&liveReady);return p;};
+const p=await open(contexts[0],'clubhouse');await p.waitForSelector('.clubhouse-scene');await p.locator('.estate-render').evaluate(i=>i.decode());
+for(const width of [320,393,768,1366]){await p.setViewportSize({width,height:width>1000?900:852});await p.evaluate(()=>scrollTo(0,0));await sleep(60);assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));if(width<=760){assert.ok(await p.evaluate(()=>{const s=document.querySelector('.clubhouse-scene').getBoundingClientRect(),b=document.querySelector('.clubhouse-estate [data-open-upgrades]').getBoundingClientRect();return b.top>=s.bottom&&b.height>=44;}));}await p.locator('.clubhouse-estate [data-open-upgrades]').click();assert.ok(await p.locator('#clubhouse-upgrades').evaluate(e=>e===document.activeElement));if(width===393){await p.evaluate(()=>scrollTo(0,0));await p.locator('.clubhouse-estate').screenshot({path:path.join(out,'clubhouse-mobile.png')});}}
+checks.push('clubhouse mobile image separation, four widths, upgrade navigation');
+const room=await api(contexts[0],'/api/online/rooms',{game_type:'blackjack',buy_in:1000,stake:20,operation_id:crypto.randomUUID()}),rp='/api/online/rooms/'+room.id;
+await api(contexts[1],rp+'/join',{buy_in:1000,operation_id:crypto.randomUUID()});
+await p.setViewportSize({width:1366,height:900});await p.evaluate(id=>go(id),room.id);await p.waitForFunction(()=>room&&liveReady);
+const q=await open(contexts[1],'table/'+room.id);await q.waitForSelector('#round-stake');await q.locator('#round-stake').fill('200');
+await p.locator('#round-stake').fill('100');await p.locator('#deal-hand').click();await p.waitForFunction(()=>!busy&&!pendingOperation&&room.seats.find(s=>s.user_id===me().id).blackjack_ready);
+let state=await api(contexts[0],rp);assert.equal(state.hand_no,0);assert.deepEqual(state.seats.map(s=>s.stack),[1000,1000]);assert.equal(await p.locator('#deal-hand').isDisabled(),true);
+await q.waitForFunction(()=>room.seats.some(s=>s.blackjack_ready));assert.equal(await q.locator('#round-stake').inputValue(),'200');
+checks.push('first confirmation does not deal or charge; peer draft survives SSE');
+await q.locator('#deal-hand').click();await q.waitForFunction(()=>room.hand_no===1&&!busy&&!pendingOperation);await p.waitForFunction(()=>room.hand_no===1);
+state=await api(contexts[0],rp);assert.deepEqual(state.hand.players.map(s=>s.contribution),[100,200]);
+for(const page of [p,q])assert.equal(await page.locator('.blackjack-player:visible').count(),2);
+if(state.status==='playing')assert.equal(state.hand.dealer[1],null);
+await p.locator('.arcade-surface').screenshot({path:path.join(out,'blackjack-desktop.png')});await q.locator('.blackjack-others').screenshot({path:path.join(out,'blackjack-peer-mobile.png')});
+checks.push('last confirmation deals both exactly once; all player hands visible; dealer hole remains private');
+assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks,errors,scope:'Synthetic accounts, isolated database, viewport/touch emulation'},null,2));console.log(JSON.stringify({checks,errors}));
+}finally{await browser?.close();proc.kill();fs.writeFileSync(path.join(out,'server.log'),logs);}})().catch(e=>{console.error(e);process.exitCode=1;});

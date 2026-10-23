@@ -341,7 +341,6 @@ html,body{background:var(--cream-bg);color:var(--ink-deep)}
 :is(#app,#modal,#social-root) .sidebar :is(.brand strong,.brand small,.sidebar-rule p,.sidebar-foot){color:#d6cdb0}
 :is(#app,#modal,#social-root) .sidebar .brand-symbol{background:#215541;color:#f6e0a8;border-color:#c9a55c}
 :is(#app,#modal,#social-root) .sidebar .sidebar-rule{border-color:#ffffff22}
-@media(min-width:761px){:is(#app,#modal,#social-root) .club-main{margin-left:204px}}
 /* 提示泡泡：深底，奶油上最清楚 */
 #toast,#toast.visible{background:#101f1b;color:var(--ivory);border:1px solid var(--gold-line);box-shadow:0 8px 22px #3a2a0d55}
 
@@ -361,12 +360,11 @@ html,body{background:var(--cream-bg);color:var(--ink-deep)}
 :is(#app,#modal,#social-root) .text-button.danger{color:var(--burgundy)}
 :is(#app,#modal,#social-root) .button.wallet-fund-button{background:#fff1cf;color:var(--ink-deep);border:1px solid var(--gold-line)}
 :is(#app,#modal,#social-root) .nav-item.selected{background:#f6e8c6;color:var(--gold-text)}
-:where(#app) :focus-visible{outline:3px solid #b98f3e;outline-offset:2px}
 
 /* ========== 4 表單 ========== */
 :is(#app,#modal,#social-root) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file]),select,textarea){background:var(--cream-sunk);color:var(--ink-deep);border:1px solid #cdb98f;border-radius:12px}
 :is(#app,#modal,#social-root) :is(input,select,textarea)::placeholder{color:#8a8470}
-:is(#app,#modal,#social-root) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file]),select,textarea):focus{border-color:var(--gold-fill-3);box-shadow:0 0 0 3px #dfbd7566;outline:none}
+:is(#app,#modal,#social-root) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file]),select,textarea):focus{border-color:var(--ink-deep);box-shadow:0 0 0 2px #dfbd75}
 :is(#app,#modal,#social-root) :is(#raise-amount,#round-stake){color:var(--ink-deep);background:var(--cream-sunk);border-color:var(--gold-line)}
 :is(#app,#modal,#social-root) .raise-step{background:#fffaf0;color:var(--gold-text);border:1px solid var(--gold-line)}
 :is(#app,#modal,#social-root) .password-toggle,:is(#app,#modal,#social-root) #toggle-password{color:var(--gold-text)}
@@ -643,12 +641,12 @@ dialog :is(p,small,label,summary,li,dd){color:var(--ink-2)}
 :is(#app,#modal,#social-root) .staff-locked .staff-portrait{opacity:.55;filter:grayscale(.6)}
 
 /* 補丁 3：桌機側欄小字、大廳右側捷徑、點擊範圍 */
-:is(#app,#modal,#social-root) .sidebar :is(small,span,p,b,i,em,div){color:#d6cdb0}
+:is(#app,#modal,#social-root) .sidebar :is(small,span,p,b,i,em,div):where(:not(.avatar,.avatar *)){color:#d6cdb0}
 :is(#app,#modal,#social-root) .sidebar :is(.profile-user-text strong,.account strong,.brand strong){color:#fff5df}
 :is(#app,#modal,#social-root) .sidebar .nav-item.active,:is(#app,#modal,#social-root) .sidebar .nav-item.active :is(span,b){color:#f6e0a8}
 :is(#app,#modal,#social-root) .night-feature-picks a{background:linear-gradient(180deg,#2c6b53,#16392d);border:1px solid var(--gold-line);border-radius:14px}
 :is(#app,#modal,#social-root) .night-feature-picks a,:is(#app,#modal,#social-root) .night-feature-picks a :is(span,small,strong,b,i){color:var(--ivory)}
-:is(#app,#modal,#social-root) .mobile-brand{display:inline-flex;align-items:center;min-height:44px}
+@media(max-width:760px){:is(#app,#modal,#social-root) .mobile-brand{display:inline-flex;align-items:center;min-height:44px}}
 :is(#app,#modal,#social-root) .global-voice-button{min-width:44px}
 :is(#app,#modal,#social-root) .raise-presets button{min-height:44px}
 :is(#app,#modal,#social-root) .seat-picker>summary,:is(#app,#modal,#social-root) .mj-funding>summary{min-height:44px;box-sizing:border-box}
@@ -671,7 +669,6 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) .game-settings-panel legend,:is(#app,#modal,#social-root) .rules-history summary{color:var(--gold-text)}
 :is(#app,#modal,#social-root) .public-game-settings>strong{color:var(--ink-deep)}
 :is(#app,#modal,#social-root) .rules-history article{border-bottom-color:var(--cream-line)}
-:is(#app,#modal,#social-root) .game-settings-panel :focus-visible{outline-color:#b98f3e}
 
 /* 檔案選擇框（上傳頭像） */
 :is(#app,#modal,#social-root) input[type=file]{background:var(--cream-sunk);color:var(--ink-2);border:1px dashed var(--gold-line);border-radius:12px;padding:10px}
@@ -704,5 +701,35 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 /* 收藏試看舞台：稱號牌保留自己的配色（上一輪的「舞台內全部象牙字」誤傷了米色底的深夜常客） */
 :is(#app,#modal,#social-root) .club-main #cosmetic-stage .identity-title.title-night{color:var(--ink-deep);background:#f3e4c4;border-color:var(--gold-line)}
 :is(#app,#modal,#social-root) .club-main #cosmetic-stage .identity-title.title-night *{color:var(--ink-deep)}
+
+
+/* ===== Opus 5.5 第二審後的修正 ===== */
+
+/* 1 選中狀態：所有 aria-pressed 切換鈕。金底＋深綠粗框＋角落勾號（不只靠顏色）。
+   這條要有 id 前綴＋屬性選擇器，才贏得過上面通用的 .button.ghost／.dice-bet 規則。 */
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.dice-bet,.roulette-chips .button,.tower-difficulty .button,.gate-directions .button)[aria-pressed=true]{background:var(--btn-gold);color:var(--ink-deep);border:2px solid #101f1b;box-shadow:inset 0 0 0 1px #f6e0a8,0 2px 0 #a47a2c;font-weight:800;position:relative}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.dice-bet,.roulette-chips .button,.tower-difficulty .button,.gate-directions .button)[aria-pressed=true]::after{content:"\2713";position:absolute;top:2px;right:5px;font-size:11px;line-height:1;font-weight:900;color:#101f1b}
+:is(#app,#modal,#social-root) .arcade-surface :is(.dice-bet,.gate-directions .button)[aria-pressed=true] :is(b,strong,small,span){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .roulette-chips .button[aria-pressed=true]{color:var(--ink-deep)}
+
+/* 2 鍵盤焦點：奶油底用深綠粗框；深色區（側欄、絨布、主圖、邀請卡）改淺金框 */
+:is(#app,#modal,#social-root) :focus-visible,#modal :focus-visible,#social-root :focus-visible{outline:3px solid #101f1b;outline-offset:2px}
+:is(#app,#modal,#social-root) :is(.sidebar,.arcade-surface,.table-arena,.night-main-art,.invite-panel,#cosmetic-stage,.mj-table) :focus-visible{outline-color:#f0d59a}
+
+/* 3 大廳沒有牌桌時的空狀態（原本是深藍底，被我改成深色字之後看不見） */
+:is(#app,#modal,#social-root) .night-tables .empty-tables,:is(#app,#modal,#social-root) .empty-tables{background:var(--cream-panel);border:1px dashed var(--gold-line);color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .empty-tables :is(h3,p,small,span){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .empty-tables h3{color:var(--ink-deep)}
+
+/* 4 麻將選中的牌：保留外框（減少動態時不會位移，要有外框才看得出來） */
+:is(#app,#modal,#social-root) .mj-hand .mj-tile.chosen{box-shadow:0 0 0 3px #f0d59a,0 0 0 5px #101f1b,0 4px 8px #6b4e1f55}
+
+/* 5 桌機對比：主圖上的副標、排行表頭 */
+:is(#app,#modal,#social-root) .night-main-art :is(p,small,span){color:#e8dcc0}
+:is(#app,#modal,#social-root) .rank-header,:is(#app,#modal,#social-root) .rank-header span{background:var(--cream-sunk);color:var(--ink-2)}
+
+/* 6 外觀小修 */
+:is(#app,#modal,#social-root) .risk-summary{padding:12px 14px;border-radius:12px}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.tower-difficulty .button,.dice-bet,.gate-directions .button,.roulette-chips .button)[aria-pressed=true] :is(small,span,b,strong){color:var(--ink-deep)}
 
 /*==== 奶油白主題 結束 ====*/

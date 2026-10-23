@@ -83,3 +83,7 @@ input,select,textarea{background:#efe2c8;color:#101f1b;border:1px solid #cdb98f}
 .section-heading .eyebrow,.stats-heading .eyebrow,.ranking .rank-num{color:#62624f}
 .ranking .rank-num{color:#7a5a14}
 .rank-row .rank-num,.ranking .rank-row .rank-num{color:#6a4d0d}
+
+.sidebar .account :is(span,small,div),.sidebar .account p{color:#d6cdb0}
+:focus-visible{outline:3px solid #101f1b;outline-offset:2px}
+.sidebar :focus-visible{outline-color:#f0d59a}

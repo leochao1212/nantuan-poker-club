@@ -11,7 +11,8 @@ def make_gate(left='7c',right='7d',third='9h',legacy=False,stack=10000):
     room=b.new_room('Taiwan gate',1,'inbetween',buy_in=stack,stake=100)
     b.sit(room,1,'Player',0)
     b.start_hand(room,1,deck=deck_order([left,right,third]))
-    if legacy:room['hand'].pop('gate_rules_version')
+    if legacy:
+        for key in ('gate_rules_version','gate_shoe_version','gate_quotes'):room['hand'].pop(key,None)
     return room
 
 
@@ -92,7 +93,7 @@ class TaiwanGateRules(unittest.TestCase):
         # JSON restart retains both the rule version and the frozen payout settings.
         restored=json.loads(json.dumps(first));restored['hand']['game_settings']['params']['target_bps']=9000
         b.act(restored,1,'shoot',2,{'stake':100,'direction':'up'})
-        self.assertEqual(restored['hand']['results'][0]['payout'],202)
+        self.assertEqual(restored['hand']['results'][0]['payout'],218)
         for mode in ('timeout','leave'):
             room=make_gate()
             if mode=='timeout':b.tick(room,40);self.assertFalse(b.tick(room,41));self.assertEqual(room['seats'][0]['stack'],10000)
@@ -106,7 +107,9 @@ class TaiwanGateReceipts(unittest.TestCase):
         user=self.users[0];clock=self.clock
         rid=online.mutate(self.db,'/api/online/rooms',{'game_type':'inbetween','operation_id':'taiwan_create_00001'},user,clock)['id'];path=f'/api/online/rooms/{rid}'
         online.mutate(self.db,path+'/start',{'operation_id':'taiwan_start_000001'},user,clock+1)
-        room=online.get_room(self.db,rid);room['hand']['pillars']=['7c','7d'];room['hand']['deck']=deck_order(['7h']);online.save(self.db,room,clock+1)
+        room=online.get_room(self.db,rid);shoe=deck_order(['7c','7d','7h']);shoe.pop();shoe.pop()
+        room['hand']['pillars']=['7c','7d'];room['hand']['deck']=shoe;room['hand'].pop('gate_quotes',None)
+        room['hand']['gate_quotes']=b.gate_quotes(room['hand']);online.save(self.db,room,clock+1)
         data={'action':'shoot','direction':'up','stake':100,'hand_id':room['hand']['id'],'turn_id':room['hand']['turn_id'],'operation_id':'taiwan_shoot_000001'}
         online.mutate(self.db,path+'/action',data,user,clock+2)
         self.assertTrue(online.mutate(self.db,path+'/action',data,user,clock+3)['replayed'])

@@ -14,7 +14,7 @@ CAP = RATE * CAP_HOURS
 UNIT = 3_600_000  # Exact point units: hourly rate times elapsed milliseconds.
 RATES = (60,90,120,180)
 HOURS = (24,30,36,48)
-DECOR = ('私人包廂','霓虹酒廊','尊爵會館','曜金行宮')
+DECOR = ('私人包廂','暖燈小館','尊爵會館','曜金行宮')
 SPEED_STEPS = (2,3,4,5)  # Half units: 1x, 1.5x, 2x, 2.5x; additive +50% per decor level.
 UPGRADES = {
     'production':dict(name='營運團隊',levels=RATES,costs=(2000,5000,12000)),

@@ -1,52 +1,107 @@
 [
   {
     "path": "static/assets/clubhouse/tier-1-small.webp",
-    "bytes": 31494,
-    "sha256": "a96f8de22f3db983466a262fdef78a1a72dbcaa3ad910ca9d4a900400207b831"
+    "bytes": 35976,
+    "sha256": "b2a7ab737ab54100a99182460ee98a038e1d3bd1027273499c3438f559c999cc"
   },
   {
     "path": "static/assets/clubhouse/tier-1.webp",
-    "bytes": 105036,
-    "sha256": "53765953925669c08d0bd86f544a863a4531e47305e4a9dfba564816132d606e"
+    "bytes": 113808,
+    "sha256": "9b2dfcd573b5733099b5903c489f46cf97ced859c90984e8f3e4de9c78ba1aad"
   },
   {
     "path": "static/assets/clubhouse/tier-2-small.webp",
-    "bytes": 44342,
-    "sha256": "cf6d613ab3eeceb854ca4c3a9e71fe83b46cff90ecf6bfea753df1bd16f4be06"
+    "bytes": 40818,
+    "sha256": "d1d6b81fbd0590f61a2829ee6cb4a16722e3e208f1d56f3cd1cb4f64106ea359"
   },
   {
     "path": "static/assets/clubhouse/tier-2.webp",
-    "bytes": 147406,
-    "sha256": "1050f23f97b93dd12aebbd77a5505df8cfcae8576fd3751828703b8f58e09949"
+    "bytes": 126556,
+    "sha256": "d4fe4bd716c43a38317bc14d74795e197a5a5601e0807cbc5817d4a1eeceaf3a"
   },
   {
     "path": "static/assets/clubhouse/tier-3-small.webp",
-    "bytes": 38920,
-    "sha256": "5c1379a01873f5eadb85f87b842f2da153db8fea9af48fa8e51a58b8777673dc"
+    "bytes": 48110,
+    "sha256": "98069d9287d5248ec340c15b401d901d7d211dde2c12fc16dafc039fb4bf3ba5"
   },
   {
     "path": "static/assets/clubhouse/tier-3.webp",
-    "bytes": 128006,
-    "sha256": "5d6853b3b0f3a714d04e783f23a6ed51efa0be374228af7a21599988a0036043"
+    "bytes": 156356,
+    "sha256": "4770137144ef43993a83317f1dec0f2c5091f1e1d64450811f5df1223a2c5a00"
   },
   {
     "path": "static/assets/clubhouse/tier-4-small.webp",
-    "bytes": 53090,
-    "sha256": "a428a120350f2e8d64f80f051d2da2c44347201f8b2afafb8a91fd9b661a813b"
+    "bytes": 60460,
+    "sha256": "c8b80a897a8dd9a752c65cc5d21bcef49a5bff291f973177c9970fc54474d61c"
   },
   {
     "path": "static/assets/clubhouse/tier-4.webp",
-    "bytes": 177824,
-    "sha256": "02ce5a542d8faa2b3a40449ba515cda8632a4f1deadc1aebbf9f62fd1512b957"
+    "bytes": 199022,
+    "sha256": "498fa2efd6a9a05b97c7a7b3beae04bef111d58238f95a9f65231d514250d9cf"
+  },
+  {
+    "path": "static/assets/covers/baccarat.webp",
+    "bytes": 21682,
+    "sha256": "75e9fdd2100b2d08a2c7a92db51a2e0d05b7fa3fc2f58cede41d364eb56edb9d"
+  },
+  {
+    "path": "static/assets/covers/big2.webp",
+    "bytes": 25028,
+    "sha256": "f044295856e85674b3041cb20c046db62c9535510c2191f6aa35c9a33bc6888a"
+  },
+  {
+    "path": "static/assets/covers/blackjack.webp",
+    "bytes": 25060,
+    "sha256": "5c863d3704aa1d71cbf9ad01e8cad90c063535f6b72fb0aac2f6287a7e301f16"
+  },
+  {
+    "path": "static/assets/covers/dice.webp",
+    "bytes": 23018,
+    "sha256": "c111d1a70c52f2c898aa2ffcc74c4569ecad653d1fa267de7f1ee0a2371c2aa9"
+  },
+  {
+    "path": "static/assets/covers/holdem.webp",
+    "bytes": 29506,
+    "sha256": "151d18219408e999df74290d8868836f6967d0eb795f399b5ded9e24c25b7b1e"
+  },
+  {
+    "path": "static/assets/covers/inbetween.webp",
+    "bytes": 23000,
+    "sha256": "63a8f8878d4b81105434e6c649780f7248f32e433aeec8dd2d779f47eced61a2"
+  },
+  {
+    "path": "static/assets/covers/mahjong.webp",
+    "bytes": 21388,
+    "sha256": "adc5745ee79980af87cfb97ac680e6c73481e58fa50781b3364f443e78ad0dd0"
+  },
+  {
+    "path": "static/assets/covers/mines.webp",
+    "bytes": 37712,
+    "sha256": "c6f95fe185975267546539609fc124024c1425bb5e094c64014d7c89a725f913"
+  },
+  {
+    "path": "static/assets/covers/roulette.webp",
+    "bytes": 28900,
+    "sha256": "d5c14ee0b006e5eb8065046d482bce1da41ed5f197044423b53decd19873e0d6"
+  },
+  {
+    "path": "static/assets/covers/slot.webp",
+    "bytes": 32056,
+    "sha256": "2a3cc3f906d05022cdbd5aa628c67cfba2bd9b3311618d20987c7bef3bbc18dc"
+  },
+  {
+    "path": "static/assets/covers/tower.webp",
+    "bytes": 26912,
+    "sha256": "24b505f7a9c7595be0351b7a039c448d7222f16c668219bd797b7cd1821b660d"
   },
   {
     "path": "static/assets/poker-night.webp",
-    "bytes": 70592,
-    "sha256": "94eb53769dbb168accee3f9273368ae841ab253032c53eae952452a632a6e847"
+    "bytes": 80676,
+    "sha256": "63dbb83cdfa5b0b099bebdb5df00e8e8ce3c50fb4346b4be1bfc9e5086d4cf75"
   },
   {
     "path": "static/favicon.svg",
-    "bytes": 235,
-    "sha256": "79d1564dcdd880ab38ce6983ca1b32cbe9b1116441286c44acdfc4f878b06303"
+    "bytes": 488,
+    "sha256": "60fa86c96703702e07c5f37fdcafe1b83dd91f90b21cacf00648acd3b4bc83d4"
   }
 ]

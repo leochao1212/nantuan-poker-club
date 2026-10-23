@@ -35,6 +35,26 @@ class StaticImages(unittest.TestCase):
         status,headers,body=self.get('/assets/covers/holdem.webp',{'If-None-Match':etag})
         self.assertEqual(status,304);self.assertEqual(body,b'')
         self.assertEqual(self.get('/assets/covers/holdem.webp',{'If-None-Match':'"stale"'})[0],200)
+    def raw(self,lines):
+        import socket
+        with socket.create_connection(('127.0.0.1',self.http.server_port),timeout=5) as sock:
+            sock.sendall(('\r\n'.join(lines)+'\r\n\r\n').encode());data=b''
+            while chunk:=sock.recv(65536):data+=chunk
+        head,_,body=data.partition(b'\r\n\r\n');return head.decode('latin-1'),body
+    def test_if_none_match_forms(self):
+        etag=self.get('/assets/covers/dice.webp')[1]['ETag']
+        for value in ('W/'+etag,'"x", '+etag,'"x",'+etag,'*'):
+            self.assertEqual(self.get('/assets/covers/dice.webp',{'If-None-Match':value})[0],304,value)
+        for value in ('','"x"','w/'+etag,etag.strip('"')):
+            self.assertEqual(self.get('/assets/covers/dice.webp',{'If-None-Match':value})[0],200,value)
+        head,body=self.raw(['GET /assets/covers/dice.webp HTTP/1.1','Host: x','If-None-Match: "x"','If-None-Match: '+etag,'Connection: close'])
+        self.assertTrue(head.startswith('HTTP/1.0 304') or head.startswith('HTTP/1.1 304'),head.split('\r\n')[0])
+    def test_304_has_no_body_headers(self):
+        etag=self.get('/assets/covers/slot.webp')[1]['ETag']
+        head,body=self.raw(['GET /assets/covers/slot.webp HTTP/1.1','Host: x','If-None-Match: '+etag,'Connection: close'])
+        lower=head.lower()
+        self.assertIn(' 304 ',head.split('\r\n')[0]);self.assertEqual(body,b'')
+        self.assertNotIn('content-length:',lower);self.assertNotIn('content-type:',lower);self.assertIn('etag:',lower)
     def test_non_image_responses_stay_no_store(self):
         status,headers,_=self.get('/api/bootstrap')
         self.assertEqual(status,200);self.assertEqual(headers['Cache-Control'],'no-store');self.assertNotIn('ETag',headers)

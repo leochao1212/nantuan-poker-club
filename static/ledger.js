@@ -40,7 +40,7 @@ async function load() {
 }
 function errorBox(form, msg) { const el=$('.form-error',form); el.textContent=msg; el.hidden=false; el.focus(); }
 function setPending(form, pending) { $$('button[type="submit"]', form).forEach(b=>{b.disabled=pending;}); }
-function brand() { return `<div class="brand-mark">${icon('spade')}</div><div><strong>楠團德州扑克</strong><span>THE SIX CLUB</span></div>`; }
+function brand() { return `<div class="brand-mark">${icon('spade')}</div><div><strong>楠團牌室</strong><span>私人牌室</span></div>`; }
 
 function renderAuth() {
   const register=authMode==='register';
@@ -78,11 +78,11 @@ function stats() {
 function render() {
   if(!state) return renderAuth();
   const nav=[['overview','grid','牌桌总览'],['history','history','牌局记录'],['members','people','楠團成员']];
-  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><a class="brand" href="#" aria-label="楠團德州扑克首页">${brand()}</a><span class="sidebar-label">CLUBHOUSE</span><nav aria-label="主导航">${nav.map(([id,ic,label])=>`<button data-tab="${id}" class="nav-item ${tab===id&&!currentGame?'selected':''}" ${tab===id&&!currentGame?'aria-current="page"':''}>${icon(ic)}<span>${label}</span>${id==='members'?`<b>${state.users.length} 人</b>`:''}</button>`).join('')}</nav>
+  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><a class="brand" href="#" aria-label="楠團牌室首页">${brand()}</a><span class="sidebar-label">CLUBHOUSE</span><nav aria-label="主导航">${nav.map(([id,ic,label])=>`<button data-tab="${id}" class="nav-item ${tab===id&&!currentGame?'selected':''}" ${tab===id&&!currentGame?'aria-current="page"':''}>${icon(ic)}<span>${label}</span>${id==='members'?`<b>${state.users.length} 人</b>`:''}</button>`).join('')}</nav>
     <div class="sidebar-bottom"><div class="club-card"><div class="tiny-label">SIX SEATS. ONE TABLE.</div><div class="mini-suits" aria-hidden="true">♠ <span>♥</span> ♣ <span>♦</span></div><p>牌品见人品，账目要分明。</p></div><div class="account">${avatar(state.me,true)}<div><strong>${esc(state.me.nickname)}</strong><span>@${esc(state.me.username)}</span></div><button class="icon-button" id="logout" aria-label="退出登录" title="退出登录">${icon('logout')}</button></div></div></aside>
     <div class="workspace"><header class="topbar"><span class="breadcrumb"><a class="online-return" href="/">返回線上牌室</a> <i>/</i> ${currentGame?'牌局详情':nav.find(n=>n[0]===tab)[2]}</span><div class="topbar-right"><span class="status-dot"></span><span>${state.users.length} 位成员已入座</span><button class="icon-button" id="refresh" aria-label="刷新牌局" title="刷新">${icon('refresh')}</button><button class="icon-button mobile-logout" id="mobile-logout" aria-label="退出登录" title="退出登录">${icon('logout')}</button></div></header>
     <main id="main" tabindex="-1">${currentGame?gameView():tab==='overview'?overview():tab==='history'?history():members()}</main>
-    <footer class="page-footer"><span>楠團德州扑克 · 每一局都有迹可循</span><span>PRIVATE POKER LEDGER</span></footer></div></div>`;
+    <footer class="page-footer"><span>楠團牌室 · 每一局都有迹可循</span><span>PRIVATE POKER LEDGER</span></footer></div></div>`;
   $$('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;currentGame=null;render();});
   $('.brand').onclick=e=>{e.preventDefault();tab='overview';currentGame=null;render();};
   const logout=async()=>{

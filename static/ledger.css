@@ -90,3 +90,8 @@ input,select,textarea{background:#efe2c8;color:#101f1b;border:1px solid #cdb98f}
 select#unit,.unit-picker select{min-height:44px}
 select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23101f1b' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:12px 8px;padding-right:30px}
 select#unit,.unit-picker select{min-width:76px}
+/* 統計單位下拉：原本 .unit-picker select 用 background 簡寫清掉了箭頭，這裡用更高權重補回 */
+select#unit,.unit-picker select#unit{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23101f1b' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:12px 8px;padding-right:30px}
+/* 點擊範圍：品牌連結與登出鈕 */
+.sidebar .brand,#logout{position:relative}
+.sidebar .brand::after,#logout::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2 - 1px));bottom:min(0px,calc((100% - 44px)/2 - 1px));left:min(0px,calc((100% - 44px)/2 - 1px));right:min(0px,calc((100% - 44px)/2 - 1px))}

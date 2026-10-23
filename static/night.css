@@ -649,7 +649,7 @@ html:where(:not([data-card-back]),[data-card-back=""]) :is(#app,#modal,#social-r
 :is(#app,#modal,#social-root) .night-feature-picks a,:is(#app,#modal,#social-root) .night-feature-picks a :is(span,small,strong,b,i){color:var(--ivory)}
 /* 品牌連結：只放大點擊區，不改高度（改高度會把頂欄撐高 22px） */
 :is(#app,#modal,#social-root) .mobile-brand{position:relative}
-:is(#app,#modal,#social-root) .mobile-brand::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2));bottom:min(0px,calc((100% - 44px)/2));left:0;right:0}
+:is(#app,#modal,#social-root) .mobile-brand::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2 - 1px));bottom:min(0px,calc((100% - 44px)/2 - 1px));left:0;right:0}
 :is(#app,#modal,#social-root) .global-voice-button{min-width:44px}
 :is(#app,#modal,#social-root) .raise-presets button{min-height:44px}
 :is(#app,#modal,#social-root) .seat-picker>summary,:is(#app,#modal,#social-root) .mj-funding>summary{min-height:44px;box-sizing:border-box}
@@ -737,12 +737,12 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.tower-difficulty .button,.dice-bet,.gate-directions .button,.roulette-chips .button)[aria-pressed=true] :is(small,span,b,strong){color:var(--ink-deep)}
 
 /* 點擊範圍（至少 44×44）：文字連結用內距加負邊距，點擊區變大、版面不動 */
-:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a){position:relative}
-:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a)::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2));bottom:min(0px,calc((100% - 44px)/2));left:min(0px,calc((100% - 44px)/2));right:min(0px,calc((100% - 44px)/2))}
+:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a,.top-profile,#back-lobby){position:relative}
+:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a,.top-profile,#back-lobby)::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2 - 1px));bottom:min(0px,calc((100% - 44px)/2 - 1px));left:min(0px,calc((100% - 44px)/2 - 1px));right:min(0px,calc((100% - 44px)/2 - 1px))}
 :is(#app,#modal,#social-root) #toggle-password{min-height:44px}
 :is(#app,#modal,#social-root) select#unit{min-height:44px}
 :is(#app,#modal,#social-root) a.brand{position:relative}
-:is(#app,#modal,#social-root) a.brand::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2));bottom:min(0px,calc((100% - 44px)/2));left:0;right:0}
+:is(#app,#modal,#social-root) a.brand::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2 - 1px));bottom:min(0px,calc((100% - 44px)/2 - 1px));left:0;right:0}
 :is(#app,#modal,#social-root) fieldset.party-create-options label{display:flex;align-items:center;gap:10px;min-height:44px}
 :is(#app,#modal,#social-root) fieldset.party-create-options input[type=checkbox]{width:24px;height:24px;flex:none}
 #modal fieldset.party-create-options label{display:flex;align-items:center;gap:10px;min-height:44px}
@@ -758,6 +758,13 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) .night-tables .room-card{padding-left:16px;padding-right:16px}
 :is(#app,#modal,#social-root) .night-feature-picks :is(a,button){background:linear-gradient(180deg,#2c6b53,#16392d);border:1px solid var(--gold-line);border-radius:14px;color:var(--ivory)}
 :is(#app,#modal,#social-root) .night-feature-picks :is(a,button) :is(span,small,strong,b,i){color:var(--ivory)}
+
+/* ===== Opus 5.5 第三次審查後的修正 ===== */
+/* 桌機會所：標題與升級鈕疊在建築照片上，焦點框用淺金 */
+@media(min-width:761px){:is(#app,#modal,#social-root) :where(.clubhouse-estate:has(.clubhouse-scene) .estate-copy) :focus-visible{outline-color:#f0d59a}}
+/* 麥克風／收聽：aria-pressed=true 代表「已關閉」，用酒紅框表示（文字也會變），並保留 hover */
+:is(#app,#modal,#social-root) :is(#voice-mute,#voice-listen)[aria-pressed=true]{background:#fff4f2;border-color:var(--burgundy);color:var(--burgundy)}
+:is(#app,#modal,#social-root) :is(#voice-mute,#voice-listen):hover:not(:disabled){background:#fff1cf}
 
 /*==== 奶油白主題 結束 ====*/
 

@@ -5,7 +5,8 @@
   "description": "Frontend development checks for Nantuan Poker Club",
   "scripts": {
     "check:js": "node scripts/check-js.cjs",
-    "test:ui": "node tests/browser/smoke.cjs"
+    "test:ui": "node tests/browser/smoke.cjs",
+    "test:layout": "node tests/browser/layout.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

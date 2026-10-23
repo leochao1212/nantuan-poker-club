@@ -167,7 +167,7 @@ class Handler(BaseHTTPRequestHandler):
         # Never log request bodies, passwords, or cookies.
         print(f"[{now()}] {self.address_string()} {fmt % args}", flush=True)
 
-    def reply(self, status, value, cookie=None, content_type="application/json; charset=utf-8", attachment=None):
+    def reply(self, status, value, cookie=None, content_type="application/json; charset=utf-8", attachment=None, cache_control="no-store", etag=None):
         if hasattr(self,'request_id') and isinstance(value,dict):
             value={**value,'request_id':self.request_id}
         encoded_at=time.monotonic()
@@ -186,8 +186,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Request-ID",self.request_id)
             self.send_header("Server-Timing",", ".join(f"{k};dur={v:.2f}" for k,v in self.timings.items()))
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
+        if status != 304:
+            self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", cache_control)
+        if etag:
+            self.send_header("ETag", etag)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "same-origin")
@@ -201,7 +204,8 @@ class Handler(BaseHTTPRequestHandler):
         if attachment:
             self.send_header("Content-Disposition", f'attachment; filename="{attachment}"')
         self.end_headers()
-        self.wfile.write(body)
+        if status != 304:
+            self.wfile.write(body)
 
     def user(self, db):
         jar = SimpleCookie()
@@ -345,7 +349,11 @@ class Handler(BaseHTTPRequestHandler):
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
             elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path):
-                self.reply(200,(ROOT/'static'/path[1:]).read_bytes(),content_type='image/webp')
+                artwork=(ROOT/'static'/path[1:]).read_bytes()
+                etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
+                unchanged=any(tag.strip().removeprefix('W/') in ('*',etag) for tag in self.headers.get('If-None-Match','').split(','))
+                self.reply(304 if unchanged else 200,b'' if unchanged else artwork,content_type='image/webp',
+                           cache_control='public, max-age=0, must-revalidate',etag=etag)
             elif path in ("/mahjong.js", "/mahjong.css", "/game-settings.js", "/game-settings.css", "/", "/index.html", "/app.js", "/style.css", "/game.js", "/profile.js", "/clubhouse-scene.js", "/clubhouse-scene.css", "/night.css", "/profile.css", "/effects.css", "/features.js", "/features.css", "/transfers.js", "/transfers.css", "/casino.css", "/ui.css", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/arcade.css", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}

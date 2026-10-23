@@ -3,19 +3,12 @@
 這個分支把全站手機／桌機畫面換成「奶油白底＋深綠絨布＋厚金邊」。只動外觀，沒動玩法、流程、資料、API、DOM 身分（id、`data-*`）。
 改前改後對照圖：同資料夾 `*-before-after.jpg`（大廳、德州、會所、21 點、收藏、後台、拉霸、礦區、骰寶）。
 
-## 一、要你做的事（只有一件）
+## 一、整合狀態（2026-10-24）
 
-`server.py` 的靜態圖白名單要多放行 11 個封面檔。大廳遊戲封面放在 `static/assets/covers/*.webp`，目前會 404。
-
-在圖片放行那一行（`elif path=='/assets/poker-night.webp' or ...`）最後面，加上一個條件：
-
-```text
-or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp', path)
-```
-
-刻意列出確切的 11 個檔名，不用萬用字元：這樣不存在的檔名仍然是 404，不會落到 `read_bytes()` 變成 500。完整補丁檔在 Steven 的工作台（`交接/server-放行封面圖.patch`）。
-
-這是後端檔案，我們沒有放進任何 commit，等你確認要這樣改。沒放行之前，封面只會看到原本的線條圖，其他功能不受影響。這條路徑目前沒有測試，建議放行時順手補一個。
+- 11 個遊戲封面的精確白名單已套用到 `server.py`，不存在的封面仍回 404。
+- 公開 WebP 圖片使用 ETag 重新驗證；內容未變時回 304，避免再次下載圖片。每次都驗證版本，沒有舊圖停留問題。HTML、API、錢包、帳號和即時串流仍禁止快取。
+- 已整合射龍門連續牌靴：每桌沿用 52 張牌，剩 13 張以下下一局重洗；倍率與機率依實際餘牌計算，免費略過只消耗兩張門柱。
+- 手機德州增加中央資訊與手牌間距，右側頭像移入牌桌邊界；保留已裝備的翡翠／酒紅牌背。
 
 ## 二、改了什麼
 
@@ -49,7 +42,7 @@ or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot
 | 項目 | 結果 |
 | --- | --- |
 | `node scripts/check-js.cjs`、`check-docs.cjs` | 通過 |
-| `python3 -m unittest discover` | 351 個測試全過 |
+| `python3 -m unittest discover` | 整合版隔離 Linux Docker：354 個測試全過 |
 | `npm run test:ui`（瀏覽器流程） | 本機通過；CI 的 `pull_request` 那輪通過 |
 | DOM 比對 | 改前改後 35 頁抓 DOM，id、`data-*` 沒有遺失（大老二一頁少了出牌按鈕，是這次輪到對手出牌） |
 | 寬度 | 320／393／768／844×390／1366，47 張截圖全部 0 左右溢出 |
@@ -61,12 +54,14 @@ or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot
 
 另外有一位獨立審查者（Opus 5.5）審過這批變更，意見與處理方式見 PR 留言。
 
+整合驗證補充：`npm run test:layout` 以 Chromium、WebKit 兩個引擎檢查 19 個頁面、7 種尺寸（320、375、393、768、844 橫向、1366、1920），共 266 組畫面；手機德州間距與牌背另有 14 組針對性檢查。`npm run test:ui` 保留雙人 21 點確認及會所升級流程測試。這些是瀏覽器模擬，並非實體手機驗證。
+
 ## 六、已知限制
 
 - 輪盤盤面沿用原本的 SVG（金框、酒紅與墨黑口袋，已經跟主題一致），沒有重畫。
 - 外觀收藏 14 款都在「試看」舞台逐一截圖檢查過（舞台刻意保留深色，讓光效看得出來）；一款稱號牌（深夜常客）的字色已修。
 - 沒有做深色模式切換：主題是整站奶油白，沒有保留舊深色版的開關。
-- 伺服器對所有檔案送 `Cache-Control: no-store` 且不壓縮，所以封面與主圖每次進大廳都會重新下載（約 400 KB）。這是原本的設定，沒有動；之後若要改善，可以對 `/assets/` 開快取。
+- 公開圖片已改用 ETag 重新驗證；未變更時回 304。其餘頁面、JS 和 API 維持原快取政策；本次沒有新增壓縮。
 - 有用到 `:has()`（會所頁與牌桌頁的版面規則）。WebKit 26.5 與 Chromium 都正常；不支援的舊瀏覽器那幾條規則會失效。
 - `工具/套用主題.sh`（Steven 的工作台，不在 repo）每次從基準提交 `98efd44` 重建 `night.css`；`main` 之後若有人改了 `night.css`，需要先合併再重建。
 - 第二審（Codex）的完整意見在 Steven 的工作台，主要是預覽圖與真實元件的差異，實作以真實元件為準。

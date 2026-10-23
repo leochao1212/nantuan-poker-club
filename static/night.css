@@ -1384,6 +1384,177 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
   :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{position:absolute;top:10px;left:10px;right:10px;z-index:6;margin:0;box-shadow:0 6px 18px #0000004d}
 }
 
+/*==== P18 第 4 批：質感（雕花厚金框、大老二對手牌疊、絨布外的奶油操作卡、摺疊區塊、排行月桂、收藏左圖右文） ====*/
+/* 金框做法：一張內嵌 SVG 當 border-image（九宮格：四角 Art Deco 階梯角花＋菱形，四邊是多層斜面——暗銅外緣、亮金、暗金斜面、暗銅線、細亮線、內陰影線）。
+   border-image-outset 往外畫 4px，不改盒子尺寸（座位、公共牌、手牌位置不動），也不算進可捲動範圍（不會造成左右溢出）。
+   邊框圖是元素自己的邊框層，畫在所有子元素底下：角花蓋不到座位或牌，也不吃點擊。不用 box-shadow 疊金框（每個牌桌只留原本 1 層外陰影＋1 層內暗角）。 */
+:root{
+  --frame-deco:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='120' y2='120' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23fff1c4'/%3E%3Cstop offset='.35' stop-color='%23e6c375'/%3E%3Cstop offset='.7' stop-color='%23c99a45'/%3E%3Cstop offset='1' stop-color='%239a6f28'/%3E%3C/linearGradient%3E%3ClinearGradient id='d' x1='0' y1='0' x2='120' y2='120' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23c49445'/%3E%3Cstop offset='1' stop-color='%236f4b1a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill-rule='evenodd' d='M7 0H113L120 7V113L113 120H7L0 113V7ZM7.7 1.2H112.3L118.8 7.7V112.3L112.3 118.8H7.7L1.2 112.3V7.7Z' fill='%234f3410'/%3E%3Cpath fill-rule='evenodd' d='M7.7 1.2H112.3L118.8 7.7V112.3L112.3 118.8H7.7L1.2 112.3V7.7ZM10.6 6.2H109.4L113.8 10.6V109.4L109.4 113.8H10.6L6.2 109.4V10.6Z' fill='url(%23g)'/%3E%3Cpath fill-rule='evenodd' d='M10.6 6.2H109.4L113.8 10.6V109.4L109.4 113.8H10.6L6.2 109.4V10.6ZM10 10H110V110H10Z' fill='url(%23d)'/%3E%3Cpath fill-rule='evenodd' d='M10 10H110V110H10ZM11 11H109V109H11Z' fill='%233f2a0c'/%3E%3Cpath fill-rule='evenodd' d='M11 11H109V109H11ZM12 12H108V108H12Z' fill='%23f6dc9a'/%3E%3Cpath fill-rule='evenodd' d='M12 12H108V108H12ZM12.8 12.8H107.2V107.2H12.8Z' fill='%231a120699'/%3E%3Cpath fill-rule='evenodd' d='M15.6 15.6H104.4V104.4H15.6ZM16.3 16.3H103.7V103.7H16.3Z' fill='%23dfbd7580'/%3E%3Cg id='c'%3E%3Cpath d='M12.8 38V27.5H17.5V22.5H22.5V17.5H27.5V12.8H38' fill='none' stroke='%233f2a0c' stroke-width='2.8'/%3E%3Cpath d='M12.8 38V27.5H17.5V22.5H22.5V17.5H27.5V12.8H38' fill='none' stroke='%23f0d28c' stroke-width='1.3'/%3E%3Cpath d='M12.8 12.8H25A12.2 12.2 0 0 1 12.8 25Z' fill='url(%23g)' stroke='%233f2a0c' stroke-width='.9'/%3E%3Cpath d='M12.8 19A6.2 6.2 0 0 0 19 12.8M12.8 12.8L22 22' fill='none' stroke='%233f2a0c' stroke-width='.8'/%3E%3C/g%3E%3Cuse href='%23c' transform='matrix(-1 0 0 1 120 0)'/%3E%3Cuse href='%23c' transform='matrix(1 0 0 -1 0 120)'/%3E%3Cuse href='%23c' transform='matrix(-1 0 0 -1 120 120)'/%3E%3C/svg%3E");
+  --laurel-l:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 30'%3E%3Cg%3E%3Cpath d='M11 29C4.5 25 2 18 3.5 10 4.2 6.5 5.6 4 7 2' fill='none' stroke='%238a6424' stroke-width='1'/%3E%3Cg fill='%23c99a45' stroke='%237a5a14' stroke-width='.5'%3E%3Cellipse cx='5.2' cy='6.5' rx='1.9' ry='4' transform='rotate(-28 5.2 6.5)'/%3E%3Cellipse cx='3.6' cy='11.5' rx='1.9' ry='4' transform='rotate(-14 3.6 11.5)'/%3E%3Cellipse cx='3.2' cy='16.8' rx='1.9' ry='4' transform='rotate(0 3.2 16.8)'/%3E%3Cellipse cx='4.2' cy='22' rx='1.9' ry='4' transform='rotate(18 4.2 22)'/%3E%3Cellipse cx='6.4' cy='26.3' rx='1.9' ry='4' transform='rotate(40 6.4 26.3)'/%3E%3C/g%3E%3Cg fill='%23e6c375' stroke='%237a5a14' stroke-width='.5'%3E%3Cellipse cx='8.6' cy='10' rx='1.5' ry='3.2' transform='rotate(30 8.6 10)'/%3E%3Cellipse cx='7.8' cy='15.2' rx='1.5' ry='3.2' transform='rotate(26 7.8 15.2)'/%3E%3Cellipse cx='8.2' cy='20.4' rx='1.5' ry='3.2' transform='rotate(34 8.2 20.4)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --laurel-r:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 30'%3E%3Cg transform='matrix(-1 0 0 1 14 0)'%3E%3Cpath d='M11 29C4.5 25 2 18 3.5 10 4.2 6.5 5.6 4 7 2' fill='none' stroke='%238a6424' stroke-width='1'/%3E%3Cg fill='%23c99a45' stroke='%237a5a14' stroke-width='.5'%3E%3Cellipse cx='5.2' cy='6.5' rx='1.9' ry='4' transform='rotate(-28 5.2 6.5)'/%3E%3Cellipse cx='3.6' cy='11.5' rx='1.9' ry='4' transform='rotate(-14 3.6 11.5)'/%3E%3Cellipse cx='3.2' cy='16.8' rx='1.9' ry='4' transform='rotate(0 3.2 16.8)'/%3E%3Cellipse cx='4.2' cy='22' rx='1.9' ry='4' transform='rotate(18 4.2 22)'/%3E%3Cellipse cx='6.4' cy='26.3' rx='1.9' ry='4' transform='rotate(40 6.4 26.3)'/%3E%3C/g%3E%3Cg fill='%23e6c375' stroke='%237a5a14' stroke-width='.5'%3E%3Cellipse cx='8.6' cy='10' rx='1.5' ry='3.2' transform='rotate(30 8.6 10)'/%3E%3Cellipse cx='7.8' cy='15.2' rx='1.5' ry='3.2' transform='rotate(26 7.8 15.2)'/%3E%3Cellipse cx='8.2' cy='20.4' rx='1.5' ry='3.2' transform='rotate(34 8.2 20.4)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2.5 2l6 6-6 6' fill='none' stroke='%237a5a14' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --frame:var(--frame-deco) 40 / 36px / 4px stretch;
+}
+/* 1 德州、麻將：所有寬度都換成厚金框（原本的細金線／木框由框圖取代；圓角收小，讓框角的斜切看得出來） */
+:is(#app,#modal,#social-root) .table-arena{border-image:var(--frame);border-radius:10px}
+:is(#app,#modal,#social-root) .mj-table{border-image:var(--frame);border-radius:10px;box-shadow:var(--shadow-soft),inset 0 12px 32px #00170d55}
+/* 小遊戲：桌機（>760）整塊絨布（含右側操作卡）外圈換厚金框 */
+@media(min-width:761px){
+  :is(#app,#modal,#social-root) .arcade-surface{border-image:var(--frame);border-radius:10px}
+}
+
+/* 3 手機（≤760）：絨布只包「桌面」，出牌／下注面板在絨布外，成為獨立的奶油卡（DOM 順序不變，只改各區塊的底色與外框）。
+   .arcade-surface 變成透明外殼（不留內距、邊框），金框＋絨布改畫在各遊戲的桌面元素上：
+   大老二＝對手牌疊＋目前桌面；21 點＝莊家區（未開局時的牌位）；輪盤＝輪盤；骰寶＝骰子；拉霸＝機台；礦區、爬塔、百家樂、射龍門＝棋盤。
+   手牌、輪盤押注表、同桌手牌等原本在絨布上的區塊改成奶油卡。桌面元素的邊框 4px＋內距 12px＝原本外殼的 4px＋12px，內容寬度不變。 */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface{padding:0;border:0;border-image:none;border-radius:0;background:none;box-shadow:none;color:var(--ink-deep)}
+  :is(#app,#modal,#social-root) .arcade-big2 .arcade-board{gap:10px}
+  /* 外殼裡、桌面以外的字：深色（原本是絨布上的象牙字） */
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(p,small,label,summary,li,dd,figcaption,h2,h3,strong,b):where(:not(.playing-card *,.risk-cell *,.dice-bet *,.roulette-cell *,.table-control-area *,.gate-preview *,.mj-tile *)){color:var(--ink-deep)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(p,small,li,dd,figcaption):where(:not(.playing-card *,.risk-cell *,.dice-bet *,.roulette-cell *,.table-control-area *,.gate-preview *,.mj-tile *)){color:var(--ink-2)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(.small-label,.eyebrow){color:var(--gold-text)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :focus-visible{outline-color:#101f1b}
+  /* 桌面元素：絨布＋厚金框 */
+  :is(#app,#modal,#social-root) .arcade-table :is(.big2-trick,.slot-machine,.roulette-stage,.dice-results,.blackjack-dealer,.arcade-empty-state),
+  :is(#app,#modal,#social-root) .arcade-table:is(.arcade-mines,.arcade-tower,.arcade-baccarat,.arcade-inbetween) .arcade-surface>.arcade-board{border:4px solid transparent;border-image:var(--frame);border-radius:10px;background:var(--felt-noise),var(--felt);box-shadow:0 6px 16px #3a2a0d38,inset 0 0 36px #0b241b80;color:var(--ivory)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(.big2-trick,.slot-machine,.roulette-stage,.dice-results,.blackjack-dealer,.arcade-empty-state) :is(p,small,label,summary,li,dd,figcaption,h2,h3,strong,b):where(:not(.playing-card *,.risk-cell *,.dice-bet *,.roulette-cell *,.table-control-area *,.gate-preview *,.mj-tile *)),
+  :is(#app,#modal,#social-root) .arcade-table:is(.arcade-mines,.arcade-tower,.arcade-baccarat,.arcade-inbetween) .arcade-surface>.arcade-board :is(p,small,label,summary,li,dd,figcaption,h2,h3,strong,b):where(:not(.playing-card *,.risk-cell *,.dice-bet *,.roulette-cell *,.table-control-area *,.gate-preview *,.mj-tile *)){color:var(--ivory)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(.big2-trick,.slot-machine,.roulette-stage,.dice-results,.blackjack-dealer,.arcade-empty-state) :is(.small-label,.eyebrow),
+  :is(#app,#modal,#social-root) .arcade-table:is(.arcade-mines,.arcade-tower,.arcade-baccarat,.arcade-inbetween) .arcade-surface>.arcade-board :is(.small-label,.eyebrow){color:#f0d59a}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(.big2-trick,.slot-machine,.roulette-stage,.dice-results,.blackjack-dealer,.arcade-empty-state) :focus-visible,
+  :is(#app,#modal,#social-root) .arcade-table:is(.arcade-mines,.arcade-tower,.arcade-baccarat,.arcade-inbetween) .arcade-surface>.arcade-board :focus-visible{outline-color:#f0d59a}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .arcade-empty-state{color:#efe4c8;align-self:stretch;width:100%;box-sizing:border-box}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .trick-empty{color:#efe4c8}
+  /* 各桌面的內距（邊框 4px＋內距 ≈ 原本外殼的 16px） */
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .big2-trick{margin:0;padding:8px 10px 10px}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .slot-machine{margin:0;padding:8px 12px 10px}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .roulette-stage{margin:0;padding:10px 12px}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .dice-results{margin:0;padding:10px 12px}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .blackjack-dealer{margin:0;padding:8px 12px 10px}
+  :is(#app,#modal,#social-root) .arcade-table:is(.arcade-mines,.arcade-tower,.arcade-baccarat,.arcade-inbetween) .arcade-surface>.arcade-board{padding:10px 12px}
+  /* 原本在絨布上、現在在絨布外的區塊：奶油卡 */
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface :is(.big2-hand,.roulette-layout,.blackjack-hands,.blackjack-others){margin:0;padding:10px 12px;background:var(--cream-panel);border:1px solid var(--gold-line);border-radius:14px;box-shadow:var(--shadow-soft)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .blackjack-player{border-color:var(--cream-line);background:var(--cream-panel2)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .blackjack-player.is-me{border-color:var(--gold-fill-3)}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .big2-hand .hand-scroll{margin-inline:-12px;padding:6px 4px 2px}
+  :is(#app,#modal,#social-root) .arcade-table .arcade-surface .big2-hand>div:first-child>span{color:var(--ink-2)}
+  /* 骰寶：骰子下方的說明在絨布外 */
+  :is(#app,#modal,#social-root) .club-main .arcade-dice .arcade-board .dice-board>p.bonus-caption{color:var(--ink-2)}
+}
+/* 操作卡（所有遊戲、所有寬度）：奶油底＋金邊＋內圈細金線（預覽圖的雙線奶油卡；2 層 inset 細線、1 層外陰影） */
+:is(#app,#modal,#social-root) .table-control-area{border:1px solid #d3ae62;box-shadow:inset 0 0 0 3px var(--cream-panel),inset 0 0 0 4px #ead5a6,var(--shadow-soft)}
+
+/* 2 大老二：桌面上方畫對手牌疊與「名字 剩 N 張」（模板新增、aria-hidden；座位膠囊本來就有同樣的資訊給報讀器） */
+:is(#app,#modal,#social-root) .big2-opponents{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;margin:2px 0 6px;padding-inline:10px}
+:is(#app,#modal,#social-root) .big2-opponent{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+:is(#app,#modal,#social-root) .big2-opponent>small{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;line-height:1.4;color:#efe4c8}
+:is(#app,#modal,#social-root) .arcade-table .arcade-surface .big2-opponent>small>b{font-weight:800;color:var(--ivory);margin-right:2px}
+:is(#app,#modal,#social-root) .big2-opponent.on-turn>small{color:#f0d59a}
+:is(#app,#modal,#social-root) .big2-stack{display:flex;justify-content:center;max-width:100%;height:32px;overflow:hidden;padding:0 1px}
+:is(#app,#modal,#social-root) .big2-stack>i{flex:none;width:22px;height:32px;margin-left:-18px;border-radius:3px;background:var(--card-back) center/100% 100% no-repeat;box-shadow:0 0 0 1px #fff5df,-1px 0 2px #00000059}
+:is(#app,#modal,#social-root) .big2-stack>i:first-child{margin-left:0}
+:is(#app,#modal,#social-root) .big2-opponent.on-turn .big2-stack>i:last-child{box-shadow:0 0 0 1px #fff5df,0 0 0 3px #f0d59a}
+/* 「新一輪，可自由選牌型」：桌面頂端的小牌匾 */
+:is(#app,#modal,#social-root) .big2-trick>.small-label{display:inline-block;margin:0 auto;padding:2px 14px;border:1px solid #dfbd75;border-radius:999px;background:#0f2f27d9;font-size:12px;font-weight:700;letter-spacing:.04em}
+:is(#app,#modal,#social-root) .big2-trick .big2-current{min-height:72px;margin-top:6px}
+:is(#app,#modal,#social-root) .big2-trick>p{margin:4px 0 0}
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .big2-stack>i{width:18px;height:27px;margin-left:-15px}
+  :is(#app,#modal,#social-root) .big2-stack{height:27px}
+  :is(#app,#modal,#social-root) .big2-opponents{gap:4px}
+}
+
+/* 4 摺疊區塊：收起時是一條 48px 的精簡列（左字、右側箭頭），展開時內容有左右內距、段落間距一致 */
+:is(#app,#modal,#social-root) details.arcade-rules{padding:0 14px;margin-top:10px}
+:is(#app,#modal,#social-root) details.arcade-rules>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:0;font-size:15px;font-weight:800;list-style:none;cursor:pointer}
+:is(#app,#modal,#social-root) :is(details.arcade-rules,details.playing-funding,details.mj-funding)>summary::-webkit-details-marker{display:none}
+:is(#app,#modal,#social-root) details.arcade-rules>summary::after,:is(#app,#modal,#social-root) details.playing-funding>summary::after,:is(#app,#modal,#social-root) details.mj-funding>summary::after{content:"";flex:none;width:9px;height:15px;margin-left:auto;background:var(--chev) center/contain no-repeat;transition:transform .2s}
+:is(#app,#modal,#social-root) details[open]:is(.arcade-rules,.playing-funding,.mj-funding)>summary::after{transform:rotate(90deg)}
+:is(#app,#modal,#social-root) details.arcade-rules[open]{padding-bottom:12px}
+:is(#app,#modal,#social-root) details.arcade-rules[open]>summary{border-bottom:1px solid var(--cream-line);margin-bottom:10px}
+:is(#app,#modal,#social-root) details.arcade-rules>p{margin:0 0 10px;font-size:13px;line-height:1.75;max-width:none}
+:is(#app,#modal,#social-root) details.arcade-rules>:last-child{margin-bottom:0}
+:is(#app,#modal,#social-root) details.arcade-rules .public-game-settings{margin:10px 0 0;padding:4px 12px}
+/* 錢包（帶入籌碼）：一張奶油卡，左邊金圈＋、右邊箭頭 */
+:is(#app,#modal,#social-root) details.playing-funding,:is(#app,#modal,#social-root) details.mj-funding{margin:0;padding:0 12px;border:1px solid var(--gold-line);border-bottom-width:1px;border-radius:14px;background:var(--cream-panel);box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) details.playing-funding>summary,:is(#app,#modal,#social-root) details.mj-funding>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:0;font-size:14px;font-weight:700;color:var(--ink-deep);list-style:none;cursor:pointer}
+:is(#app,#modal,#social-root) details.playing-funding>summary::before,:is(#app,#modal,#social-root) details.mj-funding>summary::before{content:"＋";flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--btn-gold);box-shadow:inset 0 1px 0 #fff6d8,0 0 0 1px #b98f3e;font-size:16px;font-weight:900;line-height:1;color:var(--ink-deep)}
+:is(#app,#modal,#social-root) details[open]:is(.playing-funding,.mj-funding)>summary::before{content:"−"}
+:is(#app,#modal,#social-root) details[open]:is(.playing-funding,.mj-funding){padding-bottom:12px}
+:is(#app,#modal,#social-root) details.playing-funding>.table-funding{margin:0;border-color:var(--cream-line)}
+:is(#app,#modal,#social-root) details.mj-funding{margin-bottom:10px}
+/* 莊家紀錄列：奶油卡，「莊家」酒紅膠囊，離開／結束牌桌是有框的按鈕（仍是同一顆 text-button，44px） */
+:is(#app,#modal,#social-root) .table-bottom{flex-wrap:nowrap;gap:8px;margin-bottom:42px;padding:6px 8px 6px 10px;background:var(--cream-panel);border:1px solid var(--gold-line);border-radius:14px;box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .table-bottom>.dealer-log{flex:1 1 auto;min-width:0;width:auto;padding:0;gap:8px}
+:is(#app,#modal,#social-root) .table-bottom .dealer-log>span{flex:none;padding:3px 10px;border-radius:999px;background:var(--burgundy);color:var(--ivory);font-size:12px;font-weight:800}
+:is(#app,#modal,#social-root) .table-bottom .dealer-log p{margin:0;font-size:12.5px;line-height:1.45;color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .table-bottom>.table-options{flex:none;margin-left:auto;gap:6px}
+:is(#app,#modal,#social-root) .table-bottom .table-options .text-button{min-height:44px;padding:0 12px;border:1px solid var(--gold-line);border-radius:10px;background:var(--cream-panel2);font-size:13px;font-weight:700;color:var(--ink-deep);white-space:nowrap}
+:is(#app,#modal,#social-root) .table-bottom .table-options .text-button.danger,:is(#app,#modal,#social-root) .table-bottom .table-options #close-table{border-color:#c98a90;color:var(--burgundy)}
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .table-bottom{flex-wrap:wrap}
+  :is(#app,#modal,#social-root) .table-bottom>.dealer-log{flex-basis:100%}
+}
+
+@media(max-width:760px){
+  /* 5 排行：前三名名次左右加月桂（內嵌 SVG），每列右側「›」（純裝飾：背景圖、不可點、不進報讀） */
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row{grid-template-columns:54px 40px auto minmax(0,1fr) auto 14px}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row .rank-number{justify-self:stretch;text-align:center;font-variant-numeric:tabular-nums}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row:nth-child(-n+4) .rank-number{padding:2px 11px;margin-right:4px;font-size:16px;background:var(--laurel-l) left center/10px 22px no-repeat,var(--laurel-r) right center/10px 22px no-repeat}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row::after{content:"";grid-column:6;grid-row:1/3;justify-self:end;width:8px;height:14px;background:var(--chev) center/contain no-repeat;pointer-events:none}
+
+  /* 6 收藏卡：左圖右文（圖 64px、文字在右），試看／購買兩顆鈕在下方一列（仍 ≥44px） */
+  :is(#app,#modal,#social-root) .collection-card{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:8px;row-gap:8px;padding:10px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview{grid-column:1;grid-row:1;align-self:stretch;width:64px;height:auto;min-height:76px;margin:0;border:1px solid var(--cream-line);border-radius:12px;overflow:visible}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview>.member-avatar.large{width:52px;height:52px;font-size:22px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview .preview-card{width:40px;height:58px;font-size:24px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview .identity-title{max-width:62px;padding:4px 5px;font-size:11px;line-height:1.3;white-space:normal;text-align:center;word-break:keep-all}
+  :is(#app,#modal,#social-root) .collection-card[data-cosmetic-slot=effect] .cosmetic-preview{background:radial-gradient(circle at 50% 50%,#1d4a3b 0,#14392c 29px,#c9a55c 29.5px,#c9a55c 31px,#c9a55c00 31.5px),radial-gradient(ellipse 60% 70% at 50% 55%,#f3dfae 0,#f8ead0 55%,#fbf3e3 100%)}
+  :is(#app,#modal,#social-root) .collection-card>div:not(.cosmetic-preview,.cosmetic-card-actions){grid-column:2;grid-row:1;min-width:0}
+  :is(#app,#modal,#social-root) .collection-card>div:not(.cosmetic-preview,.cosmetic-card-actions) h3{margin:1px 0 2px;font-size:15px;line-height:1.35}
+  :is(#app,#modal,#social-root) .collection-card>div:not(.cosmetic-preview,.cosmetic-card-actions) .small-label{font-size:11px}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-detail{min-height:0;margin:0 0 2px;font-size:11.5px;line-height:1.45}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-price{margin:0;font-size:14px;font-weight:800;color:var(--burgundy)}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-card-actions{grid-column:1/-1;grid-row:2;margin:0}
+}
+
+/* P18 第 4 批：首屏（資料不同時的高狀態）
+   射龍門「對子門柱、要先選往上／往下」時桌面多一組方向鈕，375 寬「下注射牌」會掉出首屏：這個狀態下門柱牌、方向鈕、說明收緊（方向鈕仍 ≥44px）。
+   320 寬的勝率／倍率卡不折行（大倍率 ×13.580 原本折三行）。爬塔結算後 320 寬：「越爬越難」說明小一號不折第三行。棋盤類桌面上下內距 10→6。 */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-table:is(.arcade-mines,.arcade-tower,.arcade-inbetween) .arcade-surface>.arcade-board{padding-block:6px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board:has(.gate-directions) .gate-cards>div{gap:2px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board:has(.gate-directions) .gate-cards .playing-card{width:50px;height:70px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board:has(.gate-directions) .gate-shot{padding:4px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-directions{margin:6px 0 0;gap:6px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-directions legend{padding:0 0 4px;font-size:14px;line-height:1.3}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-directions .button{min-height:50px;padding:4px 6px;gap:0}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-directions .button strong{font-size:18px;line-height:1.25}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-directions~.gate-stats{margin-top:6px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board:has(.gate-directions)>.gate-mode-note{margin-top:4px;font-size:11.5px;line-height:1.45}
+}
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .arcade-tower .tower-difficulty .button small{font-size:11px;line-height:1.3}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-stats>div{padding:4px 8px;flex-wrap:nowrap}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-stats span{white-space:nowrap;font-size:11px}
+  :is(#app,#modal,#social-root) .arcade-inbetween .gate-board .gate-stats strong{font-size:14px;white-space:nowrap}
+}
+/* P18 第 4 批：360 以下的收藏卡與排行（卡片只剩約 130px 寬：圖縮成 50px，名字與說明不逐字折行；排行名次欄收窄，把寬度留給「手數 · 淨輸贏」） */
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .collection-card{grid-template-columns:50px minmax(0,1fr);column-gap:6px;padding:8px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview{width:50px;min-height:64px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview>.member-avatar.large{width:42px;height:42px;font-size:18px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview .preview-card{width:34px;height:48px;font-size:20px}
+  :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview .identity-title{max-width:48px;padding:3px;font-size:10px}
+  :is(#app,#modal,#social-root) .collection-card[data-cosmetic-slot=effect] .cosmetic-preview{background:radial-gradient(circle at 50% 50%,#1d4a3b 0,#14392c 23px,#c9a55c 23.5px,#c9a55c 25px,#c9a55c00 25.5px),radial-gradient(ellipse 60% 70% at 50% 55%,#f3dfae 0,#f8ead0 55%,#fbf3e3 100%)}
+  :is(#app,#modal,#social-root) .collection-card>div:not(.cosmetic-preview,.cosmetic-card-actions) h3{font-size:14px;word-break:keep-all;overflow-wrap:anywhere}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-detail{font-size:11px}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row{grid-template-columns:46px 38px auto minmax(0,1fr) auto 10px}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row:nth-child(-n+4) .rank-number{padding:2px 9px;margin-right:2px;font-size:14px;background-size:8px 18px,8px 18px}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-identity>.avatar{width:32px;height:32px}
+}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* Keep all five community cards clear of the foreground pair on narrow tables. */

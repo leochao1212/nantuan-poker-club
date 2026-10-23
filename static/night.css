@@ -1545,7 +1545,8 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
   :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview .preview-card{width:34px;height:48px;font-size:20px}
   :is(#app,#modal,#social-root) .collection-card>.cosmetic-preview .identity-title{max-width:48px;padding:3px;font-size:10px}
   :is(#app,#modal,#social-root) .collection-card[data-cosmetic-slot=effect] .cosmetic-preview{background:radial-gradient(circle at 50% 50%,#1d4a3b 0,#14392c 23px,#c9a55c 23.5px,#c9a55c 25px,#c9a55c00 25.5px),radial-gradient(ellipse 60% 70% at 50% 55%,#f3dfae 0,#f8ead0 55%,#fbf3e3 100%)}
-  :is(#app,#modal,#social-root) .collection-card>div:not(.cosmetic-preview,.cosmetic-card-actions) h3{font-size:14px;word-break:keep-all;overflow-wrap:anywhere}
+  /* P18 審查修正 4 L4：標題 13px、不在字中間斷（最長 5 字＝65px，文字欄約 70px 放得下） */
+  :is(#app,#modal,#social-root) .collection-card>div:not(.cosmetic-preview,.cosmetic-card-actions) h3{font-size:13px;word-break:keep-all;overflow-wrap:normal}
   :is(#app,#modal,#social-root) .collection-card .cosmetic-detail{font-size:11px}
   :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row{grid-template-columns:46px 38px auto minmax(0,1fr) auto 10px}
   :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row:nth-child(-n+4) .rank-number{padding:2px 9px;margin-right:2px;font-size:14px;background-size:8px 18px,8px 18px}
@@ -1565,7 +1566,6 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) :is(.arcade-mines,.arcade-tower) .risk-summary>.risk-inline-collect{grid-column:2;grid-row:1;justify-self:end;width:100%;max-width:280px;min-width:0}
 :is(#app,#modal,#social-root) :is(.arcade-mines,.arcade-tower) .risk-inline-collect .button{width:100%;min-height:44px;padding:4px 12px;line-height:1.25;white-space:normal}
 @media(max-width:760px){
-  :is(#app,#modal,#social-root) :is(.arcade-mines,.arcade-tower) .risk-summary{min-height:52px;padding-block:3px}
   :is(#app,#modal,#social-root) :is(.arcade-mines,.arcade-tower):has(.risk-inline-collect) #table-controls .risk-actions{display:none}
   :is(#app,#modal,#social-root) :is(.arcade-mines,.arcade-tower):has(#deal-hand) .risk-returns{display:none}
   /* 爬塔結算後格子不縮，「開下一局」要回首屏：棋盤與操作卡收緊（遊戲中、結算後同一套尺寸，格子位置不變） */
@@ -1593,7 +1593,13 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
    框本身不吃點擊（壓到下面的東西也點得到），只有「確認這筆操作」鈕可點。有錯誤時，牌桌頁頂端的 4 秒提示框（#toast）移到它下方，兩者不重疊 */
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(12px,calc(50% - 240px));right:max(12px,calc(50% - 240px));bottom:auto;z-index:90;margin:0;font-size:14px;font-weight:700;box-shadow:0 8px 24px #00000059;pointer-events:none}
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error .button{pointer-events:auto}
-body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inset-top,0px) + 92px)}
+/* P18 審查修正 4 H1：解除協作者 night.css 對拉霸狀態列的 44px 固定高（固定在頂部的錯誤框改成依內容長高），「確認這筆操作」鈕在框內、44px 高、一定看得到點得到。
+   文字最多 4 行（超過就在文字區內捲動；只有文字本身吃觸控，框的內距照舊穿透），所以框最高 = 4 行 × 19.6 + 內距 16 + 框線 2 ≈ 97px。
+   #toast 固定排在這個最高值下方（8 + 97 + 8 → 114px），不論錯誤幾行都不重疊 */
+:is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{height:auto;min-height:0;max-height:none;overflow:visible;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 10px;line-height:1.4}
+:is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error>span{flex:1 1 auto;min-width:0;max-height:calc(1.4em * 4);overflow-y:auto;overscroll-behavior:contain;pointer-events:auto}
+:is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error .button{flex:none;min-height:44px;min-width:44px;margin:0;padding:4px 12px;font-size:13px;line-height:1.3}
+body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inset-top,0px) + 114px)}
 
 /* M2 後台帳號卡：頭像與名字同一列（桌機也套用；手機另有尺寸） */
 :is(#app,#modal,#social-root) .admin-account header{display:flex;align-items:center;gap:12px}
@@ -1616,6 +1622,11 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
 @media(max-width:400px){
   :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>strong{grid-row:1;align-self:end;font-size:16px}
   :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-stat:nth-child(3){grid-column:4/6}
+  /* P18 審查修正 4 L5：副標獨佔一整列、一行放完。main 是兩欄格線（標題｜總資產／遊戲淨贏），標題區塊改 display:contents，
+     h1 與副標直接當格線項目：h1 在第一列左欄、切換鈕在右欄，副標在第二列跨兩欄 */
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.page-heading,:is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.page-heading>div{display:contents}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.page-heading h1{grid-column:1;grid-row:1;align-self:center;min-width:0;margin:0}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.page-heading p{grid-column:1/-1;grid-row:2;margin:6px 0 10px;text-wrap:wrap}
 }
 
 /* L8 21 點下注名單：自己的列，暱稱太長只省略暱稱，「· 你」保留（模板把暱稱與「· 你」分成兩段） */

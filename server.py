@@ -344,7 +344,7 @@ class Handler(BaseHTTPRequestHandler):
                                         cell(people[e["user_id"]]["nickname"]), f'{e["buy_in"]/100:.2f}',
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
-            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path):
+            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path):
                 self.reply(200,(ROOT/'static'/path[1:]).read_bytes(),content_type='image/webp')
             elif path in ("/mahjong.js", "/mahjong.css", "/game-settings.js", "/game-settings.css", "/", "/index.html", "/app.js", "/style.css", "/game.js", "/profile.js", "/clubhouse-scene.js", "/clubhouse-scene.css", "/night.css", "/profile.css", "/effects.css", "/features.js", "/features.css", "/transfers.js", "/transfers.css", "/casino.css", "/ui.css", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/arcade.css", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]

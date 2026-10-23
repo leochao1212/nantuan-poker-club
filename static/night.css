@@ -689,4 +689,20 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) .club-main .arcade-board .risk-returns>span.passed{background:#e3f1e6;border-color:#8fbf9f;color:#1f6a45}
 :is(#app,#modal,#social-root) .club-main .arcade-board .risk-returns>span.passed :is(b,small){color:#1f6a45}
 
+/* 遊戲專屬圖形（P11 階段 5，JS 模板內嵌 SVG）：拉霸符號、骰面、礦區寶石與地雷 */
+:is(#app,#modal,#social-root) .slot-reel>span{display:grid;place-items:center;width:100%;height:100%}
+:is(#app,#modal,#social-root) .slot-reel>span .sym{height:74%;width:auto;max-width:78%;display:block;filter:drop-shadow(0 2px 0 #00000026)}
+:is(#app,#modal,#social-root) .die-face .sym{width:78%;height:78%;display:block}
+:is(#app,#modal,#social-root) .risk-cell>span .sym{width:62%;max-width:38px;height:auto;display:block}
+:is(#app,#modal,#social-root) .risk-cell.hazard,:is(#app,#modal,#social-root) .risk-cell.safe{box-shadow:inset 0 1px 0 #fff8}
+
+/* 操作回饋條（成功／等待／錯誤） */
+:is(#app,#modal,#social-root) .action-feedback{background:#fff1cf;color:var(--ink-deep);border:1px solid var(--gold-line)}
+:is(#app,#modal,#social-root) .action-feedback :is(span,p,strong,small){color:inherit}
+:is(#app,#modal,#social-root) .action-feedback.error{background:#fbe3e0;color:#7c242c;border-color:#d4868c}
+
+/* 收藏試看舞台：稱號牌保留自己的配色（上一輪的「舞台內全部象牙字」誤傷了米色底的深夜常客） */
+:is(#app,#modal,#social-root) .club-main #cosmetic-stage .identity-title.title-night{color:var(--ink-deep);background:#f3e4c4;border-color:var(--gold-line)}
+:is(#app,#modal,#social-root) .club-main #cosmetic-stage .identity-title.title-night *{color:var(--ink-deep)}
+
 /*==== 奶油白主題 結束 ====*/

@@ -350,7 +350,7 @@ html,body{background:var(--cream-bg);color:var(--ink-deep)}
 :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):hover:not(:disabled){background:var(--btn-gold-hover)}
 :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):disabled{opacity:.55;box-shadow:none;filter:saturate(.6)}
 :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.icon-button){background:#fffaf0;color:var(--ink-deep);border:1px solid var(--gold-line);box-shadow:0 1px 0 #fff;}
-:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button):hover:not(:disabled){background:#fff1cf}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button):hover:not(:disabled,[aria-pressed=true]){background:#fff1cf}
 :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button):disabled{opacity:.55}
 :is(#app,#modal,#social-root) .icon-button{border-radius:999px}
 :is(#app,#modal,#social-root) .button.allin-button{background:#fff4f2;color:var(--burgundy);border:1px solid #c98a90;font-weight:800}
@@ -646,7 +646,9 @@ dialog :is(p,small,label,summary,li,dd){color:var(--ink-2)}
 :is(#app,#modal,#social-root) .sidebar .nav-item.active,:is(#app,#modal,#social-root) .sidebar .nav-item.active :is(span,b){color:#f6e0a8}
 :is(#app,#modal,#social-root) .night-feature-picks a{background:linear-gradient(180deg,#2c6b53,#16392d);border:1px solid var(--gold-line);border-radius:14px}
 :is(#app,#modal,#social-root) .night-feature-picks a,:is(#app,#modal,#social-root) .night-feature-picks a :is(span,small,strong,b,i){color:var(--ivory)}
-@media(max-width:760px){:is(#app,#modal,#social-root) .mobile-brand{display:inline-flex;align-items:center;min-height:44px}}
+/* 品牌連結：只放大點擊區，不改高度（改高度會把頂欄撐高 22px） */
+:is(#app,#modal,#social-root) .mobile-brand{position:relative}
+:is(#app,#modal,#social-root) .mobile-brand::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2));bottom:min(0px,calc((100% - 44px)/2));left:0;right:0}
 :is(#app,#modal,#social-root) .global-voice-button{min-width:44px}
 :is(#app,#modal,#social-root) .raise-presets button{min-height:44px}
 :is(#app,#modal,#social-root) .seat-picker>summary,:is(#app,#modal,#social-root) .mj-funding>summary{min-height:44px;box-sizing:border-box}
@@ -707,14 +709,15 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 
 /* 1 選中狀態：所有 aria-pressed 切換鈕。金底＋深綠粗框＋角落勾號（不只靠顏色）。
    這條要有 id 前綴＋屬性選擇器，才贏得過上面通用的 .button.ghost／.dice-bet 規則。 */
-:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.dice-bet,.roulette-chips .button,.tower-difficulty .button,.gate-directions .button)[aria-pressed=true]{background:var(--btn-gold);color:var(--ink-deep);border:2px solid #101f1b;box-shadow:inset 0 0 0 1px #f6e0a8,0 2px 0 #a47a2c;font-weight:800;position:relative}
-:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.dice-bet,.roulette-chips .button,.tower-difficulty .button,.gate-directions .button)[aria-pressed=true]::after{content:"\2713";position:absolute;top:2px;right:5px;font-size:11px;line-height:1;font-weight:900;color:#101f1b}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.dice-bet,.roulette-chips .button,.tower-difficulty .button,.gate-directions .button)[aria-pressed=true]:not(#voice-mute,#voice-listen){background:var(--btn-gold);color:var(--ink-deep);border-color:#101f1b;box-shadow:inset 0 0 0 1px #101f1b,inset 0 0 0 2px #f6e0a8,0 2px 0 #a47a2c;font-weight:800;position:relative}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.dice-bet,.roulette-chips .button,.tower-difficulty .button,.gate-directions .button)[aria-pressed=true]:not(#voice-mute,#voice-listen)::after{content:"\2713";content:"\2713" / "";position:absolute;top:4px;right:6px;font-size:11px;line-height:1;font-weight:900;color:#101f1b}
 :is(#app,#modal,#social-root) .arcade-surface :is(.dice-bet,.gate-directions .button)[aria-pressed=true] :is(b,strong,small,span){color:var(--ink-deep)}
 :is(#app,#modal,#social-root) .roulette-chips .button[aria-pressed=true]{color:var(--ink-deep)}
 
 /* 2 鍵盤焦點：奶油底用深綠粗框；深色區（側欄、絨布、主圖、邀請卡）改淺金框 */
 :is(#app,#modal,#social-root) :focus-visible,#modal :focus-visible,#social-root :focus-visible{outline:3px solid #101f1b;outline-offset:2px}
-:is(#app,#modal,#social-root) :is(.sidebar,.arcade-surface,.table-arena,.night-main-art,.invite-panel,#cosmetic-stage,.mj-table) :focus-visible{outline-color:#f0d59a}
+:is(#app,#modal,#social-root) :where(.sidebar,.arcade-surface,.table-arena,.night-main-art,.invite-panel,#cosmetic-stage,.mj-table,.slot-machine,.baccarat-side) :focus-visible{outline-color:#f0d59a}
+:is(#app,#modal,#social-root) :where(.table-control-area,.gate-preview,.table-funding,.playing-funding,.round-settings,.between-hands) :focus-visible{outline-color:#101f1b}
 
 /* 3 大廳沒有牌桌時的空狀態（原本是深藍底，被我改成深色字之後看不見） */
 :is(#app,#modal,#social-root) .night-tables .empty-tables,:is(#app,#modal,#social-root) .empty-tables{background:var(--cream-panel);border:1px dashed var(--gold-line);color:var(--ink-deep)}
@@ -733,14 +736,26 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.tower-difficulty .button,.dice-bet,.gate-directions .button,.roulette-chips .button)[aria-pressed=true] :is(small,span,b,strong){color:var(--ink-deep)}
 
 /* 點擊範圍（至少 44×44）：文字連結用內距加負邊距，點擊區變大、版面不動 */
-:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a){display:inline-block;padding:12px 8px;margin:-12px -8px;min-width:44px;box-sizing:border-box;text-align:center}
-:is(#app,#modal,#social-root) .mj-player a{margin:-8px -6px;padding:8px 6px}
+:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a){position:relative}
+:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a)::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2));bottom:min(0px,calc((100% - 44px)/2));left:min(0px,calc((100% - 44px)/2));right:min(0px,calc((100% - 44px)/2))}
 :is(#app,#modal,#social-root) #toggle-password{min-height:44px}
 :is(#app,#modal,#social-root) select#unit{min-height:44px}
-:is(#app,#modal,#social-root) a.brand{min-height:44px;box-sizing:border-box}
+:is(#app,#modal,#social-root) a.brand{position:relative}
+:is(#app,#modal,#social-root) a.brand::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2));bottom:min(0px,calc((100% - 44px)/2));left:0;right:0}
 :is(#app,#modal,#social-root) fieldset.party-create-options label{display:flex;align-items:center;gap:10px;min-height:44px}
 :is(#app,#modal,#social-root) fieldset.party-create-options input[type=checkbox]{width:24px;height:24px;flex:none}
 #modal fieldset.party-create-options label{display:flex;align-items:center;gap:10px;min-height:44px}
 #modal fieldset.party-create-options input[type=checkbox]{width:24px;height:24px;flex:none}
+
+/* ===== Opus 5.5 回歸審查後的修正 ===== */
+/* L3 射龍門方向選中時的小字 */
+:is(#app,#modal,#social-root) .arcade-surface fieldset.gate-directions .button.ghost[aria-pressed=true] :is(small,strong,b,span){color:var(--ink-deep)}
+/* L6 下拉選單：WebKit 原生外觀不吃 min-height，改自畫箭頭 */
+/* 權重要等於上面表單規則 (1,1,1)，靠順序取勝；那條用 background 簡寫會清掉箭頭圖 */
+:is(#app,#modal,#social-root) select:not([multiple]){-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23101f1b' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px;padding-right:34px;min-height:44px}
+/* L8 桌機牌桌卡片內距、大廳右側捷徑的 button */
+:is(#app,#modal,#social-root) .night-tables .room-card{padding-left:16px;padding-right:16px}
+:is(#app,#modal,#social-root) .night-feature-picks :is(a,button){background:linear-gradient(180deg,#2c6b53,#16392d);border:1px solid var(--gold-line);border-radius:14px;color:var(--ivory)}
+:is(#app,#modal,#social-root) .night-feature-picks :is(a,button) :is(span,small,strong,b,i){color:var(--ivory)}
 
 /*==== 奶油白主題 結束 ====*/

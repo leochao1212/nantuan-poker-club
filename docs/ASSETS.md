@@ -6,12 +6,17 @@
 
 | 素材 | 檔案 | 用途 |
 | --- | --- | --- |
-| 會所 Lv.1 | [桌機圖片](../static/assets/clubhouse/tier-1.webp)／[手機圖片](../static/assets/clubhouse/tier-1-small.webp) | 私人包廂，3:2 展示區 |
-| 會所 Lv.2 | [桌機圖片](../static/assets/clubhouse/tier-2.webp)／[手機圖片](../static/assets/clubhouse/tier-2-small.webp) | 霓虹酒廊，3:2 展示區 |
+| 會所 Lv.1 | [桌機圖片](../static/assets/clubhouse/tier-1.webp)／[手機圖片](../static/assets/clubhouse/tier-1-small.webp) | 私人包廂：路邊破舊鐵皮棚，3:2 展示區 |
+| 會所 Lv.2 | [桌機圖片](../static/assets/clubhouse/tier-2.webp)／[手機圖片](../static/assets/clubhouse/tier-2-small.webp) | 整修後的街角小店（名稱見後端 DECOR），3:2 展示區 |
 | 會所 Lv.3 | [桌機圖片](../static/assets/clubhouse/tier-3.webp)／[手機圖片](../static/assets/clubhouse/tier-3-small.webp) | 尊爵會館，3:2 展示區 |
 | 會所 Lv.4 | [桌機圖片](../static/assets/clubhouse/tier-4.webp)／[手機圖片](../static/assets/clubhouse/tier-4-small.webp) | 曜金行宮，3:2 展示區 |
-| 德州場景 | [poker-night.webp](../static/assets/poker-night.webp) | 牌室封面／場景 |
+| 大廳主圖 | [poker-night.webp](../static/assets/poker-night.webp) | 大廳主圖區（左側留白給標題） |
+| 遊戲封面 ×11 | static/assets/covers/*.webp（德州、大老二、21 點、輪盤、百家樂、拉霸、礦區、骰寶、爬塔、射龍門、麻將） | 大廳遊戲卡封面，經 `.game-art::before` 疊上；需後端白名單放行 `/assets/covers/` |
 | 網站圖示 | [favicon.svg](../static/favicon.svg) | 瀏覽器標誌 |
+
+## 新素材的來源（奶油白主題）
+
+所有新圖是 AI 生成的視覺素材（不含文字、不含真人），提示詞原文放在 [asset-prompts](design-proposals/asset-prompts/)，一圖一檔，可重現。會所四級用同一個街角場景、前一級當參考逐級升級。員工 3 人的走路貼圖用純洋紅背景生成後去背，縮成小圖內嵌在 clubhouse-scene.js（不需要額外放行）。本清單不推定生成工具的授權條款。
 
 ## 程式生成視覺
 

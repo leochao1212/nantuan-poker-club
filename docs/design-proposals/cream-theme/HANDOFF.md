@@ -8,6 +8,7 @@
 - 公開 WebP 圖片使用 ETag 重新驗證；內容未變時回 304，避免再次下載圖片。每次都驗證版本，沒有舊圖停留問題。HTML、API、錢包、帳號和即時串流仍禁止快取。
 - 已整合射龍門連續牌靴：每桌沿用 52 張牌，剩 13 張以下下一局重洗；倍率與機率依實際餘牌計算，免費略過只消耗兩張門柱。
 - 手機德州增加中央資訊與手牌間距，右側頭像移入牌桌邊界；保留已裝備的翡翠／酒紅牌背。
+- 第三輪（分支 `design/cream-round3`）：照設計稿再貼近一次，分四批做，每批後獨立審查並修正。幾乎全是 CSS，另有少數 JS 畫面字串（第三節「第三輪 JS 模板」）；後端只有第二節的小修。
 
 ## 二、後端改了什麼
 
@@ -26,7 +27,7 @@
 | 層級 | 檔案 | 說明 |
 | --- | --- | --- |
 | CSS | `static/night.css` | 尾端加了一段主題區塊，有開始／結束註解。 |
-| CSS（續） | `static/night.css` | 用 `#app`、`#modal`、`#social-root` 前綴取得優先權。 |
+| CSS（續） | `static/night.css` | 用 `:is(#app,#modal,#social-root)` 前綴取得優先權（原始檔寫 `#app `，建置時展開，見第六節）。 |
 | CSS（續） | `static/night.css` | 新增了 2 個 `!important`，用在 `.account-delete` 的框色與字色。原因是 `profile.css` 本來就用 `!important` 設定它。 |
 | CSS（續） | `static/night.css` | 這份主題用全站通用選擇器，和 CONTRIBUTING「先以頁面根 class 限定」不同。這是刻意的，因為要整站換色。 |
 | CSS | `static/clubhouse-scene.css` | 刪掉已經沒有對應節點的舊員工小人規則：`.estate-leg-*`、`.estate-uniform-*`、`@keyframes estate-step`。 |
@@ -55,14 +56,37 @@
 
 德州座位的頭像本來就有畫在模板裡，是 CSS 把它藏起來，這次只是拿掉那條隱藏規則。
 
+**第三輪 JS 模板**（只動畫面字串，沒動事件、流程、狀態、API、既有 id／`data-*`／`aria-label`）：
+
+| 檔案 | 改動 |
+| --- | --- |
+| `static/bonus.js` 骰寶 | 「小 4–10」「大 11–17」的數字範圍包進 `<small>`，320 寬可以分兩行。 |
+| `static/bonus.js` 礦區 | 棋盤上新增「收手，領取 N 點」鈕：原本只給爬塔的條件 `kind==='tower'` 改成 `kind==='tower'\|\|kind==='mines'`。按鈕沿用既有的 `data-arcade-action="cashout"`，沒有新事件。 |
+| `static/arcade.js` `blackjackBets` | 確認名單每列前加頭像 `window.ClubIdentity.avatar(s)`，再用正則把 `data-member-id="\d+"` 換成 `data-member-id="0"`。原因：`profile.js` 的 `observe()` 會把 `data-member-id` 大於 0 的頭像變成可點連結（`role="link"`、可 Tab），名單裡不要多出這些停點和誤點跳頁。 |
+| `static/arcade.js` `blackjackBets`（續） | 暱稱拆成 `<span class="bj-nick">` 和 `<span class="bj-you"> · 你</span>`，長暱稱只省略名字，不會吃掉「· 你」。 |
+| `static/arcade.js` `big2Board` | 新增 `aria-hidden="true"` 的 `.big2-opponents`：每位對手一疊牌背（最多 13 張）加「暱稱 剩 N 張」。資料用 `h.players` 原本就有的 `card_count`，純裝飾，報讀不重複。 |
+| `static/club.js` `ClubRewards.view` | 頭框／特效的試看頭像從 `avatar_key:'crown'` 改成 `'initial'`，顯示自己的字。 |
+| `static/admin.js` `paint` | 帳號卡標題前加頭像（從 `lobby.users` 找同 id 的資料），同樣用正則換成 `data-member-id="0"`，理由同上。 |
+| `static/profile.js` 上傳鈕 | 「上傳自己的照片」包進 `<span id="photo-upload-text" aria-hidden="true">`，`<input id="profile-photo">` 新增 `aria-labelledby="photo-upload-text"`，避免報讀念兩次。input 本來沒有 `aria-label`，其他屬性不變。 |
+
+**CSS 依賴你的文字**：骰寶開獎前的金色骰盅，選擇器是 `.die-face[aria-label="等待收注開獎"]`（`bonus.js` 骰面的 `aria-label`）。改這段文字，骰盅會消失（不影響玩法）。
+
+**主題守的互動規則**（你改畫面時也請留意）：
+- 可點元素至少 44×44px。唯一例外：礦區／爬塔的停用格只在「從沒開過局」（盤面沒有 `.safe`／`.hazard`）時縮小；結算後不縮。
+- 伺服器回應後，不能讓另一個可點元素移到使用者剛點的位置（例如剛按「收手」的地方變成「開下一局」，連點就會誤開新局）。
+
+本輪沒有改 `index.html` 的 `?v=`。JS／CSS 目前是 `no-store`，所以不影響；若你之後開長快取，記得一起換版本號。
+
 素材的來源與提示詞見 [ASSETS.md](../../ASSETS.md) 和 [asset-prompts](../asset-prompts/)。
 
 ## 四、驗證
 
 | 項目 | 結果 |
 | --- | --- |
-| `node scripts/check-js.cjs`、`check-docs.cjs` | 通過 |
-| `python3 -m unittest discover` | 整合版完整 358 個測試（含 `test_assets.py`、`test_static_artwork.py` 與射龍門牌靴） |
+| `node scripts/check-js.cjs` | 17 個檔案語法通過 |
+| `node scripts/check-docs.cjs` | 33 個本機連結通過 |
+| `python3 -m unittest discover` | 360 個測試全過（含 `test_assets.py`、`test_static_artwork.py` 與射龍門牌靴） |
+| `npm run test:layout` | 19 頁、266 組畫面通過（細節見第五節下方） |
 | `npm run test:ui` | 本機通過 |
 | DOM 比對 | 改前改後比對 35 頁 DOM，id 與 `data-*` 沒有遺失。大老二那一頁少了出牌按鈕，是因為截圖時輪到對手出牌 |
 | 版面位移 | 9 個頁面、31 組主要容器（頂欄、排行列、成員卡、麻將桌與名牌、會所卡、牌桌卡、桌名列）的高度和改前完全相同 |
@@ -90,7 +114,9 @@
 | 其他 | 結果 |
 | --- | --- |
 | 低階手機效能 | 牌桌絨布的 `feTurbulence` 雜訊只算一次（120×120 磚塊）。Chromium 降速 6 倍捲動時，開或關雜訊沒有差別。無頭瀏覽器沒有真機 GPU，所以只能說「沒發現問題」 |
-| 獨立審查 | 三次 Opus 5.5 唯讀審查：第一次審全部、第二次審第一次的修正、第三次審後端與第二次的修正。成立的意見都已修正，並加進上面的自動檢查 |
+| 獨立審查 | 前兩輪三次 Opus 5.5 唯讀審查：第一次審全部、第二次審第一次的修正、第三次審後端與第二次的修正。成立的意見都已修正，並加進上面的自動檢查 |
+| 獨立審查（第三輪） | 四次 Opus 5.5 唯讀審查：第 1 批、第 2 批、第 2 批修正＋第 3 批、第 4 批＋修正 3，之後再修一次（修正 4）。成立的意見已修正，判定可接受、沒修的列在第六節 |
+| 自動檢查（第三輪） | 上表 5 項再加 3 項：主要操作在首屏、點擊後同位置不換成別的可點元素、placeholder 對比。主要尺寸全 0；例外是 375×667、844×390 的首屏與 844×390 的點擊位移，見第六節 |
 
 ## 五、建議你評估（沒有改）
 
@@ -99,6 +125,8 @@
   - 目前仍是 `no-store`，因為這會影響你的部署習慣。
 - **員工貼圖改成獨立檔案。** `clubhouse-scene.js` 現在是 36,563 B，若介意可以把 3 張貼圖改成獨立 webp。
   - 做法和封面一樣，加進白名單即可。
+- **`npm run test:layout` 的溢出判斷有盲點。** `tests/browser/layout.cjs` 用 `scrollWidth > innerWidth` 判斷左右溢出，但手機模擬下 `innerWidth` 會跟著內容變寬，所以抓不到。改用 `document.documentElement.clientWidth` 才準（我們自己的檢查已改）。
+- **`test:layout` 沒有「主要操作在首屏」的檢查。** 目前抓不到「下注／出牌鈕被推出首屏」「可點的那層在首屏外」。我們的檢查是：每個遊戲頁的主要操作（`#deal-hand`、`#table-controls` 第一個可用主按鈕、爬塔／礦區可點格）要在 393×852、375×812、320×800 首屏內。
 
 整合驗證補充：`npm run test:layout` 以 Chromium、WebKit 兩個引擎檢查 19 個頁面、7 種尺寸（320、375、393、768、844 橫向、1366、1920），共 266 組畫面；手機德州間距與牌背另有 14 組針對性檢查。`npm run test:ui` 保留雙人 21 點確認及會所升級流程測試。這些是瀏覽器模擬，並非實體手機驗證。
 
@@ -108,6 +136,13 @@
 - 輪盤盤面沿用原本的 SVG，它已經是金框加酒紅墨黑，和主題一致。
 - 用了 `:has()`。WebKit 26.5 和 Chromium 都正常，不支援的舊瀏覽器那幾條規則會失效。
 - 牌桌浮水印「楠團牌室／私人牌室」刻意做成淡色裝飾，有 `aria-hidden`。
-- 建置方式：主題原始檔在 Steven 的工作台，建置時會從基準提交 `98efd44` 重新產生 `night.css`。
-  - 如果你之後在 `main` 改了 `night.css`，請告訴 Steven 先合併再重建。
+- 建置方式：主題原始檔在 repo 外（Steven 工作台的 `主題原始檔/cream.css`、`ledger-cream.css`），用 `工具/套用主題.sh` 套進 repo。
+  - `night.css`：把原始檔的 `#app ` 展開成 `:is(#app,#modal,#social-root) `，替換尾端兩個註解之間的主題區塊（含註解）：起點 `/*==== 奶油白主題（P01/P02/P08）開始`，終點 `/*==== 奶油白主題 結束 ====*/`。區塊外的內容原樣保留，可以重複執行；找不到唯一的起點／終點就停下、不改檔。
+  - `ledger.css`：從 `/*==== 奶油白主題（P01/P02）：舊記帳頁` 這個註解替換到檔尾，註解之前的內容原樣保留。
+  - 不再從舊提交重建，所以你在 `main` 改主題區塊以外的地方不會被蓋掉。**直接改主題區塊（或 `ledger.css` 那段之後）的話，下次建置會被覆蓋**，請改在區塊外，或告訴我們同步回原始檔。
+- 844×390 橫向：礦區、爬塔按「開始遊戲」後，同一點會變成錢包摺疊列。這是最後一次修正之前就有的問題，後果只是展開摺疊、不動錢；要改橫向版面才修得掉。
+- 375×667、844×390 有些頁面的主要按鈕要捲動才看得到，要改全站外框才能解決。
+- 爬塔在手機上 1F 在下、6F 在上，視覺順序和 Tab 順序不一致。這是為了在 320 寬首屏放得下「開下一局」。
+- 桌機礦區有兩顆收手鈕（棋盤上一顆、操作列一顆），和爬塔一致。
+- 21 點 320 寬下注階段只剩約 3px 餘裕；6 人桌加分牌沒有實測。
 - Cloudflare 邊緣對 `public, max-age=0, must-revalidate`＋`ETag` 的處理沒有實測。部署後可以對同一張封面打兩次 `curl -sI https://<你的網域>/assets/covers/holdem.webp`，看 `cf-cache-status`、`cache-control`、`etag`，再帶 `If-None-Match` 打一次，確認回 304。

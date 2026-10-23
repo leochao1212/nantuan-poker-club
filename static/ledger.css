@@ -87,3 +87,4 @@ input,select,textarea{background:#efe2c8;color:#101f1b;border:1px solid #cdb98f}
 .sidebar .account :is(span,small,div),.sidebar .account p{color:#d6cdb0}
 :focus-visible{outline:3px solid #101f1b;outline-offset:2px}
 .sidebar :focus-visible{outline-color:#f0d59a}
+select#unit,.unit-picker select{min-height:44px}

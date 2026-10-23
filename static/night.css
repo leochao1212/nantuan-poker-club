@@ -732,4 +732,15 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) .risk-summary{padding:12px 14px;border-radius:12px}
 :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.tower-difficulty .button,.dice-bet,.gate-directions .button,.roulette-chips .button)[aria-pressed=true] :is(small,span,b,strong){color:var(--ink-deep)}
 
+/* 點擊範圍（至少 44×44）：文字連結用內距加負邊距，點擊區變大、版面不動 */
+:is(#app,#modal,#social-root) :is(a.member-name-link,.admin-room a,.mj-rule-copy a,.mj-player a){display:inline-block;padding:12px 8px;margin:-12px -8px;min-width:44px;box-sizing:border-box;text-align:center}
+:is(#app,#modal,#social-root) .mj-player a{margin:-8px -6px;padding:8px 6px}
+:is(#app,#modal,#social-root) #toggle-password{min-height:44px}
+:is(#app,#modal,#social-root) select#unit{min-height:44px}
+:is(#app,#modal,#social-root) a.brand{min-height:44px;box-sizing:border-box}
+:is(#app,#modal,#social-root) fieldset.party-create-options label{display:flex;align-items:center;gap:10px;min-height:44px}
+:is(#app,#modal,#social-root) fieldset.party-create-options input[type=checkbox]{width:24px;height:24px;flex:none}
+#modal fieldset.party-create-options label{display:flex;align-items:center;gap:10px;min-height:44px}
+#modal fieldset.party-create-options input[type=checkbox]{width:24px;height:24px;flex:none}
+
 /*==== 奶油白主題 結束 ====*/

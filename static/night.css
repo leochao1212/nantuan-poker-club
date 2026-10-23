@@ -766,6 +766,177 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) :is(#voice-mute,#voice-listen)[aria-pressed=true]{background:#fff4f2;border-color:var(--burgundy);color:var(--burgundy)}
 :is(#app,#modal,#social-root) :is(#voice-mute,#voice-listen):hover:not(:disabled){background:#fff1cf}
 
+/* ===== P18 第 1 批：殼層單行頂欄、全站密度、大廳首屏、頁標題、登入 ===== */
+/* 共用：金線＋菱形（頁標題兩側） */
+:root{
+  --title-rule-l:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10' preserveAspectRatio='none'%3E%3Cpath d='M0 5H110' stroke='%23c9a55c' stroke-width='1.2'/%3E%3C/svg%3E");
+  --title-diamond:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L10 5L5 10L0 5Z' fill='%23c9a55c'/%3E%3C/svg%3E");
+}
+
+@media(max-width:760px){
+  /* C1／C17 頂欄單行：品牌在左，點數膠囊、即時連線、語音、頭像、登出在右。
+     看得到的按鈕縮成 32～34px，點擊區用 ::after 撐到 44×44（不改高度就不會把頂欄撐高）。 */
+  :is(#app,#modal,#social-root) .topbar{flex-wrap:nowrap;align-items:center;gap:6px;height:auto;min-height:52px;padding:4px 10px;row-gap:0}
+  :is(#app,#modal,#social-root) .topbar .mobile-brand{flex:0 1 auto;min-width:44px;gap:5px;font-size:16px;font-weight:800;letter-spacing:.02em;white-space:nowrap;overflow:visible}
+  :is(#app,#modal,#social-root) .topbar .mobile-brand .icon{width:20px;height:20px;flex:none}
+  :is(#app,#modal,#social-root) .topbar .header-right{flex:0 1 auto;flex-wrap:nowrap;gap:4px;min-width:0;max-width:none;margin-left:auto;row-gap:0}
+  :is(#app,#modal,#social-root) .topbar :is(.header-balance,#connection,.global-voice-button,.top-profile,.mobile-logout){position:relative;flex:none}
+  :is(#app,#modal,#social-root) .topbar :is(.header-balance,#connection,.global-voice-button,.mobile-logout)::after{content:"";position:absolute;top:min(0px,calc((100% - 44px)/2 - 1px));bottom:min(0px,calc((100% - 44px)/2 - 1px));left:min(0px,calc((100% - 44px)/2 - 1px));right:min(0px,calc((100% - 44px)/2 - 1px))}
+  :is(#app,#modal,#social-root) .topbar .header-balance{height:32px;min-height:32px;padding:0 10px;display:inline-flex;align-items:center;gap:2px;font-size:13px;white-space:nowrap}
+  :is(#app,#modal,#social-root) .topbar .header-balance strong{font-size:14px}
+  :is(#app,#modal,#social-root) .topbar .header-balance small{font-size:11px}
+  :is(#app,#modal,#social-root) .topbar #connection{width:auto;min-width:32px;height:32px;min-height:32px;padding:0 2px;gap:4px;font-size:11px;white-space:nowrap;justify-content:center}
+  :is(#app,#modal,#social-root) .topbar #connection i{width:7px;height:7px;flex:none;margin:0}
+  :is(#app,#modal,#social-root) .topbar .global-voice-button{width:auto;min-width:44px;height:32px;min-height:32px;padding:0 10px;border-radius:999px;font-size:12px}
+  :is(#app,#modal,#social-root) .topbar .top-profile{width:34px;min-width:34px;height:34px;min-height:34px;padding:0;display:inline-grid;place-items:center;border-radius:999px}
+  :is(#app,#modal,#social-root) .topbar .top-profile .avatar{width:32px;height:32px;font-size:14px}
+  :is(#app,#modal,#social-root) .topbar .mobile-logout{width:32px;min-width:32px;height:32px;min-height:32px;margin:0;padding:0;align-items:center;justify-content:center}
+  :is(#app,#modal,#social-root) .topbar .mobile-logout .icon{width:16px;height:16px}
+
+  /* 全站密度：頁面上下留白、頁標題 */
+  :is(#app,#modal,#social-root) .club-app:not(:has(.live-room)) main#main{padding-top:12px}
+  :is(#app,#modal,#social-root) .page-heading{margin-bottom:12px;gap:8px}
+  :is(#app,#modal,#social-root) .page-heading h1{font-size:24px;line-height:1.3}
+  :is(#app,#modal,#social-root) .page-heading p{font-size:13px;line-height:1.6;margin-top:4px}
+  :is(#app,#modal,#social-root) .page-heading>.button{min-height:44px}
+}
+
+/* P18 第 1 批：頁標題樣式（依各頁預覽圖） */
+/* 大廳、任務收藏：置中，兩側金線＋菱形 */
+:is(#app,#modal,#social-root) :is(.night-lobby>.page-heading,main#main>.page-heading:has(.collection-balance)) h1{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center}
+:is(#app,#modal,#social-root) :is(.night-lobby>.page-heading,main#main>.page-heading:has(.collection-balance)) h1::before,
+:is(#app,#modal,#social-root) :is(.night-lobby>.page-heading,main#main>.page-heading:has(.collection-balance)) h1::after{content:"";flex:1 1 24px;max-width:110px;height:10px;background:var(--title-diamond) right center/8px 8px no-repeat,linear-gradient(90deg,#c9a55c00,#c9a55c) left center/calc(100% - 11px) 1.2px no-repeat}
+:is(#app,#modal,#social-root) :is(.night-lobby>.page-heading,main#main>.page-heading:has(.collection-balance)) h1::after{background:var(--title-diamond) left center/8px 8px no-repeat,linear-gradient(90deg,#c9a55c,#c9a55c00) right center/calc(100% - 11px) 1.2px no-repeat}
+:is(#app,#modal,#social-root) .night-lobby>.page-heading>div,:is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance)>div{flex:1 1 100%;min-width:0;text-align:center}
+:is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance){flex-wrap:wrap}
+:is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance) p{margin-left:auto;margin-right:auto}
+:is(#app,#modal,#social-root) main#main>.page-heading .collection-balance{white-space:nowrap}
+/* 我的帳號：靠左，右側金線收在菱形 */
+:is(#app,#modal,#social-root) main#main:has([data-profile-tab])>.page-heading>div{flex:1 1 100%;min-width:0}
+:is(#app,#modal,#social-root) main#main:has([data-profile-tab])>.page-heading h1{display:flex;align-items:center;gap:12px}
+:is(#app,#modal,#social-root) main#main:has([data-profile-tab])>.page-heading h1::after{content:"";flex:1 1 40px;max-width:200px;height:10px;background:var(--title-diamond) right center/8px 8px no-repeat,linear-gradient(90deg,#c9a55c,#c9a55c66) left center/calc(100% - 11px) 1.2px no-repeat}
+/* 楠團成員：墨綠金框橫幅，標題置中 */
+:is(#app,#modal,#social-root) main#main:has(.members-grid)>.page-heading>div{flex:1 1 100%;min-width:0;text-align:center}
+:is(#app,#modal,#social-root) main#main:has(.members-grid)>.page-heading h1{max-width:640px;margin-left:auto;margin-right:auto;background:var(--felt-noise),linear-gradient(180deg,#245c47,#14392c);color:var(--ivory);border:2px solid var(--gold-line);border-radius:14px;box-shadow:inset 0 0 0 1px #f0d59a55,var(--shadow-soft);padding:8px 12px;letter-spacing:.08em;text-shadow:0 1px 0 #0006}
+:is(#app,#modal,#social-root) main#main:has(.members-grid)>.page-heading p{margin-left:auto;margin-right:auto}
+
+@media(max-width:760px){
+  /* C2 大廳：首屏看得到遊戲卡 */
+  :is(#app,#modal,#social-root) .night-lobby>.page-heading{margin-bottom:10px}
+  :is(#app,#modal,#social-root) .night-feature{margin-bottom:14px}
+  :is(#app,#modal,#social-root) .night-feature .night-main-art,:is(#app,#modal,#social-root) .night-feature .night-hero-copy{min-height:104px}
+  :is(#app,#modal,#social-root) .night-feature .night-hero-copy{padding:12px 14px}
+  :is(#app,#modal,#social-root) .night-feature .night-hero-copy h2{font-size:24px;margin:0 0 8px}
+  /* 「開放牌桌」標題靠左，在線人數、篩選同一列 */
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;row-gap:6px;margin-bottom:10px}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.section-title{grid-column:1;display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:8px;margin:0;min-width:0;text-align:left}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.section-title h2{display:flex;align-items:center;gap:6px;font-size:19px;white-space:nowrap;margin:0}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.section-title h2 span{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 6px;border-radius:999px;background:var(--cream-panel);border:1px solid var(--gold-line);color:var(--ink-deep);font-size:12px;font-weight:800}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.section-title p{display:flex;align-items:center;gap:5px;margin:0;font-size:11px;white-space:nowrap;color:var(--ink-2)}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.section-title p::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.room-filter{grid-column:2;margin:0;gap:6px;font-size:11px;white-space:nowrap;max-width:none;color:var(--ink-2)}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.room-filter select{flex:none;width:112px;min-height:44px;height:44px;padding:0 26px 0 10px;font-size:13px;font-weight:700;border-radius:999px;background-color:var(--cream-panel);border-color:var(--gold-line);background-position:right 10px center}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>:is(.room-grid,.empty-tables,#expand-rooms){grid-column:1/-1}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .room-grid{border-top:0;padding:2px 2px 4px}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .mini-avatars .avatar{width:24px;height:24px;font-size:11px}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip #expand-rooms{justify-self:start;margin:0;min-height:44px;padding:8px 14px;font-size:13px}
+  /* 牌桌卡：內距與徽章縮小 */
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .room-card{padding:10px 12px;row-gap:4px;min-height:0;align-items:center}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .room-card h3{font-size:15px;line-height:1.35}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .room-card .game-badge{padding:2px 8px;min-height:0;line-height:1.4}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .room-card .room-specs{gap:2px 10px;padding:0}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip .room-card .room-card-bottom{gap:6px}
+  /* 遊戲卡：主圖矮一點，人數與按鈕同列 */
+  :is(#app,#modal,#social-root) .night-lobby #lobby-games .night-catalog-heading{margin-bottom:10px}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog{gap:12px 10px}
+  :is(#app,#modal,#social-root) .night-lobby .game-choice .game-art{height:88px;margin-bottom:6px}
+  :is(#app,#modal,#social-root) .night-lobby .game-choice h2{font-size:16px;margin:4px 0 2px}
+  :is(#app,#modal,#social-root) .night-lobby .game-choice footer{flex-wrap:wrap;align-items:center;gap:4px;padding-top:2px}
+  :is(#app,#modal,#social-root) .night-lobby .game-choice footer>span{width:auto;flex:1 0 auto;min-height:0}
+  :is(#app,#modal,#social-root) .night-lobby .game-choice footer .button{padding:9px 8px;gap:4px;min-width:56px}
+  :is(#app,#modal,#social-root) .night-lobby .game-choice footer .button>[aria-hidden=true]{display:none}
+}
+@media(max-width:374px){
+  /* 窄螢幕：篩選只留下拉選單（標籤文字仍是選單的名稱） */
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.room-filter{font-size:0;gap:0}
+  :is(#app,#modal,#social-root) .night-lobby .lobby-room-strip>.room-filter select{width:104px}
+}
+
+@media(max-width:760px){
+  /* C2 楠團成員：成員卡一列排完（頭像｜名字與帳號｜總籌碼｜轉點數），長暱稱在中欄換行 */
+  :is(#app,#modal,#social-root) .member-toolbar{margin:0 0 10px;gap:6px}
+  :is(#app,#modal,#social-root) details.member-invite{margin-bottom:10px}
+  :is(#app,#modal,#social-root) .members-grid{gap:8px}
+  :is(#app,#modal,#social-root) .members-grid .member-panel{grid-template-columns:44px minmax(0,1fr) auto;gap:2px 10px;padding:10px 12px}
+  :is(#app,#modal,#social-root) .members-grid .member-top .avatar{width:44px;height:44px}
+  :is(#app,#modal,#social-root) .members-grid .presence{margin-top:4px}
+  :is(#app,#modal,#social-root) .members-grid .member-panel h2{font-size:16px;line-height:1.3}
+  :is(#app,#modal,#social-root) .members-grid .member-panel h2 .member-name-link{min-height:0}
+  :is(#app,#modal,#social-root) .members-grid .member-stats strong{font-size:17px}
+  :is(#app,#modal,#social-root) .members-grid .member-transfer{margin:2px 0 0;padding:6px 12px;font-size:12px}
+  /* C2 籌碼排行：排行列矮一點 */
+  :is(#app,#modal,#social-root) .own-rank{padding:10px 14px;margin-bottom:10px}
+  :is(#app,#modal,#social-root) .ranking-panel .rank-row{min-height:0;padding:8px 12px;gap:2px 12px}
+  :is(#app,#modal,#social-root) .ranking-panel .rank-row .rank-identity{gap:8px}
+  :is(#app,#modal,#social-root) .ranking-panel .rank-row .identity-stack{gap:2px}
+  :is(#app,#modal,#social-root) .ranking-panel .rank-row .member-name-link{min-height:0}
+  :is(#app,#modal,#social-root) .ranking-panel .rank-row>.rank-stat{font-size:12px}
+  :is(#app,#modal,#social-root) .ranking-panel .rank-row>strong{font-size:18px}
+  :is(#app,#modal,#social-root) main#main>.view-switch{margin-bottom:10px}
+  /* C2 任務收藏：收藏卡矮一點，試看與購買並排 */
+  :is(#app,#modal,#social-root) .collection-grid{gap:10px}
+  :is(#app,#modal,#social-root) .collection-card{padding:10px}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-preview{margin:-10px -10px 10px;min-height:96px;height:96px}
+  :is(#app,#modal,#social-root) .collection-card h3{font-size:15px;margin:2px 0}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-detail{min-height:0;margin:2px 0 4px;line-height:1.5}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-price{margin-bottom:8px}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-card-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-card-actions .button{flex:1 1 auto;width:auto;min-width:44px;min-height:44px;padding:8px 6px;font-size:13px}
+  :is(#app,#modal,#social-root) .collection-section .panel-title{margin-bottom:8px;padding-top:4px;padding-bottom:8px}
+  :is(#app,#modal,#social-root) .collection-section .cosmetic-filters,:is(#app,#modal,#social-root) .collection-section .cosmetic-ownership{margin-bottom:8px}
+  /* C2 管理後台：帳號卡內距與數字縮小 */
+  :is(#app,#modal,#social-root) .admin-summary{gap:8px;margin-bottom:10px}
+  :is(#app,#modal,#social-root) .admin-accounts{padding:0 10px 12px;gap:10px}
+  :is(#app,#modal,#social-root) article.admin-account{padding:12px}
+  :is(#app,#modal,#social-root) .admin-account h3{font-size:16px}
+  :is(#app,#modal,#social-root) .admin-account dl{margin:10px 0 6px;gap:6px}
+  :is(#app,#modal,#social-root) .admin-account dd{font-size:17px;margin-top:2px}
+  :is(#app,#modal,#social-root) .admin-account .admin-room{min-height:0;margin:0}
+  :is(#app,#modal,#social-root) .admin-account footer{padding-top:8px;gap:8px}
+  :is(#app,#modal,#social-root) .admin-account footer .button{padding:8px 10px}
+}
+@media(min-width:375px) and (max-width:760px){
+  /* 寬度夠時，轉點數鈕放在右側同一列；@帳號太長就在鈕內換行 */
+  :is(#app,#modal,#social-root) .members-grid .member-panel{grid-template-columns:44px minmax(0,1fr) auto auto}
+  :is(#app,#modal,#social-root) .members-grid .member-transfer{grid-column:4;grid-row:1/4;align-self:center;max-width:118px;margin:0;padding:6px 8px;font-size:11px;line-height:1.3;white-space:normal;overflow-wrap:anywhere;text-align:center}
+}
+
+/* C3 登入：三個特色改成圓形金框徽章（原本的線條圖示放在墨綠圓裡），文字在下方 */
+:is(#app,#modal,#social-root) .auth-perks{align-items:flex-start;gap:16px}
+:is(#app,#modal,#social-root) .auth-perks>span{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:70px;text-align:center;font-weight:700;color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .auth-perks .icon{box-sizing:border-box;width:46px;height:46px;padding:11px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2f7a5d,#14392c 75%);color:#f0d59a;box-shadow:0 0 0 2px #dfbd75,0 0 0 3px #7a5a14,0 4px 10px #3a2a0d40;overflow:visible}
+@media(max-width:760px){
+  /* 首屏背景圖：右側是牌桌照片，左側奶油漸層承托文字 */
+  :is(#app,#modal,#social-root) .auth-scene{background:linear-gradient(90deg,#f6ecd9 0%,#f6ecd9 46%,#f6ecd9d9 60%,#f6ecd933 84%,#f6ecd900 100%),linear-gradient(0deg,#f6ecd9 0%,#f6ecd900 18%),url(/assets/poker-night.webp) 78% 40%/cover no-repeat,#f6ecd9}
+  :is(#app,#modal,#social-root) .auth-pitch h1{font-size:32px;line-height:1.3;margin:8px 0 10px}
+  :is(#app,#modal,#social-root) .auth-pitch>p{max-width:236px;font-size:13px;line-height:1.75}
+  :is(#app,#modal,#social-root) .auth-perks{margin-top:16px;gap:12px}
+  :is(#app,#modal,#social-root) .auth-perks>span{font-size:12px;min-width:68px}
+}
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .admin-summary>div{padding:10px 12px;min-height:0}
+  :is(#app,#modal,#social-root) .admin-summary strong{font-size:22px;margin-top:2px}
+}
+/* C1 頂欄在窄螢幕的退讓順序：品牌先縮成「楠團」，再縮成只剩黑桃；非牌桌頁的「即時連線」最後才縮成圓點（文字仍在 aria-label） */
+@media(max-width:392px){
+  :is(#app,#modal,#social-root) .topbar .brand-mobile-long{display:none}
+  :is(#app,#modal,#social-root) .topbar .brand-mobile-short{display:inline}
+}
+@media(max-width:343px){
+  :is(#app,#modal,#social-root) .club-app:not(:has(.live-room)) .topbar .brand-mobile-short{display:none}
+  :is(#app,#modal,#social-root) .club-app:not(:has(.live-room)) .topbar #connection{font-size:0;gap:0;padding:0;width:32px}
+}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* Keep all five community cards clear of the foreground pair on narrow tables. */

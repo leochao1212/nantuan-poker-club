@@ -26,5 +26,5 @@ window.ClubhouseScene=(()=>{
  document.addEventListener('visibilitychange',()=>document.documentElement.toggleAttribute('data-club-hidden',document.hidden));
  document.documentElement.toggleAttribute('data-club-hidden',document.hidden);
  function staff(employees){owned=new Set((employees||[]).filter(p=>p.owned).map(p=>p.key));sync();}
- return {render,names,staff};
+ return {render,names,staff,sprite:key=>spriteData[key]};
 })();

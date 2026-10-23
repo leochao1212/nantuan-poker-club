@@ -1479,3 +1479,437 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) input[type=file]::file-selector-button{background:var(--btn-gold);color:var(--ink-deep);border:1px solid #a47a2c;border-radius:10px;padding:8px 14px;margin-right:10px;font-weight:800;min-height:44px;cursor:pointer}
 
 /*==== 奶油白主題 結束 ====*/
+
+
+/*==== 奶油白主題（P01/P02/P08）開始：原始檔在 主題原始檔/cream.css ====*/
+/* 楠團牌室 · 奶油白豪華主題（P01／P02／P08）
+   接在 night.css 尾端（night.css 在伺服器靜態檔白名單內，不用改後端）。
+   所有規則用 #app／#modal／#social-root 前綴取得優先權，不用 !important（除了 profile.css 本來就有的 .account-delete）。
+   原則：只改外觀（色、框、陰影），不改版面、DOM 身分與行為。
+   字型：用系統內建，不下載。 */
+:root{
+  color-scheme:light;accent-color:#215541;
+  /* 色票 */
+  --cream-bg:#f6ecd9;      /* 頁面 */
+  --cream-panel:#fff8ea;   /* 面板、卡片 */
+  --cream-panel2:#faf0dc;  /* 第二層表面 */
+  --cream-sunk:#efe2c8;    /* 凹陷：輸入框、格子底 */
+  --cream-line:#dcc9a0;    /* 細線 */
+  --ink-deep:#101f1b;      /* 墨綠：主要文字、實心面板 */
+  --ink-2:#4a5750;         /* 次要文字 */
+  --ink-3:#62624f;         /* 弱文字 */
+  --emerald:#215541;       /* 翡翠：絨布、主體 */
+  --emerald-2:#2c6b53;
+  --burgundy:#a33c45;      /* 酒紅：點綴、危險 */
+  --gold-text:#7a5a14;     /* 金字（奶油底上可讀） */
+  --gold-line:#c9a55c;     /* 金邊 */
+  --gold-fill:#dfbd75;     /* 金鈕填色 */
+  --gold-fill-2:#f0d59a;
+  --gold-fill-3:#b98f3e;
+  --ivory:#fff5df;
+  --ok:#25704a;
+  --warn:#8a5200;
+  --shadow-soft:0 6px 18px #6b4e1f1f;
+  /* 翻掉舊變數 */
+  --night:var(--cream-bg);--panel:var(--cream-panel);--panel2:var(--cream-panel2);
+  --line:var(--cream-line);--ink:var(--ink-deep);--muted:var(--ink-2);--subtle:var(--ink-3);
+  --gold:var(--gold-text);--night-accent:var(--emerald);
+  --mint:var(--ok);--loss:var(--burgundy);--rose:var(--burgundy);--rose-hover:#8a2f38;
+  --text:var(--ink-deep);
+}
+html,body{background:var(--cream-bg);color:var(--ink-deep)}
+
+/* 共用材質 */
+:root{
+  --btn-gold:linear-gradient(180deg,#f6e0a8 0%,#dfbd75 52%,#c79a45 100%);
+  --btn-gold-hover:linear-gradient(180deg,#fbe9b9 0%,#e8c885 52%,#d3a64f 100%);
+  --gold-bevel:linear-gradient(135deg,#f6e2ae 0%,#c9a24e 28%,#f0d28a 52%,#a97f33 76%,#e9cb84 100%);
+  --felt:radial-gradient(ellipse at 50% 30%,#2f7a5d 0%,#215541 54%,#14392c 100%);
+  --felt-noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --card-back:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 56' preserveAspectRatio='none'%3E%3Crect width='40' height='56' fill='%23215541'/%3E%3Crect x='3' y='3' width='34' height='50' rx='2' fill='none' stroke='%23dfbd75' stroke-width='1'/%3E%3Cpath d='M3 3L37 53M37 3L3 53M20 3L37 28L20 53L3 28Z' stroke='%23dfbd75' stroke-width='.6' fill='none' opacity='.7'/%3E%3Cpath d='M20 20L26 28L20 36L14 28Z' fill='%23dfbd75'/%3E%3C/svg%3E");
+  --btn-shadow:inset 0 1px 0 #fff6d8,0 2px 0 #a47a2c,0 6px 12px #7a5a1430;
+}
+
+/* ========== 1 基底文字 ========== */
+#app,:is(#app,#modal,#social-root) .club-main{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) h1,:is(#app,#modal,#social-root) h2,:is(#app,#modal,#social-root) h3,:is(#app,#modal,#social-root) h4{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .club-main :is(p,small,dd,figcaption,label,legend,summary,li){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .club-main :is(b,strong):where(:not(.playing-card *,.mj-tile *)){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .club-main dt,:is(#app,#modal,#social-root) .small-label,:is(#app,#modal,#social-root) .eyebrow,:is(#app,#modal,#social-root) .eyebrow.gold,:is(#app,#modal,#social-root) .neon-label,:is(#app,#modal,#social-root) .game-badge,:is(#app,#modal,#social-root) .table-status{color:var(--gold-text)}
+:is(#app,#modal,#social-root) a.member-name-link{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .club-main :is(.wallet-total,#dice-total,#roulette-total,#transfer-balance,#gate-chance,#gate-multiplier,#gate-return){color:var(--gold-text)}
+:is(#app,#modal,#social-root) .table-status.playing,:is(#app,#modal,#social-root) .presence.online,:is(#app,#modal,#social-root) #connection{color:var(--ok)}
+:is(#app,#modal,#social-root) .status-chip.status-active{background:#e3f1e6;color:#1f6a45;border:1px solid #bcd9c5}
+:is(#app,#modal,#social-root) .me-tag,:is(#app,#modal,#social-root) em.me-tag{background:#f6e8c6;color:var(--gold-text);border-color:var(--gold-line)}
+
+/* ========== 2 殼層 ========== */
+:is(#app,#modal,#social-root) .club-main{background:var(--cream-bg)}
+:is(#app,#modal,#social-root) .play-reminder{background:#f1e2c0;color:var(--ink-2);border-bottom:1px solid var(--gold-line)}
+:is(#app,#modal,#social-root) .play-reminder strong{background:var(--btn-gold);color:var(--ink-deep);border-radius:8px}
+:is(#app,#modal,#social-root) .play-reminder :is(.reminder-track,.reminder-window,label.reminder-pause){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .topbar{background:var(--cream-panel);border-color:var(--gold-line);box-shadow:inset 0 -1px 0 #fff3d2}
+:is(#app,#modal,#social-root) .mobile-brand,:is(#app,#modal,#social-root) .brand-mobile-long,:is(#app,#modal,#social-root) .header-word{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .header-balance{background:var(--cream-sunk);border:1px solid var(--gold-line);border-radius:999px;color:var(--ink-deep);padding:4px 12px}
+:is(#app,#modal,#social-root) .header-balance small{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .global-voice-button{background:var(--cream-panel);color:var(--ink-deep);border:1px solid var(--gold-line)}
+:is(#app,#modal,#social-root) .global-voice-button.voice-connected{background:#e3f1e6;color:#1f6a45;border-color:#8fbf9f}
+:is(#app,#modal,#social-root) .global-voice-button.voice-muted{background:#f6e8c6;color:var(--gold-text)}
+:is(#app,#modal,#social-root) .header-right .icon-button{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .recovery-notice{background:#fbefd0;color:var(--ink-2);border-bottom:1px solid var(--cream-line)}
+:is(#app,#modal,#social-root) .page-foot,:is(#app,#modal,#social-root) .page-footer{color:var(--ink-3);border-color:var(--cream-line)}
+/* 底部導航／桌機側欄：墨綠底 */
+:is(#app,#modal,#social-root) .sidebar{background:#101f1bf7;border-color:#c9a55c;border-top:1px solid #c9a55c;color:var(--ivory)}
+:is(#app,#modal,#social-root) .sidebar .nav-item{color:#d6cdb0}
+:is(#app,#modal,#social-root) .sidebar .nav-item:hover{background:#ffffff14;color:var(--ivory)}
+:is(#app,#modal,#social-root) .sidebar .nav-item.active{background:#dfbd7530;color:#f6e0a8;box-shadow:inset 0 -3px 0 #dfbd75}
+:is(#app,#modal,#social-root) .sidebar :is(.brand strong,.brand small,.sidebar-rule p,.sidebar-foot){color:#d6cdb0}
+:is(#app,#modal,#social-root) .sidebar .brand-symbol{background:#215541;color:#f6e0a8;border-color:#c9a55c}
+:is(#app,#modal,#social-root) .sidebar .sidebar-rule{border-color:#ffffff22}
+@media(min-width:761px){:is(#app,#modal,#social-root) .club-main{margin-left:204px}}
+/* 提示泡泡：深底，奶油上最清楚 */
+#toast,#toast.visible{background:#101f1b;color:var(--ivory);border:1px solid var(--gold-line);box-shadow:0 8px 22px #3a2a0d55}
+
+/* ========== 3 按鈕 ========== */
+:is(#app,#modal,#social-root) .button{border-radius:12px}
+:is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button){background:var(--btn-gold);color:var(--ink-deep);border:1px solid #a47a2c;box-shadow:var(--btn-shadow);font-weight:800;text-shadow:0 1px 0 #fff3cc}
+:is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):hover:not(:disabled){background:var(--btn-gold-hover)}
+:is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):disabled{opacity:.55;box-shadow:none;filter:saturate(.6)}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.icon-button){background:#fffaf0;color:var(--ink-deep);border:1px solid var(--gold-line);box-shadow:0 1px 0 #fff;}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button):hover:not(:disabled){background:#fff1cf}
+:is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button):disabled{opacity:.55}
+:is(#app,#modal,#social-root) .icon-button{border-radius:999px}
+:is(#app,#modal,#social-root) .button.allin-button{background:#fff4f2;color:var(--burgundy);border:1px solid #c98a90;font-weight:800}
+:is(#app,#modal,#social-root) :is(.button.account-delete,.text-button.danger,#close-table){color:var(--burgundy)}
+:is(#app,#modal,#social-root) .button.account-delete{background:#fff4f2;border-color:#d9a1a6}
+:is(#app,#modal,#social-root) .text-button{color:var(--emerald)}
+:is(#app,#modal,#social-root) .text-button.danger{color:var(--burgundy)}
+:is(#app,#modal,#social-root) .button.wallet-fund-button{background:#fff1cf;color:var(--ink-deep);border:1px solid var(--gold-line)}
+:is(#app,#modal,#social-root) .nav-item.selected{background:#f6e8c6;color:var(--gold-text)}
+:where(#app) :focus-visible{outline:3px solid #b98f3e;outline-offset:2px}
+
+/* ========== 4 表單 ========== */
+:is(#app,#modal,#social-root) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file]),select,textarea){background:var(--cream-sunk);color:var(--ink-deep);border:1px solid #cdb98f;border-radius:12px}
+:is(#app,#modal,#social-root) :is(input,select,textarea)::placeholder{color:#8a8470}
+:is(#app,#modal,#social-root) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file]),select,textarea):focus{border-color:var(--gold-fill-3);box-shadow:0 0 0 3px #dfbd7566;outline:none}
+:is(#app,#modal,#social-root) :is(#raise-amount,#round-stake){color:var(--ink-deep);background:var(--cream-sunk);border-color:var(--gold-line)}
+:is(#app,#modal,#social-root) .raise-step{background:#fffaf0;color:var(--gold-text);border:1px solid var(--gold-line)}
+:is(#app,#modal,#social-root) .password-toggle,:is(#app,#modal,#social-root) #toggle-password{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .auth-tabs{background:var(--cream-sunk);border:1px solid var(--cream-line)}
+:is(#app,#modal,#social-root) .auth-tabs button{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .auth-tabs button[aria-selected=true]{background:var(--btn-gold);color:var(--ink-deep);border-color:#a47a2c}
+
+/* ========== 5 面板與卡片 ========== */
+:is(#app,#modal,#social-root) :is(.panel,section.panel,article.panel,article.facility,article.admin-account,article.staff-card,article.mission-card,article.collection-card,article.stat,.wallet-panel,.club-missions,.income-panel,.clubhouse-rules,article.room-card,.own-rank,details.night-supply,details.arcade-rules,details.member-invite,.daily-box,.gate-preview,.public-game-settings,.wealth-summary){background:var(--cream-panel);color:var(--ink-deep);border:1px solid var(--cream-line);border-radius:16px;box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .income-panel{background:var(--cream-panel)}
+:is(#app,#modal,#social-root) .daily-box{background:var(--cream-panel2);box-shadow:none}
+:is(#app,#modal,#social-root) .rank-row,:is(#app,#modal,#social-root) details.dice-extra{border-color:var(--cream-line)}
+:is(#app,#modal,#social-root) .bar-track{background:var(--cream-line)}
+:is(#app,#modal,#social-root) li.unlocked{background:var(--gold-fill)}
+:is(#app,#modal,#social-root) .panel-note,:is(#app,#modal,#social-root) .panel-footnote{border-color:var(--cream-line);color:var(--ink-3)}
+:is(#app,#modal,#social-root) summary{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) details[open]>summary{color:var(--gold-text)}
+
+/* ========== 6 登入頁 ========== */
+:is(#app,#modal,#social-root) .auth-layout{background:var(--cream-bg)}
+:is(#app,#modal,#social-root) .auth-scene{background:linear-gradient(180deg,#fff2d2 0%,#f6ecd9 100%)}
+:is(#app,#modal,#social-root) .auth-scene:after{background:none}
+:is(#app,#modal,#social-root) .auth-side{background:var(--cream-panel);border-color:var(--cream-line)}
+:is(#app,#modal,#social-root) .auth-pitch h1,:is(#app,#modal,#social-root) .auth-pitch h1 span{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .auth-pitch>p,:is(#app,#modal,#social-root) .auth-perks,:is(#app,#modal,#social-root) .auth-perks span{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .auth-perks .icon,:is(#app,#modal,#social-root) .auth-fine .icon{color:var(--gold-text)}
+:is(#app,#modal,#social-root) :is(.auth-fine,.auth-side-foot,.auth-scene-foot){color:var(--ink-3);border-color:var(--cream-line)}
+:is(#app,#modal,#social-root) .brand-symbol{background:#215541;color:#f6e0a8;border-color:#c9a55c}
+
+/* ========== 7 對話框、聊天、語音 ========== */
+dialog#modal,dialog{background:var(--cream-panel);color:var(--ink-deep);border:2px solid var(--gold-line);border-radius:18px;box-shadow:0 20px 50px #101f1b66}
+dialog::backdrop{background:#101f1b8c}
+dialog :is(h1,h2,h3,h4,strong,b){color:var(--ink-deep)}
+dialog :is(p,small,label,summary,li,dd){color:var(--ink-2)}
+.chat-head{background:var(--cream-panel2);border-color:var(--cream-line)}
+.chat-head p,.chat-empty,.chat-message time{color:var(--ink-3)}
+.voice-panel{background:var(--cream-panel2);border:1px solid var(--cream-line)}
+.voice-note,.voice-meter-label,.voice-status-row>span,#room-chat .voice-note,#room-chat .voice-person small,.voice-device-row label{color:var(--ink-2)}
+.voice-person,#room-chat .voice-person{background:var(--cream-sunk);color:var(--ink-deep)}
+#room-chat .voice-person.speaking{background:#e3f1e6}
+.voice-person.connected i,.voice-active .voice-dot{background:var(--ok)}
+.chat-message{background:#fffdf6;color:var(--ink-deep);border:1px solid var(--cream-line)}
+.chat-message.mine{background:#f7e8c4}
+.voice-device-settings summary{color:var(--gold-text)}
+.voice-device-row select{background:var(--cream-sunk);color:var(--ink-deep)}
+.voice-channel-picker .button[aria-pressed=true]{background:var(--btn-gold);color:var(--ink-deep)}
+
+/* ========== 8 大廳 ========== */
+:is(#app,#modal,#social-root) .night-main-art{border:2px solid var(--gold-line);border-radius:16px;box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .night-main-art:before{background:linear-gradient(90deg,#101f1bf0,#101f1b8a 62%,transparent)}
+:is(#app,#modal,#social-root) .night-hero-copy h2{color:var(--ivory)}
+:is(#app,#modal,#social-root) .night-hero-actions .button.ghost{background:#fff5df24;color:var(--ivory);border-color:#fff5df80;box-shadow:none}
+:is(#app,#modal,#social-root) .night-hero-actions .button.ghost:hover{background:#fff5df3d}
+:is(#app,#modal,#social-root) .game-choice{background:var(--cream-panel);border:1px solid var(--gold-line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .game-short-rules{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .game-configure{color:var(--emerald)}
+:is(#app,#modal,#social-root) .room-card .room-specs,:is(#app,#modal,#social-root) .room-card .room-specs span{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .room-filter{color:var(--ink-2)}
+
+/* ========== 9 頭像：琺瑯徽章＋金圈（P03） ========== */
+:is(#app,#modal,#social-root) .member-avatar,:is(#app,#modal,#social-root) .avatar{border:0;color:var(--ivory);box-shadow:0 0 0 2px #dfbd75,0 0 0 3px #7a5a14;text-shadow:0 1px 0 #00000040}
+:is(#app,#modal,#social-root) .color-0{background:#7a2e3a;color:var(--ivory)}
+:is(#app,#modal,#social-root) .color-1{background:#6b4426;color:var(--ivory)}
+:is(#app,#modal,#social-root) .color-2{background:#1f4e5a;color:var(--ivory)}
+:is(#app,#modal,#social-root) .color-3{background:#4e3a64;color:var(--ivory)}
+:is(#app,#modal,#social-root) .color-4{background:#215541;color:var(--ivory)}
+:is(#app,#modal,#social-root) .color-5{background:#a33c45;color:var(--ivory)}
+:is(#app,#modal,#social-root) .avatar.tone-1,:is(#app,#modal,#social-root) .avatar.tone-3{background:#6b4426;color:var(--ivory)}
+:is(#app,#modal,#social-root) .avatar.tone-2{background:#1f4e5a;color:var(--ivory)}
+:is(#app,#modal,#social-root) .avatar.tone-4{background:#4e3a64;color:var(--ivory)}
+:is(#app,#modal,#social-root) .avatar.tone-5,:is(#app,#modal,#social-root) .avatar.tone-0{background:#215541;color:var(--ivory)}
+:is(#app,#modal,#social-root) .avatar-option{background:var(--cream-panel2);color:var(--ink-deep);border:1px solid var(--cream-line)}
+:is(#app,#modal,#social-root) .avatar-option[aria-pressed=true],:is(#app,#modal,#social-root) .avatar-option.selected,:is(#app,#modal,#social-root) .avatar-option:has(input:checked){border:2px solid var(--gold-fill-3);background:#fff1cf}
+:is(#app,#modal,#social-root) .dealer-disc{background:#fff5df;color:var(--ink-deep);border:1px solid var(--gold-line)}
+
+/* ========== 10 牌桌共用：絨布外框、座位、操作卡 ========== */
+:is(#app,#modal,#social-root) .arcade-surface{border:4px solid transparent;background:var(--felt-noise) padding-box,var(--felt) padding-box,var(--gold-bevel) border-box;border-radius:20px;color:var(--ivory);box-shadow:var(--shadow-soft),inset 0 0 40px #0b241b66}
+:is(#app,#modal,#social-root) .arcade-surface :is(p,small,label,summary,li,dd,figcaption,h2,h3,strong,b):where(:not(.playing-card *,.risk-cell *,.dice-bet *,.roulette-cell *,.table-control-area *,.gate-preview *,.mj-tile *)){color:var(--ivory)}
+:is(#app,#modal,#social-root) .arcade-surface :is(.small-label,.eyebrow){color:#f0d59a}
+:is(#app,#modal,#social-root) .arcade-surface .table-control-area{background:var(--cream-panel);border:1px solid var(--gold-line);border-radius:16px;box-shadow:var(--shadow-soft);color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .arcade-surface .table-control-area :is(p,small,label,summary,span,li,dd,figcaption,h2,h3,em){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .arcade-surface .table-control-area :is(strong,b){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .table-control-area{background:var(--cream-panel);border:1px solid var(--gold-line);border-radius:16px;color:var(--ink-deep);box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .table-control-area :is(p,small,label,span,dd){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .table-control-area :is(strong,b){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .table-control-area .button.primary,:is(#app,#modal,#social-root) .table-control-area .button.call-button{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .arcade-seat{background:var(--cream-panel);border:1px solid var(--gold-line);color:var(--ink-deep);border-radius:14px}
+:is(#app,#modal,#social-root) .arcade-seat.is-me{border:2px solid var(--gold-fill-3);box-shadow:0 0 0 2px #f0d59a}
+:is(#app,#modal,#social-root) .arcade-seat :is(strong,b){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .arcade-seat .seat-online{background:var(--ok)}
+:is(#app,#modal,#social-root) .arcade-seat-back{border-color:#c9a55c}
+:is(#app,#modal,#social-root) .arcade-empty-state,:is(#app,#modal,#social-root) .arcade-spectator,:is(#app,#modal,#social-root) .trick-empty{color:#e7dcc0}
+:is(#app,#modal,#social-root) .table-funding{background:var(--cream-panel2);border:1px solid var(--cream-line);border-radius:16px;color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .table-funding :is(span,small,strong,b){color:inherit}
+:is(#app,#modal,#social-root) .table-funding small{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .table-funding strong{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .public-rule-weights span{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .public-game-settings{background:var(--cream-panel2);box-shadow:none}
+:is(#app,#modal,#social-root) .arcade-rules summary{color:var(--ink-deep)}
+
+/* ========== 11 格子類：礦區、爬塔、骰寶、輪盤 ========== */
+:is(#app,#modal,#social-root) .risk-cell{background:linear-gradient(180deg,#fffaf0,#f1e3c4);color:var(--gold-text);border:1px solid var(--gold-line);box-shadow:inset 0 1px 0 #fff,0 2px 0 #c9a55c66}
+:is(#app,#modal,#social-root) .arcade-surface .risk-cell{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .risk-cell:disabled{opacity:.9}
+:is(#app,#modal,#social-root) .risk-cell.safe{background:linear-gradient(180deg,#e3f1e6,#c8e2d1);color:#1f6a45;border-color:#8fbf9f}
+:is(#app,#modal,#social-root) .risk-cell.hazard{background:linear-gradient(180deg,#fbe3e0,#efc0bb);color:var(--burgundy);border-color:#d4868c}
+:is(#app,#modal,#social-root) .tower-floor.current{border-color:var(--gold-fill-3)}
+:is(#app,#modal,#social-root) .risk-summary{background:#14392c;border:1px solid var(--gold-line);color:var(--ivory)}
+:is(#app,#modal,#social-root) .dice-bet{background:linear-gradient(180deg,#fffaf0,#f3e5c6);color:var(--ink-deep);border:1px solid var(--gold-line);box-shadow:inset 0 1px 0 #fff}
+:is(#app,#modal,#social-root) .arcade-surface .dice-bet :is(b,strong){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .arcade-surface .dice-bet :is(small,span){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .die-face{background:#fffaf0;color:var(--burgundy);border:1px solid var(--gold-line)}
+:is(#app,#modal,#social-root) .roulette-cell{background:linear-gradient(180deg,#2c6b53,#215541);color:var(--ivory);border:1px solid #dfbd7580}
+:is(#app,#modal,#social-root) .roulette-cell.red{background:linear-gradient(180deg,#b9505a,#8a2f38)}
+:is(#app,#modal,#social-root) .roulette-cell.black{background:linear-gradient(180deg,#2b3b35,#16231e)}
+:is(#app,#modal,#social-root) .roulette-cell.green{background:linear-gradient(180deg,#3b8467,#276650)}
+:is(#app,#modal,#social-root) .roulette-outside .roulette-cell{background:linear-gradient(180deg,#fffaf0,#f3e5c6);color:var(--ink-deep);border-color:var(--gold-line)}
+:is(#app,#modal,#social-root) .roulette-wheel{background:#192a25;border-color:#c9a55c}
+:is(#app,#modal,#social-root) .wheel-hub{background:#263b33;color:#f3dfb1;border-color:#c9a55c}
+:is(#app,#modal,#social-root) .slot-machine{background:linear-gradient(180deg,#2c6b53,#16392d);border:3px solid transparent;border-radius:20px;background-clip:padding-box;box-shadow:0 0 0 3px #c9a55c,var(--shadow-soft);color:var(--ivory)}
+:is(#app,#modal,#social-root) .slot-reels{background:#0f1a16;border-color:#dfbd75}
+:is(#app,#modal,#social-root) .baccarat-side{background:linear-gradient(180deg,#1c5a45,#123b32);border:2px solid #dfbd75b0;color:var(--ivory)}
+:is(#app,#modal,#social-root) .gate-shot{border-color:#dfbd75}
+:is(#app,#modal,#social-root) .gate-preview{background:var(--cream-panel2)}
+:is(#app,#modal,#social-root) .gate-preview :is(span,small,strong){color:inherit}
+:is(#app,#modal,#social-root) .gate-preview strong{color:var(--gold-text)}
+
+/* ========== 12 德州桌 ========== */
+:is(#app,#modal,#social-root) .table-arena{background:radial-gradient(ellipse at 50% 45%,#1d4a3a 0%,#0f2a21 74%);border:2px solid var(--gold-line);border-radius:20px;box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .table-arena :is(p,small,label,strong,b):where(:not(.playing-card *)){color:var(--ivory)}
+:is(#app,#modal,#social-root) .table-arena :is(.seat-details strong,.seat-caption,.seat-number,.seat-bet){color:var(--ivory)}
+:is(#app,#modal,#social-root) .table-arena .poker-felt{border-color:#6a4426;box-shadow:inset 0 0 0 2px #c9a55c,0 8px 22px #00000066}
+:is(#app,#modal,#social-root) .seat-box{background:#101f1bf0;border:1px solid var(--gold-line);color:var(--ivory)}
+:is(#app,#modal,#social-root) .seat-box b{color:#f0d59a}
+:is(#app,#modal,#social-root) .seat-bet{color:#f0d59a}
+:is(#app,#modal,#social-root) .table-seat.is-me .seat-box,:is(#app,#modal,#social-root) .table-seat.on-turn .seat-box{border-color:#f0d59a;box-shadow:0 0 0 2px #dfbd7566}
+:is(#app,#modal,#social-root) button.table-seat.vacant{background:#ffffff12;border:1px dashed #dfbd75;color:var(--ivory)}
+:is(#app,#modal,#social-root) .board-placeholder{background:#ffffff10;border-color:#dfbd7566;color:#dfbd7599}
+:is(#app,#modal,#social-root) .street-label{color:#d9ead9}
+:is(#app,#modal,#social-root) .holdem-decision{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .seat-clock{background:#ffffff22}
+
+/* ========== 13 麻將 ========== */
+:is(#app,#modal,#social-root) .mj-table{color:var(--ivory)}
+:is(#app,#modal,#social-root) .club-main .mj-table :is(p,small,label,span,strong,b){color:inherit}
+:is(#app,#modal,#social-root) .mj-player{background:#101f1bdb;border-color:#dfbd7580;color:var(--ivory)}
+:is(#app,#modal,#social-root) .mj-player.active{border-color:#f0d59a}
+:is(#app,#modal,#social-root) .mj-compass{background:#14392c;border-color:#dfbd75;color:#f0d59a}
+:is(#app,#modal,#social-root) .mj-river-empty{color:#d9ead9}
+:is(#app,#modal,#social-root) .mj-tile,:is(#app,#modal,#social-root) button.mj-tile{box-shadow:0 2px 0 #c9a55c,0 4px 8px #6b4e1f33}
+:is(#app,#modal,#social-root) .mj-wind{color:#f0d59a}
+:is(#app,#modal,#social-root) .mj-rule-copy,:is(#app,#modal,#social-root) .mj-rule-copy p{color:var(--ink-2)}
+
+/* ========== 14 會所、收藏、帳號、排行 ========== */
+:is(#app,#modal,#social-root) .clubhouse-estate{background:var(--cream-panel);border:1px solid var(--gold-line);color:var(--ink-deep);box-shadow:var(--shadow-soft)}
+:is(#app,#modal,#social-root) .clubhouse-estate :is(h1,h2,h3){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .clubhouse-estate .estate-plaque{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .estate-badge{background:#101f1bd9;color:#f0d59a;border-color:#dfbd75}
+:is(#app,#modal,#social-root) .clubhouse-scene{border:2px solid var(--gold-line);border-radius:14px;overflow:hidden}
+:is(#app,#modal,#social-root) .facility-current{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .wallet-mark{background:#fff1cf;color:var(--gold-text);border-color:var(--gold-line)}
+:is(#app,#modal,#social-root) .collection-card{background:var(--cream-panel);color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .collection-balance,:is(#app,#modal,#social-root) .wallet-title{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .stat{background:var(--cream-panel);color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .rank-num{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .rank-number{color:var(--ink-3)}
+:is(#app,#modal,#social-root) .rank-score,:is(#app,#modal,#social-root) .rank-person{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .wealth-up,:is(#app,#modal,#social-root) strong.wealth-up{color:var(--ok)}
+:is(#app,#modal,#social-root) strong.neutral{color:var(--ink-3)}
+:is(#app,#modal,#social-root) .skip-link{background:var(--gold-fill);color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .button.ghost.account-delete,:is(#app,#modal,#social-root) .account-delete{border-color:#d9a1a6!important;color:var(--burgundy)!important}
+:is(#app,#modal,#social-root) .reminder-track i{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .identity-title.title-night{background:#efe2c8;color:var(--ink-2);border-color:var(--gold-line)}
+:is(#app,#modal,#social-root) .hero-card{color:var(--ink-deep)}
+
+/* 德州加注快捷鍵 */
+:is(#app,#modal,#social-root) .raise-presets button{background:#fffaf0;color:var(--ink-deep);border:1px solid var(--gold-line);border-radius:12px}
+:is(#app,#modal,#social-root) .raise-presets button:hover{background:#fff1cf}
+
+/* 補丁：深色元素內的金字、員工職稱、麻將玩家 */
+:is(#app,#modal,#social-root) .seat-box :is(em,small){color:#f0d59a}
+:is(#app,#modal,#social-root) .staff-person>div>span,:is(#app,#modal,#social-root) .staff-person span{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .staff-card.staff-violet .staff-person span{color:#6d4a82}
+:is(#app,#modal,#social-root) .staff-card.staff-teal .staff-person span{color:#1f6a58}
+:is(#app,#modal,#social-root) .mj-player :is(a,span,strong,b,small){color:var(--ivory)}
+:is(#app,#modal,#social-root) .mj-player strong{color:#fff5df}
+
+/* 聊天視窗（dialog#room-chat 在 :is(#app,#modal,#social-root) 外） */
+#room-chat{background:var(--cream-panel);border-color:var(--gold-line)}
+#chat-form{background:var(--cream-panel2);border-top:1px solid var(--cream-line)}
+#chat-input{background:var(--cream-sunk);color:var(--ink-deep);border:1px solid #cdb98f}
+#chat-input::placeholder{color:#8a8470}
+
+/* 補丁 2：絨布上的小字、卡片內小字、邀請卡、試看舞台 */
+:is(#app,#modal,#social-root) .club-main .arcade-board :is(.tower-floor>span,.tower-floor small,.risk-returns>span,.risk-returns b,.gate-cards>div>span:not(.playing-card),.gate-stats span,.arcade-deck small,.bonus-caption){color:#e8dcc0}
+:is(#app,#modal,#social-root) .club-main .arcade-board :is(#gate-chance,#gate-multiplier,#gate-return,.gate-stats strong,.risk-returns b){color:#f0d59a}
+:is(#app,#modal,#social-root) .club-main .arcade-board .gate-preview strong{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .club-main :is(.game-choice footer span,.night-catalog-heading span,.own-rank span){color:var(--ink-2)}
+:is(#app,#modal,#social-root) .club-main p i{color:var(--ink-3)}
+:is(#app,#modal,#social-root) .club-main :is(.button.primary,.button.gold-button,.button.call-button) :is(small,span,b){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .invite-panel{background:var(--felt);border:2px solid var(--gold-line);color:var(--ivory);border-radius:18px}
+:is(#app,#modal,#social-root) .club-main .invite-panel :is(h2,h3,p,strong,span,small,label){color:var(--ivory)}
+:is(#app,#modal,#social-root) .club-main .invite-panel .small-label{color:#f0d59a}
+:is(#app,#modal,#social-root) .invite-value{background:#101f1b99;border-color:var(--gold-line)}
+:is(#app,#modal,#social-root) #cosmetic-stage{color:var(--ivory)}
+:is(#app,#modal,#social-root) .club-main #cosmetic-stage :is(h2,h3,p,strong,span,small){color:var(--ivory)}
+:is(#app,#modal,#social-root) .club-main #cosmetic-stage .small-label{color:#f0d59a}
+:is(#app,#modal,#social-root) .club-main .theme-orbit :is(strong,small,span){color:var(--ivory)}
+:is(#app,#modal,#social-root) .club-main .preview-disclosure>summary{color:var(--ink-deep)}
+
+/* 牌背：墨綠＋金格（取代酒紅斜紋） */
+:is(#app,#modal,#social-root) .playing-card.covered{background:var(--card-back) center/100% 100% no-repeat,#215541;border:2px solid #fff5df;color:#dfbd75}
+:is(#app,#modal,#social-root) .playing-card.covered.small{border-width:1.5px}
+/* 德州牌桌絨布質感 */
+:is(#app,#modal,#social-root) .table-arena .felt-inner{background-image:var(--felt-noise)}
+:is(#app,#modal,#social-root) .loading{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .loading>span{color:var(--gold-fill-3)}
+
+/* 大廳主圖：新圖左側本來就暗，遮罩放輕 */
+:is(#app,#modal,#social-root) .night-main-art:before{background:linear-gradient(90deg,#101f1bd9,#101f1b59 58%,transparent)}
+
+/* 遊戲封面：用偽元素疊上去。圖片檔不存在時偽元素是透明的，原本的 SVG 圖形照舊顯示。 */
+:is(#app,#modal,#social-root) .game-art{position:relative;overflow:hidden;background-color:#215541}
+:is(#app,#modal,#social-root) .game-art::before{content:"";position:absolute;inset:0;z-index:1;background:center/cover no-repeat;pointer-events:none}
+:is(#app,#modal,#social-root) .game-holdem .game-art::before{background-image:url(/assets/covers/holdem.webp)}
+:is(#app,#modal,#social-root) .game-big2 .game-art::before{background-image:url(/assets/covers/big2.webp)}
+:is(#app,#modal,#social-root) .game-blackjack .game-art::before{background-image:url(/assets/covers/blackjack.webp)}
+:is(#app,#modal,#social-root) .game-roulette .game-art::before{background-image:url(/assets/covers/roulette.webp)}
+:is(#app,#modal,#social-root) .game-baccarat .game-art::before{background-image:url(/assets/covers/baccarat.webp)}
+:is(#app,#modal,#social-root) .game-slot .game-art::before{background-image:url(/assets/covers/slot.webp)}
+:is(#app,#modal,#social-root) .game-mines .game-art::before{background-image:url(/assets/covers/mines.webp)}
+:is(#app,#modal,#social-root) .game-dice .game-art::before{background-image:url(/assets/covers/dice.webp)}
+:is(#app,#modal,#social-root) .game-tower .game-art::before{background-image:url(/assets/covers/tower.webp)}
+:is(#app,#modal,#social-root) .game-inbetween .game-art::before{background-image:url(/assets/covers/inbetween.webp)}
+:is(#app,#modal,#social-root) .game-mahjong .game-art::before{background-image:url(/assets/covers/mahjong.webp)}
+
+/* 遊戲卡：有外框後文字要有內距 */
+:is(#app,#modal,#social-root) .game-choice{padding-bottom:12px}
+:is(#app,#modal,#social-root) .game-choice>:is(h2,details,footer,p){padding-left:12px;padding-right:12px}
+:is(#app,#modal,#social-root) .game-choice>.game-art{margin-bottom:8px}
+
+/* P06：德州座位顯示頭像（蓋在名字牌上緣的小圓徽章；原本被 .holdem-room .table-arena .avatar{display:none} 藏起來） */
+:is(#app,#modal,#social-root) .holdem-room .table-arena .seat-box{position:relative;overflow:visible}
+:is(#app,#modal,#social-root) .holdem-room .table-arena .seat-box>.avatar{display:inline-grid;position:absolute;top:-13px;right:-9px;width:26px;height:26px;font-size:12px;z-index:2;box-shadow:0 0 0 2px #dfbd75,0 2px 4px #0006}
+:is(#app,#modal,#social-root) .holdem-room .table-arena .table-seat.is-me .seat-box>.avatar{width:30px;height:30px;font-size:13px;top:-15px}
+@media(max-width:360px){:is(#app,#modal,#social-root) .holdem-room .table-arena .seat-box>.avatar{width:22px;height:22px;font-size:10px;top:-11px;right:-7px}}
+
+/* 會所：桌機版標題疊在建築圖上，要用亮字；手機版標題在圖上方，維持深字 */
+@media(min-width:761px){
+  :is(#app,#modal,#social-root) .clubhouse-estate:has(.clubhouse-scene) .estate-copy :is(h1,h2,h3){color:var(--ivory)}
+  :is(#app,#modal,#social-root) .clubhouse-estate:has(.clubhouse-scene) .estate-copy .estate-plaque{color:#e8dcc0}
+  :is(#app,#modal,#social-root) .clubhouse-estate:has(.clubhouse-scene){background:#101f1b;border-color:var(--gold-line)}
+}
+
+/* 會所員工：2D 貼圖走路（P12）。貼圖朝右；往回走時左右翻面；步伐用上下晃動表現。 */
+:is(#app,#modal,#social-root) .estate-person-scale{transform:scale(1)}
+@media(max-width:760px){:is(#app,#modal,#social-root) .estate-person-scale{transform:scale(1.25)}}
+:is(#app,#modal,#social-root) .clubhouse-scene .estate-walker.estate-route-0{--estate-x:170px;--estate-y:4px}
+:is(#app,#modal,#social-root) .clubhouse-scene .estate-walker.estate-route-1{--estate-x:130px;--estate-y:6px}
+:is(#app,#modal,#social-root) .clubhouse-scene .estate-walker.estate-route-2{--estate-x:90px;--estate-y:-4px}
+.estate-flip{animation:estate-flip 17s linear infinite}
+.estate-route-1 .estate-flip{animation-name:estate-flip-r;animation-direction:reverse;animation-delay:-8s}
+.estate-route-2 .estate-flip{animation-duration:23s;animation-delay:-12s}
+.estate-sprite{animation:estate-bob .62s ease-in-out infinite alternate}
+@keyframes estate-flip{0%,49.99%{transform:scaleX(1)}50%,100%{transform:scaleX(-1)}}
+@keyframes estate-flip-r{0%,49.99%{transform:scaleX(-1)}50%,100%{transform:scaleX(1)}}
+@keyframes estate-bob{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+.clubhouse-scene[data-estate-paused] .estate-flip,.clubhouse-scene[data-estate-paused] .estate-sprite,html[data-club-hidden] .estate-flip,html[data-club-hidden] .estate-sprite{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.estate-flip,.estate-sprite{animation:none}}
+
+/* 員工卡半身像：六角金框＋貼圖上半身 */
+:is(#app,#modal,#social-root) .portrait-back{fill:#f3e4c4;stroke:var(--staff-accent,#c9a55c);stroke-width:2.5}
+:is(#app,#modal,#social-root) .staff-locked{background:var(--cream-panel2)}
+:is(#app,#modal,#social-root) .staff-locked .staff-portrait{opacity:.55;filter:grayscale(.6)}
+
+/* 補丁 3：桌機側欄小字、大廳右側捷徑、點擊範圍 */
+:is(#app,#modal,#social-root) .sidebar :is(small,span,p,b,i,em,div){color:#d6cdb0}
+:is(#app,#modal,#social-root) .sidebar :is(.profile-user-text strong,.account strong,.brand strong){color:#fff5df}
+:is(#app,#modal,#social-root) .sidebar .nav-item.active,:is(#app,#modal,#social-root) .sidebar .nav-item.active :is(span,b){color:#f6e0a8}
+:is(#app,#modal,#social-root) .night-feature-picks a{background:linear-gradient(180deg,#2c6b53,#16392d);border:1px solid var(--gold-line);border-radius:14px}
+:is(#app,#modal,#social-root) .night-feature-picks a,:is(#app,#modal,#social-root) .night-feature-picks a :is(span,small,strong,b,i){color:var(--ivory)}
+:is(#app,#modal,#social-root) .mobile-brand{display:inline-flex;align-items:center;min-height:44px}
+:is(#app,#modal,#social-root) .global-voice-button{min-width:44px}
+:is(#app,#modal,#social-root) .raise-presets button{min-height:44px}
+:is(#app,#modal,#social-root) .seat-picker>summary,:is(#app,#modal,#social-root) .mj-funding>summary{min-height:44px;box-sizing:border-box}
+:is(#app,#modal,#social-root) a.button,:is(#app,#modal,#social-root) button.button{min-height:44px}
+
+/* 第二審建議：高承諾操作要保留語意（加注＝酒紅，跟注＝金，全下＝酒紅框） */
+:is(#app,#modal,#social-root) #raise-form .button.primary{background:linear-gradient(180deg,#b9505a,#8a2f38);color:var(--ivory);border:1px solid #6f232b;box-shadow:inset 0 1px 0 #d98a92,0 2px 0 #6f232b,0 6px 12px #6f232b30;text-shadow:0 1px 0 #00000040}
+:is(#app,#modal,#social-root) #raise-form .button.primary:hover:not(:disabled){background:linear-gradient(180deg,#c45e68,#97363f)}
+
+/* 遊戲設定（game-settings.css 在 night.css 之後載入，所以前綴要更強） */
+html body #game-settings-modal{background:var(--cream-panel);color:var(--ink-deep);border:2px solid var(--gold-line);box-shadow:0 20px 50px #101f1b66}
+html body #game-settings-modal::backdrop{background:#101f1b8c}
+html body #game-settings-modal :is(h1,h2,h3,strong,th){color:var(--ink-deep)}
+html body #game-settings-modal :is(p,td,li,small){color:var(--ink-2)}
+html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
+:is(#app,#modal,#social-root) .game-settings-panel>p,:is(#app,#modal,#social-root) .rules-field-grid label,:is(#app,#modal,#social-root) .rules-weights small,:is(#app,#modal,#social-root) .rules-history article>span,:is(#app,#modal,#social-root) .rules-history pre,:is(#app,#modal,#social-root) .rules-current,:is(#app,#modal,#social-root) .public-rule-weights>span{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .rules-current{background:var(--cream-sunk)}
+:is(#app,#modal,#social-root) .rules-game-label select,:is(#app,#modal,#social-root) .rules-field-grid input,:is(#app,#modal,#social-root) .game-settings-panel textarea{background:var(--cream-sunk);color:var(--ink-deep);border:1px solid #cdb98f}
+:is(#app,#modal,#social-root) .game-settings-panel fieldset,:is(#app,#modal,#social-root) .rules-fixed,:is(#app,#modal,#social-root) .public-game-settings{border-color:var(--cream-line)}
+:is(#app,#modal,#social-root) .game-settings-panel legend,:is(#app,#modal,#social-root) .rules-history summary{color:var(--gold-text)}
+:is(#app,#modal,#social-root) .public-game-settings>strong{color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .rules-history article{border-bottom-color:var(--cream-line)}
+:is(#app,#modal,#social-root) .game-settings-panel :focus-visible{outline-color:#b98f3e}
+
+/* 檔案選擇框（上傳頭像） */
+:is(#app,#modal,#social-root) input[type=file]{background:var(--cream-sunk);color:var(--ink-2);border:1px dashed var(--gold-line);border-radius:12px;padding:10px}
+:is(#app,#modal,#social-root) input[type=file]::file-selector-button{background:var(--btn-gold);color:var(--ink-deep);border:1px solid #a47a2c;border-radius:10px;padding:8px 14px;margin-right:10px;font-weight:800;min-height:44px;cursor:pointer}
+
+/* 補丁 4：新狀態（射龍門選方向、輪盤已押注、爬塔已通過列） */
+:is(#app,#modal,#social-root) .arcade-surface fieldset.gate-directions>legend{color:#e8dcc0}
+:is(#app,#modal,#social-root) .arcade-surface fieldset.gate-directions .button.ghost :is(strong,b,small,span){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .arcade-surface fieldset.gate-directions .button.ghost small{color:var(--ink-2)}
+:is(#app,#modal,#social-root) .arcade-surface .roulette-cell.chosen{outline:3px solid #f0d59a;outline-offset:-3px}
+:is(#app,#modal,#social-root) .arcade-surface .roulette-cell:is(.red,.black,.green) :is(b,small,span){color:var(--ivory)}
+:is(#app,#modal,#social-root) .arcade-surface .roulette-outside .roulette-cell :is(b,small,span){color:var(--ink-deep)}
+:is(#app,#modal,#social-root) .arcade-surface .risk-returns>span.passed{background:#e3f1e6;border-color:#8fbf9f}
+:is(#app,#modal,#social-root) .arcade-surface .risk-returns>span.passed :is(b,small,span){color:#1f6a45}
+:is(#app,#modal,#social-root) .club-main .arcade-board .risk-returns>span.passed,:is(#app,#modal,#social-root) .club-main .arcade-board .risk-returns>span.passed :is(b,small){color:#1f6a45}
+
+/*==== 奶油白主題 結束 ====*/

@@ -82,3 +82,32 @@ input,select,textarea{background:#efe2c8;color:#101f1b;border:1px solid #cdb98f}
 .empty .button.secondary,.button.secondary{background:#fffaf0;color:#101f1b;border:1px solid #c9a55c}
 .section-heading .eyebrow,.stats-heading .eyebrow,.ranking .rank-num{color:#62624f}
 .ranking .rank-num{color:#7a5a14}
+
+/*==== 奶油白主題（P01/P02）：舊記帳頁。覆寫上面的深色變數，只改外觀。 ====*/
+:root{color-scheme:light;--bg:#f6ecd9;--surface:#fff8ea;--green:#215541;--deep:#101f1b;--green-soft:#efe2c8;--gold:#7a5a14;--ink:#101f1b;--muted:#4a5750;--border:#dcc9a0;--positive:#25704a;--negative:#a33c45;--focus:#b98f3e}
+html,body{background:var(--bg);color:var(--ink)}
+.topbar,.workspace>.topbar{background:#fff8ea;border-color:#c9a55c}
+.sidebar{background:#101f1bf7;border-color:#c9a55c;color:#d6cdb0}
+.sidebar a,.sidebar button,.sidebar .nav-item{color:#d6cdb0}
+.sidebar .active,.sidebar [aria-current=page]{color:#f6e0a8;background:#dfbd7530}
+.button.primary,.primary{background:linear-gradient(180deg,#f6e0a8,#dfbd75 52%,#c79a45);color:#101f1b;border:1px solid #a47a2c;box-shadow:inset 0 1px 0 #fff6d8,0 2px 0 #a47a2c}
+.hero-card{background:linear-gradient(135deg,#215541,#14392c);border:2px solid #c9a55c;color:#fff5df}
+.hero-card :is(h1,h2,h3,p,span,small,strong){color:inherit}
+.hero-playing-card.front-card{color:#7a5a14}
+.stat,.panel,.stat-grid .stat{background:#fff8ea;border-color:#dcc9a0;box-shadow:0 6px 18px #6b4e1f1f;color:#101f1b}
+.tag{background:#efe2c8;color:#4a5750}
+.me-badge{background:#f6e8c6;color:#7a5a14}
+.avatar.tone-1,.avatar.tone-3{background:#6b4426;color:#fff5df}
+.avatar.tone-2{background:#1f4e5a;color:#fff5df}
+.avatar.tone-4{background:#4e3a64;color:#fff5df}
+.avatar.tone-5,.avatar.tone-0{background:#215541;color:#fff5df}
+.rank-num{color:#7a5a14}
+input,select,textarea{background:#efe2c8;color:#101f1b;border:1px solid #cdb98f}
+.club-card{background:#ffffff14;color:#d6cdb0;border-color:#ffffff22}
+.club-card :is(p,div,span,.tiny-label,.mini-suits){color:#d6cdb0}
+.sidebar :is(small,span,p,div){color:#d6cdb0}
+.breadcrumb i,.eyebrow{color:#62624f}
+.empty .button.secondary,.button.secondary{background:#fffaf0;color:#101f1b;border:1px solid #c9a55c}
+.section-heading .eyebrow,.stats-heading .eyebrow,.ranking .rank-num{color:#62624f}
+.ranking .rank-num{color:#7a5a14}
+.rank-row .rank-num,.ranking .rank-row .rank-num{color:#6a4d0d}

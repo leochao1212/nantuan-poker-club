@@ -85,7 +85,7 @@ class GateRules(unittest.TestCase):
         r=gate();v=b.public_view(r,1);self.assertNotIn('deck',v['hand']);self.assertIsNone(v['hand']['third']);self.assertEqual(v['hand']['board'],[])
         r['hand']['game_settings']['params']['target_bps']=9000
         old=deepcopy(game_settings.DEFAULTS['inbetween']);game_settings.DEFAULTS['inbetween']['target_bps']=30000
-        try:b.act(r,1,'shoot',2,{'stake':100});self.assertEqual(r['hand']['results'][0]['payout'],140)
+        try:b.act(r,1,'shoot',2,{'stake':100});self.assertEqual(r['hand']['results'][0]['payout'],150)
         finally:game_settings.DEFAULTS['inbetween']=old
         r=gate();self.assertTrue(b.tick(r,32));self.assertEqual(r['seats'][0]['stack'],2000)
         r=gate();b.leave(r,1,2);self.assertEqual(r['status'],'closed');self.assertEqual(r['departures'][0]['stack'],2000)
@@ -97,7 +97,9 @@ class GateTransactions(unittest.TestCase):
     def test_start_shoot_retry_conflict_leave_and_projection_are_consistent(self):
         made=self.call('/api/online/rooms',{'game_type':'inbetween','operation_id':'gate_create_00000001'});rid=made['id'];path=f'/api/online/rooms/{rid}'
         request={'operation_id':'gate_start_000000001'};self.call(path+'/start',request);self.assertTrue(self.call(path+'/start',request)['replayed'])
-        r=online.get_room(self.db,rid);r['hand']['pillars']=['3c','Kc'];r['hand']['winning_cards']=36;r['hand']['deck']=deck_order(['7d']);online.save(self.db,r,self.clock+1)
+        r=online.get_room(self.db,rid);shoe=deck_order(['3c','Kc','7d']);shoe.pop();shoe.pop()
+        r['hand']['pillars']=['3c','Kc'];r['hand']['deck']=shoe;r['hand'].pop('gate_quotes',None)
+        r['hand']['gate_quotes']=b.gate_quotes(r['hand']);online.save(self.db,r,self.clock+1)
         request={'action':'shoot','stake':100,'hand_id':r['hand']['id'],'turn_id':r['hand']['turn_id'],'operation_id':'gate_shoot_000000001'}
         self.call(path+'/action',request,at=2);r=online.get_room(self.db,rid);self.assertEqual(r['seats'][0]['stack'],1050)
         self.assertTrue(self.call(path+'/action',request,at=3)['replayed']);self.assertEqual(online.get_room(self.db,rid)['seats'][0]['stack'],1050)

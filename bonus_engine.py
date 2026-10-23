@@ -25,6 +25,7 @@ SLOT_V2_TRIPLES = [value + 3 for value in SLOT_BASE_TRIPLES]
 SLOT_TRIPLES = [value + 2 for value in SLOT_BASE_TRIPLES]  # total return, including stake
 SLOT_PAIR = 4
 SLOT_RTP = Fraction(sum(SLOT_TRIPLES) + 30 * SLOT_PAIR, 216)
+GATE_CUT_REMAINING = len(poker.DECK) // 4
 
 TOWER_BOMBS = {'fixed': [1]*6, 'progressive': [1,1,1,2,2,2]}
 DICE_TOTALS = {4:50,5:18,6:14,7:12,8:8,9:6,10:6,11:6,12:6,13:8,14:12,15:14,16:18,17:50}
@@ -86,6 +87,26 @@ def sit(room, user_id, nickname, clock, seat=None, buy_in=None):
 
 def turn_id(hand): return arcade.turn_id(hand)
 
+def _gate_shoe(room, deck=None):
+    """Reuse one private 52-card shoe until its cut card is reached.
+
+    A test-supplied deck starts a new shoe. In normal play the previous
+    settled hand is the only source of the remaining, ordered cards.
+    """
+    previous=room.get('hand');state=room.get('gate_shoe')
+    if deck is None and state and state.get('version')==1:
+        if not previous or previous.get('shoe_id')!=state.get('id') or previous.get('phase')!='showdown':
+            raise RuleError('射龍門牌靴狀態無效，請聯絡管理員。')
+        remaining=previous.get('deck')
+        if not isinstance(remaining,list) or len(remaining)!=len(set(remaining)) or any(c not in poker.DECK for c in remaining):
+            raise RuleError('射龍門牌靴資料無效，請聯絡管理員。')
+        if len(remaining)>state.get('cut_remaining',GATE_CUT_REMAINING) and len(remaining)>=3:
+            return list(remaining),{**state,'round_no':state['round_no']+1},False
+    shoe=list(deck) if deck is not None else list(poker.DECK)
+    if len(shoe)!=52 or set(shoe)!=set(poker.DECK):raise RuleError('射龍門須使用完整 52 張牌。')
+    if deck is None:secrets.SystemRandom().shuffle(shoe)
+    return shoe,{'version':1,'id':secrets.token_hex(12),'round_no':1,'cut_remaining':GATE_CUT_REMAINING},True
+
 def start_hand(room, clock, deck=None, options=None, user_id=None,settings=None):
     if room['status'] != 'waiting': raise RuleError('上一局仍在進行。')
     kind=room['game_type'];options=options or {};snapshot=deepcopy(settings or game_settings.default(kind));cfg=snapshot['params']
@@ -112,9 +133,7 @@ def start_hand(room, clock, deck=None, options=None, user_id=None,settings=None)
         else:maximum=risk_return(kind,stake,5 if kind=='mines' else 6,mode=mode,settings=cfg)*len(seats)
     if room['bank'] < maximum: raise RuleError('本桌莊家點數不足以保留最大派彩，請另開新桌。')
     if kind=='inbetween':
-        shoe=list(deck) if deck is not None else list(poker.DECK)
-        if len(shoe)!=52 or set(shoe)!=set(poker.DECK):raise RuleError('射龍門須使用完整 52 張牌。')
-        if deck is None:secrets.SystemRandom().shuffle(shoe)
+        shoe,shoe_state,reshuffled=_gate_shoe(room,deck)
     room['stake']=stake
     if kind=='tower':room['tower_mode']=mode
     players = [dict(user_id=s['user_id'],nickname=s['nickname'],seat=s['seat'],stack=s['stack'],starting_stack=s['stack'],contribution=0,street_bet=0,folded=False,last_action='',hole=[]) for s in seats]
@@ -136,7 +155,12 @@ def start_hand(room, clock, deck=None, options=None, user_id=None,settings=None)
         p=players[0]
         if kind=='inbetween':
             pillars=sorted([shoe.pop(),shoe.pop()],key=gate_rank)
-            h.update(deck=shoe,pillars=pillars,third=None,winning_cards=max(0,gate_rank(pillars[1])-gate_rank(pillars[0])-1)*4,remaining_cards=50,gate_rules_version=2)
+            h.update(deck=shoe,pillars=pillars,third=None,remaining_cards=len(shoe),gate_rules_version=2,
+                     gate_shoe_version=1,shoe_id=shoe_state['id'],shoe_round=shoe_state['round_no'],shoe_reshuffled=reshuffled)
+            h['gate_quotes']=gate_quotes(h)
+            h['winning_cards']=h['gate_quotes'].get('between',{}).get('winning_cards',0)
+            room['gate_shoe']=shoe_state
+            if reshuffled:poker.log(room,'52 張牌已重新洗牌 · 新牌靴開始',clock)
             arcade._turn(room,p['user_id'],clock);poker.sync_stacks(room)
             return
         poker.pay(p,needed)
@@ -211,21 +235,30 @@ def finish_risk(room,clock,lost=False):
 def gate_rank(card):return 'A23456789TJQK'.index(card[0])+1
 
 
-def gate_return(stake,winning_cards,target_bps=9700,post_cards=0,loss_multiplier=1):
-    if not 0<winning_cards<=48:raise RuleError('這組門柱沒有可命中的點數，請重發門柱。')
+def gate_return(stake,winning_cards,target_bps=9700,post_cards=0,loss_multiplier=1,total_cards=50):
+    if not 0<winning_cards<=total_cards:raise RuleError('這組門柱沒有可命中的點數，請重發門柱。')
     # RTP uses all actually deducted points, including the extra post penalty.
-    return stake*target_bps*(50+(loss_multiplier-1)*post_cards)//(10000*winning_cards)
+    return stake*target_bps*(total_cards+(loss_multiplier-1)*post_cards)//(10000*winning_cards)
 
 
 def gate_quotes(hand):
-    """Public odds from visible pillars only. Missing version means legacy rules."""
+    """Freeze odds from the unseen shoe composition, never its card order."""
+    if 'gate_quotes' in hand:return hand['gate_quotes']
     low,high=map(gate_rank,hand['pillars']);modern=hand.get('gate_rules_version',1)>=2
     target=game_settings.params(hand,'inbetween')['target_bps']
-    choices={'between':max(0,high-low-1)*4}
-    if modern and low==high:choices={'up':4*(13-low),'down':4*(low-1)}
-    posts=2 if low==high else 6;loss=(3 if low==high else 2) if modern else 1
-    return {direction:{'winning_cards':wins,'post_cards':posts,'loss_multiplier':loss,
-                       'return_numerator':target*(50+(loss-1)*posts),'return_denominator':10000*wins}
+    if hand.get('gate_shoe_version')==1:
+        remaining=hand['deck'];total=len(remaining)
+        choices={'between':sum(low<gate_rank(c)<high for c in remaining)}
+        if modern and low==high:choices={'up':sum(gate_rank(c)>low for c in remaining),'down':sum(gate_rank(c)<low for c in remaining)}
+        posts=sum(gate_rank(c) in (low,high) for c in remaining)
+    else:
+        # Existing hands that began before the shoe change keep their quote.
+        total=50;choices={'between':max(0,high-low-1)*4}
+        if modern and low==high:choices={'up':4*(13-low),'down':4*(low-1)}
+        posts=2 if low==high else 6
+    loss=(3 if low==high else 2) if modern else 1
+    return {direction:{'winning_cards':wins,'total_cards':total,'post_cards':posts,'loss_multiplier':loss,
+                       'return_numerator':target*(total+(loss-1)*posts),'return_denominator':10000*wins}
             for direction,wins in choices.items() if wins}
 
 
@@ -249,6 +282,7 @@ def finish_gate(room,clock,stake=None,direction=None):
         h.update(board=[h['pillars'][0],h['third'],h['pillars'][1]],stake=stake,direction=direction,
                  winning_cards=quote['winning_cards'],charged=charged,max_loss=maximum_loss)
     p['last_action']=label
+    h['remaining_cards']=len(h['deck'])
     arcade._complete(room,clock,{p['user_id']:gross},{p['user_id']:label},f'{label} · 扣點 {p["contribution"]:,} · 總返還 {gross:,} 點',p['contribution']-gross)
     room['next_hand_at']=clock
 
@@ -331,7 +365,7 @@ def leave(room,uid,clock):
 def public_view(room,viewer_id):
     # Persisted rooms contain JSON records only. Clone containers without
     # deepcopy's per-leaf memo bookkeeping on every spin and push snapshot.
-    view=view_cache.clone(room);view.pop('departures',None);view.pop('bank',None)
+    view=view_cache.clone(room);view.pop('departures',None);view.pop('bank',None);view.pop('gate_shoe',None)
     for s in view['seats']:s.pop('session_id',None)
     h=view.get('hand')
     if h:

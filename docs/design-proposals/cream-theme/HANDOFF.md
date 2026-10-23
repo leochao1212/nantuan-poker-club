@@ -7,9 +7,10 @@
 
 `server.py` 的靜態圖白名單要多放行一個資料夾。大廳遊戲封面放在 `static/assets/covers/*.webp`，目前會 404。
 
-```diff
--            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path):
-+            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/[a-z0-9-]+\.webp',path):
+在 `static` 圖片放行那一行（`elif path=='/assets/poker-night.webp' or ...`）最後面，加上一個條件，放行 `/assets/covers/` 底下小寫字母、數字、橫線命名的 webp：
+
+```text
+or re.fullmatch(r'/assets/covers/[a-z0-9-]+\.webp', path)
 ```
 
 這是後端檔案，我們沒有放進任何 commit，等你確認要這樣改。沒放行之前，封面只會看到原本的線條圖，其他功能不受影響。

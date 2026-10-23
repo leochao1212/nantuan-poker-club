@@ -18,7 +18,7 @@ window.ClubBonus=(()=>{
   const dieArt=v=>svg((pipSpots[v]||[]).map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="'+(v===1?8:5.4)+'" fill="'+(v===1?'#c4474f':'#8a2f38')+'"/>').join(''),'0 0 60 60');
   const mineArt=svg('<circle cx="30" cy="36" r="15" fill="#2b2b2b" stroke="#101010" stroke-width="3"/><path d="M30 14v6m0 32v6M8 36h6m32 0h6M14 20l4 4m24 24 4 4M46 20l-4 4M18 48l-4 4" stroke="#2b2b2b" stroke-width="4" stroke-linecap="round"/><path d="M36 15c3-4 6-4 9-2" stroke="#c9a24e" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="47" cy="12" r="3" fill="#e8a03a"/><circle cx="24" cy="30" r="3.5" fill="#6b6b6b"/>','0 0 60 60');
   const gemArt=svg('<path d="M30 6 50 22 30 54 10 22Z" fill="#2c9b72" stroke="#14392c" stroke-width="3" stroke-linejoin="round"/><path d="M10 22h40M30 6l-8 16 8 32 8-32Z" fill="none" stroke="#bff0d8" stroke-width="2" stroke-linejoin="round"/>','0 0 60 60');
- const glyphs=['7','♛','◇','♧','●','BAR'], labels=['七','皇冠','鑽石','鈴鐺','櫻桃','BAR'], triples=[77,32,20,14,10,7];
+ const labels=['七','皇冠','鑽石','鈴鐺','櫻桃','BAR'], triples=[77,32,20,14,10,7];
  const drafts=new Map(),diceTotals={4:50,5:18,6:14,7:12,8:8,9:6,10:6,11:6,12:6,13:8,14:12,15:14,16:18,17:50};
  rules.inbetween='完整 52 張牌，每局公平重洗；A=1、K=13，不比花色。一般門柱押第三張嚴格落在中間；同點門柱先選往上或往下，AA 只能往上、KK 只能往下。押錯方向或射出門外扣本注，普通撞柱總扣本注 2 倍，對子再撞同點總扣 3 倍。確認前顯示命中總返還及最大損失，籌碼須足以支付最大損失。個人對莊採依命中率浮動派彩，含本金、向下取整；派彩基準包含撞柱額外扣款，預設長期返還率不超過 97%，小額取整會更低。相鄰門柱免費略過，未下注逾時或離桌不扣點。';
  let blackjackIdentity=null;

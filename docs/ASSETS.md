@@ -20,9 +20,9 @@
 
 | 素材 | 檔案 | 生成方式 |
 | --- | --- | --- |
-| 大廳主圖 | static/assets/poker-night.webp | `hero-lobby` 提示詞，裁成 3:2，1400×933 |
+| 大廳主圖 | static/assets/poker-night.webp | `hero-lobby` 提示詞，裁成 3:2，1400×933（原本是 1400×600，比例從 7:3 改成 3:2；畫面用 cover 裁切，只是裁切位置不同，左側留白給標題）|
 | 遊戲封面 ×11 | static/assets/covers/*.webp | `cover-*` 提示詞，裁成 4:3，480×360 |
-| 會所四級（桌機＋手機） | static/assets/clubhouse/tier-1～4(-small).webp | 同一街角場景；第 1 級先畫，第 2～4 級各以前一級為參考圖逐級升級；桌機 1280×853，手機 640×427 |
+| 會所四級（桌機＋手機） | static/assets/clubhouse/tier-1～4(-small).webp | 同一街角場景；第 1 級先畫，第 2～4 級各以前一級為參考圖逐級升級；桌機 1200×800，手機 600×400 |
 | 員工 3 人走路貼圖 | 內嵌在 static/clubhouse-scene.js（base64 webp，高 240） | `staff-*` 提示詞，純洋紅背景生成後色鍵去背；同一張圖也用在 profile.js 的員工卡半身像 |
 | 牌背、絨布紋理 | 不是檔案，在 night.css 以內嵌 SVG 產生 | 手寫 |
 | 拉霸符號、骰面、礦區寶石與地雷、狐狸、貓 | 內嵌 SVG（bonus.js、profile.js） | 手寫 |

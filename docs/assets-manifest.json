@@ -1,102 +1,107 @@
 [
   {
     "path": "static/assets/clubhouse/tier-1-small.webp",
-    "bytes": 44808,
-    "sha256": "50e27bfba26de99438fbb53ebc376e604f64e920cfed66fe8068938f32e00fc1"
+    "bytes": 35976,
+    "sha256": "b2a7ab737ab54100a99182460ee98a038e1d3bd1027273499c3438f559c999cc"
   },
   {
     "path": "static/assets/clubhouse/tier-1.webp",
-    "bytes": 141958,
-    "sha256": "5a96c9fd66e77380f3af179dc7745e413e66cf674bad7b5cc655da3b0cc9de0b"
+    "bytes": 113808,
+    "sha256": "9b2dfcd573b5733099b5903c489f46cf97ced859c90984e8f3e4de9c78ba1aad"
   },
   {
     "path": "static/assets/clubhouse/tier-2-small.webp",
-    "bytes": 50282,
-    "sha256": "313e646df9a6116f363390c4f384e823ecc0a390f2f24177b008061513b43baa"
+    "bytes": 40818,
+    "sha256": "d1d6b81fbd0590f61a2829ee6cb4a16722e3e208f1d56f3cd1cb4f64106ea359"
   },
   {
     "path": "static/assets/clubhouse/tier-2.webp",
-    "bytes": 156108,
-    "sha256": "029f3fa525967f02196a00a7440e174f93955916cc989a0bcb6fbb12004f6b79"
+    "bytes": 126556,
+    "sha256": "d4fe4bd716c43a38317bc14d74795e197a5a5601e0807cbc5817d4a1eeceaf3a"
   },
   {
     "path": "static/assets/clubhouse/tier-3-small.webp",
-    "bytes": 59576,
-    "sha256": "63baeb03241621d236a5fcf202bd1a9a074c2e7ddfb5ecb75d5b4385badfc85b"
+    "bytes": 48110,
+    "sha256": "98069d9287d5248ec340c15b401d901d7d211dde2c12fc16dafc039fb4bf3ba5"
   },
   {
     "path": "static/assets/clubhouse/tier-3.webp",
-    "bytes": 191976,
-    "sha256": "7828d407f65e29d8803a647dba6ce3bbb14c87d8f5c7e5f151b6f3c1c49873c1"
+    "bytes": 156356,
+    "sha256": "4770137144ef43993a83317f1dec0f2c5091f1e1d64450811f5df1223a2c5a00"
   },
   {
     "path": "static/assets/clubhouse/tier-4-small.webp",
-    "bytes": 74532,
-    "sha256": "a3394bd0497ca718aa451a98789301f5c10027a0a87118dd9f82ec50fc680189"
+    "bytes": 60460,
+    "sha256": "c8b80a897a8dd9a752c65cc5d21bcef49a5bff291f973177c9970fc54474d61c"
   },
   {
     "path": "static/assets/clubhouse/tier-4.webp",
-    "bytes": 242484,
-    "sha256": "ed9a4c158038a755cfafd2392037c9b7da5cacfd854375875327864e410c0ad7"
+    "bytes": 199022,
+    "sha256": "498fa2efd6a9a05b97c7a7b3beae04bef111d58238f95a9f65231d514250d9cf"
   },
   {
     "path": "static/assets/covers/baccarat.webp",
-    "bytes": 23190,
-    "sha256": "1dea7baf26a90201c96ba39d69a5ecc96b97e934f3cc9a886fe1ae4873abf90f"
+    "bytes": 21682,
+    "sha256": "75e9fdd2100b2d08a2c7a92db51a2e0d05b7fa3fc2f58cede41d364eb56edb9d"
   },
   {
     "path": "static/assets/covers/big2.webp",
-    "bytes": 26830,
-    "sha256": "80c21088e4a1587191a38d428d62ae284d8094831825eff6b70a184527c018aa"
+    "bytes": 25028,
+    "sha256": "f044295856e85674b3041cb20c046db62c9535510c2191f6aa35c9a33bc6888a"
   },
   {
     "path": "static/assets/covers/blackjack.webp",
-    "bytes": 26838,
-    "sha256": "f61567fb859a01307ddf9f65dc11185f4ae99aa4831d02157cbeb073d3adc05a"
+    "bytes": 25060,
+    "sha256": "5c863d3704aa1d71cbf9ad01e8cad90c063535f6b72fb0aac2f6287a7e301f16"
   },
   {
     "path": "static/assets/covers/dice.webp",
-    "bytes": 25316,
-    "sha256": "17e4765ebbe1e42da5e8a82a3321538dbff0ecf687f8c5525e632a2f7af93ded"
+    "bytes": 23018,
+    "sha256": "c111d1a70c52f2c898aa2ffcc74c4569ecad653d1fa267de7f1ee0a2371c2aa9"
   },
   {
     "path": "static/assets/covers/holdem.webp",
-    "bytes": 31906,
-    "sha256": "99048c37b850f2c8f802713f4bed2c07f8c654400f2fd97cd2c7819401911f11"
+    "bytes": 29506,
+    "sha256": "151d18219408e999df74290d8868836f6967d0eb795f399b5ded9e24c25b7b1e"
   },
   {
     "path": "static/assets/covers/inbetween.webp",
-    "bytes": 24690,
-    "sha256": "37ed5353dab9eaa3648072da90b98a96303a67ae5cb82c9d23a6526797fca64c"
+    "bytes": 23000,
+    "sha256": "63a8f8878d4b81105434e6c649780f7248f32e433aeec8dd2d779f47eced61a2"
   },
   {
     "path": "static/assets/covers/mahjong.webp",
-    "bytes": 22948,
-    "sha256": "3267fe0dd23ec682859bc57875fa6035aa00bd676718bcb0da632813c66fc213"
+    "bytes": 21388,
+    "sha256": "adc5745ee79980af87cfb97ac680e6c73481e58fa50781b3364f443e78ad0dd0"
   },
   {
     "path": "static/assets/covers/mines.webp",
-    "bytes": 40432,
-    "sha256": "ee0e975356f08ae80a4f59793d67aa63643c1e3fbc80e30ec529db22c68cc5a5"
+    "bytes": 37712,
+    "sha256": "c6f95fe185975267546539609fc124024c1425bb5e094c64014d7c89a725f913"
   },
   {
     "path": "static/assets/covers/roulette.webp",
-    "bytes": 31062,
-    "sha256": "fc3b7017dbd2a7e8624205c3940a8c1111da67ad42c968ca18b11ad54f296a3e"
+    "bytes": 28900,
+    "sha256": "d5c14ee0b006e5eb8065046d482bce1da41ed5f197044423b53decd19873e0d6"
   },
   {
     "path": "static/assets/covers/slot.webp",
-    "bytes": 34074,
-    "sha256": "af4ce8ae0ef9ae48e93e6f06ad01c49fee80f93e87ea6f2008d684cf8c2bf37c"
+    "bytes": 32056,
+    "sha256": "2a3cc3f906d05022cdbd5aa628c67cfba2bd9b3311618d20987c7bef3bbc18dc"
   },
   {
     "path": "static/assets/covers/tower.webp",
-    "bytes": 29350,
-    "sha256": "0ef947ba66e62c23ee1a38e481eda4a2d5f0d4234ce98ab5d5bffe18aaf1fa94"
+    "bytes": 26912,
+    "sha256": "24b505f7a9c7595be0351b7a039c448d7222f16c668219bd797b7cd1821b660d"
   },
   {
     "path": "static/assets/poker-night.webp",
-    "bytes": 93042,
-    "sha256": "fde792fa1eb4b80441af030bc94f52cf260e5f0ecf6e0c5758cb1bae9c4fd241"
+    "bytes": 80676,
+    "sha256": "63dbb83cdfa5b0b099bebdb5df00e8e8ce3c50fb4346b4be1bfc9e5086d4cf75"
+  },
+  {
+    "path": "static/favicon.svg",
+    "bytes": 488,
+    "sha256": "60fa86c96703702e07c5f37fdcafe1b83dd91f90b21cacf00648acd3b4bc83d4"
   }
 ]

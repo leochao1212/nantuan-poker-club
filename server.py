@@ -172,6 +172,11 @@ class Handler(BaseHTTPRequestHandler):
             value={**value,'request_id':self.request_id}
         encoded_at=time.monotonic()
         body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode()
+        # Static images may be revalidated: the browser keeps a copy and gets 304 when unchanged.
+        if etag and status == 200:
+            tags=[t.strip().removeprefix("W/") for t in self.headers.get("If-None-Match","").split(",")]
+            if etag in tags or "*" in tags:
+                status,body=304,b""
         if hasattr(self,'timings'):
             self.timings['encode']=(time.monotonic()-encoded_at)*1000
             self.timings['server']=(time.monotonic()-self.started)*1000
@@ -351,8 +356,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path):
                 artwork=(ROOT/'static'/path[1:]).read_bytes()
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
-                unchanged=any(tag.strip().removeprefix('W/') in ('*',etag) for tag in self.headers.get('If-None-Match','').split(','))
-                self.reply(304 if unchanged else 200,b'' if unchanged else artwork,content_type='image/webp',
+                self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=0, must-revalidate',etag=etag)
             elif path in ("/mahjong.js", "/mahjong.css", "/game-settings.js", "/game-settings.css", "/", "/index.html", "/app.js", "/style.css", "/game.js", "/profile.js", "/clubhouse-scene.js", "/clubhouse-scene.css", "/night.css", "/profile.css", "/effects.css", "/features.js", "/features.css", "/transfers.js", "/transfers.css", "/casino.css", "/ui.css", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/arcade.css", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
@@ -830,7 +834,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="楠團德州撲克 · 六人私人線上牌室")
+    parser = argparse.ArgumentParser(description="楠團牌室 · 私人線上牌室")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--open", action="store_true", help="启动后打开浏览器")

@@ -56,7 +56,7 @@ dialog::backdrop{background:#060709b8;backdrop-filter:blur(4px)}body:has(dialog[
 @media(max-width:760px){.hero-graphic{opacity:.28;pointer-events:none}.hero-card>div:first-child{position:relative;z-index:1;max-width:100%}.hero-caption{display:block;font-size:12px;line-height:1.8;max-width:26ch}}
 
 /*==== 奶油白主題（P01/P02）：舊記帳頁。覆寫上面的深色變數，只改外觀。 ====*/
-:root{color-scheme:light;--bg:#f6ecd9;--surface:#fff8ea;--green:#215541;--deep:#101f1b;--green-soft:#efe2c8;--gold:#7a5a14;--ink:#101f1b;--muted:#4a5750;--border:#dcc9a0;--positive:#25704a;--negative:#a33c45;--focus:#b98f3e}
+:root{color-scheme:light;--bg:#f6ecd9;--surface:#fff8ea;--green:#215541;--deep:#101f1b;--green-soft:#efe2c8;--gold:#7a5a14;--ink:#101f1b;--muted:#4a5750;--border:#dcc9a0;--positive:#25704a;--negative:#a33c45;--focus:#101f1b}
 html,body{background:var(--bg);color:var(--ink)}
 .topbar,.workspace>.topbar{background:#fff8ea;border-color:#c9a55c}
 .sidebar{background:#101f1bf7;border-color:#c9a55c;color:#d6cdb0}
@@ -86,5 +86,7 @@ input,select,textarea{background:#efe2c8;color:#101f1b;border:1px solid #cdb98f}
 
 .sidebar .account :is(span,small,div),.sidebar .account p{color:#d6cdb0}
 :focus-visible{outline:3px solid #101f1b;outline-offset:2px}
-.sidebar :focus-visible{outline-color:#f0d59a}
+.sidebar :is(a,button,input,select,textarea):focus-visible{outline-color:#f0d59a}
 select#unit,.unit-picker select{min-height:44px}
+select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23101f1b' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:12px 8px;padding-right:30px}
+select#unit,.unit-picker select{min-width:76px}

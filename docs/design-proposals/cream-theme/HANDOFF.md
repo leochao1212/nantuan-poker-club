@@ -1,7 +1,7 @@
 # 奶油白主題 · 交接說明（給 leochao1212）
 
 這個分支把全站手機／桌機畫面換成「奶油白底＋深綠絨布＋厚金邊」。只動外觀，沒動玩法、流程、資料、API、DOM 身分（id、`data-*`）。
-改前改後對照圖：同資料夾 `*-before-after.jpg`。
+改前改後對照圖：同資料夾 `*-before-after.jpg`（大廳、德州、會所、21 點、收藏、後台、拉霸、礦區、骰寶）。
 
 ## 一、要你做的事（只有一件）
 
@@ -26,7 +26,8 @@ or re.fullmatch(r'/assets/covers/[a-z0-9-]+\.webp', path)
 | 自由改（圖） | `static/assets/poker-night.webp`、`clubhouse/tier-*.webp`、`covers/*.webp` | 大廳主圖、會所四級、11 款遊戲封面。無文字、無真人。大小比原本小 |
 | 要回報（JS 模板） | `static/game.js` | 只有 3 個字串：`brand()` 的「楠團德州撲克／地下牌室」→「楠團牌室／私人牌室」；邀請複製文字；牌桌絨布浮水印 |
 | 要回報（JS 模板） | `static/clubhouse-scene.js` | 員工走路改成 3 張 2D 貼圖（base64 內嵌，不需放行）；走路起點重設；新增 `sprite(key)` 給 profile.js 用 |
-| 要回報（JS 模板） | `static/profile.js` | `portrait()` 優先用貼圖上半身，沒有貼圖就退回原本向量圖 |
+| 要回報（JS 模板） | `static/profile.js` | `portrait()` 優先用貼圖上半身，沒有貼圖就退回原本向量圖；`pet()` 重畫狐狸、貓（兩隻長得不一樣） |
+| 要回報（JS 模板） | `static/bonus.js` | 拉霸符號（7、皇冠、寶石、鈴鐺、櫻桃、BAR）、骰面點數、礦區／爬塔的寶石與地雷，原本是文字字元，改成內嵌小 SVG。只換 span 裡的內容；`aria-label`、`data-*`、動畫作用的節點（`.slot-reel span`、`.die-face`）都沒變 |
 | 文件 | `docs/ASSETS.md`、`docs/assets-manifest.json`、`docs/design-proposals/asset-prompts/` | 素材來源與提示詞（可重現） |
 
 沒碰：事件綁定、狀態、請求、SSE、後端、玩法、派彩、`member_accounts.py`。
@@ -54,7 +55,7 @@ or re.fullmatch(r'/assets/covers/[a-z0-9-]+\.webp', path)
 
 ## 六、已知限制
 
-- 遊戲專屬圖形（拉霸符號、骰面、礦區寶石、輪盤盤面）還是原本的程式圖形，只換了顏色。立體符號要改 JS，另案。
-- 外觀收藏的 7 款頭像特效、3 款稱號沒有逐一驗證新底色上的效果。
+- 輪盤盤面沿用原本的 SVG（金框、酒紅與墨黑口袋，已經跟主題一致），沒有重畫。
+- 外觀收藏 14 款都在「試看」舞台逐一截圖檢查過（舞台刻意保留深色，讓光效看得出來）；一款稱號牌（深夜常客）的字色已修。
 - 沒有做深色模式切換：主題是整站奶油白，沒有保留舊深色版的開關。
 - 第二審（Codex）的完整意見在 Steven 的工作台，主要是預覽圖與真實元件的差異，實作以真實元件為準。

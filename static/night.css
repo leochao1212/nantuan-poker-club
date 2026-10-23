@@ -1189,6 +1189,201 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 :is(#app,#modal,#social-root) .arcade-dice .dice-submit .button{word-break:keep-all}
 :is(#app,#modal,#social-root) .arcade-dice .dice-submit .button:not(:first-child){white-space:nowrap}
 
+/*==== P18 第 3 批：其他頁面（帳號、收藏、排行、後台、頁首裝飾）與首屏尾巴 ====*/
+/* 裝飾圖都是內嵌 SVG（不新增檔案、不用伺服器放行）；全部 pointer-events:none，不吃點擊、不進焦點順序 */
+:root{
+  --orn-cards:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 36'%3E %3Cg transform='rotate(-16 18 30)'%3E%3Crect x='7' y='6' width='19' height='26' rx='2.5' fill='%23fff8ea' stroke='%23b98f3e'/%3E%3Cpath d='M16.5 23.5l-4.2-4.4a2.5 2.5 0 0 1 4.2-2.7 2.5 2.5 0 0 1 4.2 2.7Z' fill='%23a33c45'/%3E%3C/g%3E %3Cg transform='rotate(9 30 30)'%3E%3Crect x='19' y='3' width='19' height='26' rx='2.5' fill='%23fffdf6' stroke='%23b98f3e'/%3E%3Cpath d='M28.5 9.5c-2.3 3-4.7 4.4-4.7 6.7a2.3 2.3 0 0 0 3.9 1.6l-.9 3h3.4l-.9-3a2.3 2.3 0 0 0 3.9-1.6c0-2.3-2.4-3.7-4.7-6.7Z' fill='%23101f1b'/%3E%3C/g%3E %3Cg stroke='%237a5a14' stroke-width='.7'%3E%3Cpath d='M41 30.5v2.4c0 1.4 3.6 2.6 8 2.6s8-1.2 8-2.6v-2.4' fill='%23173b30'/%3E%3Cellipse cx='49' cy='30.5' rx='8' ry='2.6' fill='%23215541'/%3E%3Cpath d='M41 26.5v2.4c0 1.4 3.6 2.6 8 2.6s8-1.2 8-2.6v-2.4' fill='%237d2a33'/%3E%3Cellipse cx='49' cy='26.5' rx='8' ry='2.6' fill='%23a33c45'/%3E%3Cpath d='M41 22.5v2.4c0 1.4 3.6 2.6 8 2.6s8-1.2 8-2.6v-2.4' fill='%23b98f3e'/%3E%3Cellipse cx='49' cy='22.5' rx='8' ry='2.6' fill='%23f0d59a'/%3E%3C/g%3E %3C/svg%3E");
+  --orn-fan-l:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 34'%3E %3Cg stroke='%23b98f3e' stroke-width='.9'%3E%3Crect x='6' y='6' width='17' height='24' rx='2' fill='%23f3e4c4' transform='rotate(-22 14 30)'/%3E%3Crect x='12' y='4' width='17' height='24' rx='2' fill='%23faf0dc' transform='rotate(-6 20 28)'/%3E%3Crect x='19' y='3' width='17' height='24' rx='2' fill='%23fffdf6' transform='rotate(12 27 27)'/%3E%3C/g%3E %3Cpath d='M28.3 9.5c-2.1 2.8-4.3 4.1-4.3 6.2a2.1 2.1 0 0 0 3.6 1.5l-.8 2.8h3.1l-.8-2.8a2.1 2.1 0 0 0 3.6-1.5c0-2.1-2.2-3.4-4.4-6.2Z' fill='%23101f1b' transform='rotate(12 27 27)'/%3E %3C/svg%3E");
+  --orn-fan-r:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 34'%3E %3Cg stroke='%23b98f3e' stroke-width='.9'%3E%3Crect x='8' y='3' width='17' height='24' rx='2' fill='%23fffdf6' transform='rotate(-12 17 27)'/%3E%3Crect x='15' y='4' width='17' height='24' rx='2' fill='%23faf0dc' transform='rotate(6 24 28)'/%3E%3Crect x='21' y='6' width='17' height='24' rx='2' fill='%23f3e4c4' transform='rotate(22 30 30)'/%3E%3C/g%3E %3Cpath d='M16.5 19l-3.8-4a2.3 2.3 0 0 1 3.8-2.5 2.3 2.3 0 0 1 3.8 2.5Z' fill='%23a33c45' transform='rotate(-12 17 27)'/%3E %3Cpath d='M23.5 11.5l3 4-3 4-3-4Z' fill='%23a33c45' transform='rotate(6 24 28)'/%3E %3Cg fill='%23101f1b' transform='rotate(22 30 30)'%3E%3Ccircle cx='29.5' cy='13' r='1.8'/%3E%3Ccircle cx='27.6' cy='16' r='1.8'/%3E%3Ccircle cx='31.4' cy='16' r='1.8'/%3E%3Cpath d='M29.5 15l-1 4h2Z'/%3E%3C/g%3E %3C/svg%3E");
+  --orn-chips:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 44'%3E %3Cg stroke='%237a5a14' stroke-width='.8'%3E %3Cpath d='M4 38v3c0 1.6 4 2.8 9 2.8s9-1.2 9-2.8v-3' fill='%23b98f3e'/%3E%3Cellipse cx='13' cy='38' rx='9' ry='2.8' fill='%23f0d59a'/%3E %3Cpath d='M4 34v3c0 1.6 4 2.8 9 2.8s9-1.2 9-2.8v-3' fill='%237d2a33'/%3E%3Cellipse cx='13' cy='34' rx='9' ry='2.8' fill='%23a33c45'/%3E %3Cpath d='M4 30v3c0 1.6 4 2.8 9 2.8s9-1.2 9-2.8v-3' fill='%23b98f3e'/%3E%3Cellipse cx='13' cy='30' rx='9' ry='2.8' fill='%23f0d59a'/%3E %3Cpath d='M26 38v3c0 1.6 5 2.8 11 2.8s11-1.2 11-2.8v-3' fill='%230d2a22'/%3E%3Cellipse cx='37' cy='38' rx='11' ry='3.2' fill='%23215541'/%3E %3Cpath d='M26 33.5v3c0 1.6 5 2.8 11 2.8s11-1.2 11-2.8v-3' fill='%23b98f3e'/%3E%3Cellipse cx='37' cy='33.5' rx='11' ry='3.2' fill='%23f0d59a'/%3E %3Cpath d='M26 29v3c0 1.6 5 2.8 11 2.8s11-1.2 11-2.8v-3' fill='%230d2a22'/%3E%3Cellipse cx='37' cy='29' rx='11' ry='3.2' fill='%23215541'/%3E %3Cpath d='M26 24.5v3c0 1.6 5 2.8 11 2.8s11-1.2 11-2.8v-3' fill='%23b98f3e'/%3E%3Cellipse cx='37' cy='24.5' rx='11' ry='3.2' fill='%23f0d59a'/%3E %3Cpath d='M26 20v3c0 1.6 5 2.8 11 2.8s11-1.2 11-2.8v-3' fill='%230d2a22'/%3E%3Cellipse cx='37' cy='20' rx='11' ry='3.2' fill='%23215541'/%3E %3C/g%3E %3Cg fill='none' stroke='%23f0d59a' stroke-width='.8' stroke-dasharray='2 2.2'%3E%3Cellipse cx='37' cy='20' rx='7.5' ry='2'/%3E%3C/g%3E %3C/svg%3E");
+  --ic-users:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%237a5a14'%3E%3Ccircle cx='5.6' cy='4.8' r='2.6'/%3E%3Ccircle cx='11.3' cy='5.4' r='2.2'/%3E%3Cpath d='M.8 14.2c0-3 2.1-5.2 4.8-5.2s4.8 2.2 4.8 5.2Z'/%3E%3Cpath d='M10.4 9.1c2.9-.5 4.9 1.7 4.9 5.1h-3.6c0-2-.4-3.8-1.3-5.1Z'/%3E%3C/svg%3E");
+  --ic-person:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%237a5a14'%3E%3Ccircle cx='8' cy='4.6' r='3'/%3E%3Cpath d='M2.4 15c0-3.5 2.5-6.2 5.6-6.2s5.6 2.7 5.6 6.2Z'/%3E%3C/svg%3E");
+  --ic-coins:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='%23dfbd75' stroke='%237a5a14' stroke-width='1'%3E%3Cpath d='M1.5 11.5v1.6c0 1 2 1.9 4.5 1.9s4.5-.9 4.5-1.9v-1.6'/%3E%3Cellipse cx='6' cy='11.5' rx='4.5' ry='1.9'/%3E%3Cpath d='M5.5 6.3v1.6c0 1 2 1.9 4.5 1.9s4.5-.9 4.5-1.9V6.3'/%3E%3Cellipse cx='10' cy='6.3' rx='4.5' ry='1.9'/%3E%3Cpath d='M5.5 3.3v1.6c0 1 2 1.9 4.5 1.9s4.5-.9 4.5-1.9V3.3'/%3E%3Cellipse cx='10' cy='3.3' rx='4.5' ry='1.9'/%3E%3C/g%3E%3C/svg%3E");
+  --ic-camera:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 18' fill='none' stroke='%23101f1b' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2 5.5h3.3L7 3h6l1.7 2.5H18V15H2Z'/%3E%3Ccircle cx='10' cy='10' r='3'/%3E%3C/svg%3E");
+}
+
+/* C5 我的帳號：「上傳自己的照片」是中文按鈕（所有寬度）。
+   原生檔案欄位蓋滿整顆按鈕、透明：仍是同一個 input（同 id、同事件），點按鈕任何位置都會開選檔；
+   鍵盤 Tab 停在 input 上，按鈕外框顯示焦點；報讀器讀到的名稱就是 label 文字「上傳自己的照片」。
+   選好後的結果由原本的 #photo-note 狀態列（照片已準備好…）與上方預覽頭像呈現。 */
+:is(#app,#modal,#social-root) .profile-layout .photo-upload{position:relative;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;min-height:48px;margin:12px 0 0;padding:10px 16px;border:1px solid var(--gold-line);border-radius:12px;background:var(--cream-panel);color:var(--ink-deep);font-size:15px;font-weight:800;letter-spacing:.04em;cursor:pointer;box-shadow:0 2px 0 #c9a55c66}
+:is(#app,#modal,#social-root) .profile-layout .photo-upload::before{content:"";flex:none;width:20px;height:18px;background:var(--ic-camera) center/contain no-repeat}
+:is(#app,#modal,#social-root) .profile-layout .photo-upload:hover{background:#fff1cf}
+:is(#app,#modal,#social-root) .profile-layout .photo-upload>input[type=file]{position:absolute;inset:0;z-index:1;width:100%;height:100%;min-height:0;max-width:none;margin:0;padding:0;border:0;opacity:0;cursor:pointer;font-size:0}
+:is(#app,#modal,#social-root) .profile-layout .photo-upload:has(>input:focus-visible){outline:3px solid var(--ink-deep);outline-offset:2px}
+:is(#app,#modal,#social-root) .profile-layout .photo-upload+.profile-help{margin-top:6px}
+
+@media(max-width:760px){
+  /* C5 頭像選擇格：4 欄、圖示放大到接近預覽圖；格子內距收緊 */
+  :is(#app,#modal,#social-root) .profile-layout #profile-form>label{gap:6px;margin-top:4px}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-picker{margin:12px 0 0;padding:0;border:0}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-picker legend{padding:0;margin:0 0 8px;font-size:14px;font-weight:800;color:var(--ink-deep)}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-options{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:0}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-option{min-width:0;min-height:0;padding:8px 2px 6px;gap:5px;border-radius:12px}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-option .avatar{width:50px;height:50px;font-size:22px;box-shadow:0 0 0 2px #dfbd75,0 0 0 3px #b98f3e,0 3px 6px #3a2a0d33}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-option .avatar>span{font-size:22px;line-height:1}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-option>span:last-child{font-size:12px;font-weight:700;line-height:1.3}
+
+  /* 頁首右上牌堆裝飾（帳號、後台、轉帳）：只佔標題那一行的右側，不壓副標 */
+  :is(#app,#modal,#social-root) main#main:is(:has([data-profile-tab]),:has(#admin-console),:has(#transfer-console))>.page-heading{position:relative}
+  :is(#app,#modal,#social-root) main#main:is(:has([data-profile-tab]),:has(#admin-console),:has(#transfer-console))>.page-heading::after{content:"";position:absolute;top:-3px;right:0;width:60px;height:36px;background:var(--orn-cards) right center/contain no-repeat;pointer-events:none}
+  :is(#app,#modal,#social-root) main#main:is(:has(#admin-console),:has(#transfer-console))>.page-heading h1{padding-right:66px}
+  :is(#app,#modal,#social-root) main#main:has([data-profile-tab])>.page-heading h1{padding-right:68px}
+  /* 任務收藏：置中標題兩側金線讓出左右各一塊，裝飾放右上 */
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance){position:relative}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance)::after{content:"";position:absolute;top:-2px;right:0;width:50px;height:30px;background:var(--orn-cards) right center/contain no-repeat;pointer-events:none}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance) h1{padding-inline:52px}
+  /* 楠團成員：墨綠橫幅左右各一把牌扇 */
+  :is(#app,#modal,#social-root) main#main:has(.members-grid)>.page-heading h1{background:var(--orn-fan-l) left 8px center/auto 34px no-repeat,var(--orn-fan-r) right 8px center/auto 34px no-repeat,var(--felt-noise),linear-gradient(180deg,#245c47,#14392c);padding-inline:56px}
+
+  /* C6 任務收藏：可用錢包與「免費試看外觀」同一列（試看把自己往上拉到錢包那一列、靠右），下方不再畫分隔線 */
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance){margin-bottom:0;row-gap:4px}
+  :is(#app,#modal,#social-root) main#main>.page-heading .collection-balance{display:block;line-height:44px;font-size:14px}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance)+.preview-disclosure{margin:-44px 0 8px;border-bottom:0}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance)+.preview-disclosure>summary{width:max-content;max-width:55%;margin-left:auto;padding:0 2px;font-size:13px;font-weight:700;color:var(--ink-deep);text-decoration:underline;text-decoration-color:var(--gold-line);text-underline-offset:4px}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance)+.preview-disclosure[open]>.cosmetic-stage{margin-top:6px}
+  /* 「外觀收藏」與「已收藏 0 / 14」同一列，留白收緊 */
+  :is(#app,#modal,#social-root) .collection-section .panel-title{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;padding:2px 0 8px;margin-bottom:8px}
+  :is(#app,#modal,#social-root) .collection-section .panel-title h2{display:flex;align-items:center;gap:8px;margin:0;font-size:19px;white-space:nowrap}
+  :is(#app,#modal,#social-root) .collection-section .panel-title h2::after{content:"";width:28px;height:10px;background:var(--title-diamond) left center/7px 7px no-repeat,linear-gradient(90deg,#c9a55c,#c9a55c00) right center/calc(100% - 10px) 1.2px no-repeat}
+  :is(#app,#modal,#social-root) .collection-section .panel-title>span{flex:none;font-size:13px;color:var(--ink-2);white-space:nowrap}
+  /* C6 收藏卡上半部：奶油底＋淡金光（特效卡保留中間一塊深色圓底，光效才看得清楚） */
+  :is(#app,#modal,#social-root) .collection-card .cosmetic-preview{background:radial-gradient(ellipse 60% 70% at 50% 55%,#f3dfae 0,#f8ead0 55%,#fbf3e3 100%);border-bottom:1px solid var(--cream-line)}
+  :is(#app,#modal,#social-root) .collection-card[data-cosmetic-slot=effect] .cosmetic-preview{background:radial-gradient(circle at 50% 50%,#1d4a3b 0,#14392c 37px,#c9a55c 37.5px,#c9a55c 39px,#c9a55c00 39.5px),radial-gradient(ellipse 60% 70% at 50% 55%,#f3dfae 0,#f8ead0 55%,#fbf3e3 100%)}
+  :is(#app,#modal,#social-root) .collection-card[data-cosmetic-slot=back] .preview-card{box-shadow:0 4px 10px #3a2a0d40}
+
+  /* C7 籌碼排行：「總資產／遊戲淨贏」與標題同一列（右側）；main 只在排行頁改成兩欄格線，其餘區塊照舊整列 */
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-content:start}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>*{grid-column:1/-1;min-width:0}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.page-heading{grid-column:1;grid-row:1;margin-bottom:10px}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.view-switch{grid-column:2;grid-row:1;align-self:start;margin:0;gap:4px;padding:3px;border:1px solid var(--gold-line);border-radius:12px;background:var(--cream-panel2)}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.view-switch .button{min-height:44px;padding:0 10px;font-size:13px;border-radius:9px}
+  /* 我的排名：墨綠強調卡、名次金色大字、右側一疊籌碼 */
+  :is(#app,#modal,#social-root) .club-main .own-rank{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px;row-gap:0;padding:10px 72px 12px 16px;margin-bottom:10px;background:var(--felt-noise),linear-gradient(135deg,#245c47,#14392c);color:var(--ivory);border:2px solid var(--gold-line);box-shadow:inset 0 0 0 1px #f0d59a55,var(--shadow-soft)}
+  :is(#app,#modal,#social-root) .club-main div.own-rank>span{grid-column:1/-1;font-size:12px;font-weight:700;color:#f0d59a}
+  :is(#app,#modal,#social-root) .club-main div.own-rank>strong{font-size:36px;line-height:1.1;font-weight:900;color:#f0d59a;padding-right:14px;border-right:1px solid #f0d59a66;text-shadow:0 2px 0 #0007;font-variant-numeric:tabular-nums}
+  :is(#app,#modal,#social-root) .club-main div.own-rank>b{margin:0;font-size:24px;font-weight:900;color:var(--ivory);white-space:nowrap;font-variant-numeric:tabular-nums}
+  :is(#app,#modal,#social-root) .club-main .own-rank::after{content:"";position:absolute;right:10px;bottom:6px;width:56px;height:44px;background:var(--orn-chips) center/contain no-repeat;pointer-events:none}
+  /* 排行列：名次｜頭像｜名字（下一行「手數 1 · 淨輸贏 +1,560」）｜總籌碼 */
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row{display:grid;grid-template-columns:26px 40px auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:0;row-gap:1px;min-height:58px;padding:7px 12px}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-identity{display:contents}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row .rank-number{grid-column:1;grid-row:1/3;min-width:0;font-size:13px;font-weight:800;color:var(--ink-2)}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row:nth-child(-n+4) .rank-number{font-size:16px;font-weight:900;color:var(--gold-text)}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-identity>.avatar{display:inline-flex;grid-column:2;grid-row:1/3;width:34px;height:34px;font-size:14px}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row .identity-stack{grid-column:3/5;grid-row:1;align-self:end;min-width:0}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-stat{grid-row:2;align-self:start;padding:0;font-size:11.5px;line-height:1.4;color:var(--ink-2);text-align:left;white-space:nowrap}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-stat:nth-child(2){grid-column:3}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-stat:nth-child(3){grid-column:4;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-stat:nth-child(3)::before{content:"·";margin:0 5px;color:var(--ink-3)}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>.rank-stat small{display:inline;margin:0 3px 0 0;font-size:11.5px;color:var(--ink-3)}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>strong{grid-column:5;grid-row:1/3;align-self:center;padding-left:8px;font-size:19px;font-weight:900;color:var(--gold-text);white-space:nowrap}
+  :is(#app,#modal,#social-root) .club-main .ranking-panel .rank-row>strong::after{content:" 點";font-size:11px;font-weight:700;color:var(--ink-2)}
+
+  /* C15 管理後台：統計卡加小圖示；全站總籌碼那格寬一點，數字不換行（7 位數也不在逗號處斷開） */
+  :is(#app,#modal,#social-root) .admin-summary{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.3fr);gap:6px}
+  :is(#app,#modal,#social-root) .admin-summary>div{padding:9px 10px;min-width:0}
+  :is(#app,#modal,#social-root) .admin-summary span{display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap}
+  :is(#app,#modal,#social-root) .admin-summary span::before{content:"";flex:none;width:16px;height:16px;background:var(--ic-users) center/contain no-repeat}
+  :is(#app,#modal,#social-root) .admin-summary>div:nth-child(2) span::before{background-image:var(--ic-person)}
+  :is(#app,#modal,#social-root) .admin-summary>div:nth-child(3) span::before{background-image:var(--ic-coins)}
+  :is(#app,#modal,#social-root) .admin-summary strong{white-space:nowrap;overflow-wrap:normal;font-size:clamp(16px,5.4vw,22px);font-weight:900;line-height:1.25}
+  /* 搜尋框與兩顆按鈕同一列 */
+  :is(#app,#modal,#social-root) .admin-toolbar{flex-wrap:nowrap;gap:6px;padding:12px 12px 6px}
+  :is(#app,#modal,#social-root) .admin-toolbar>label{flex:1 1 auto;min-width:0}
+  :is(#app,#modal,#social-root) .admin-toolbar input[type=search]{min-height:44px;height:44px;padding:0 10px;font-size:13px}
+  :is(#app,#modal,#social-root) .admin-toolbar input[type=search]::placeholder{font-size:inherit;font-weight:500}
+  :is(#app,#modal,#social-root) .admin-toolbar>button.button{flex:none;min-height:44px;padding:0 10px;font-size:13px;white-space:nowrap}
+  /* 帳號卡：左側頭像，名字與帳號在中間，狀態在右 */
+  :is(#app,#modal,#social-root) .admin-account header{display:flex;align-items:center;gap:10px}
+  :is(#app,#modal,#social-root) .admin-account header>.avatar{flex:none;width:44px;height:44px;font-size:18px;box-shadow:0 0 0 2px #dfbd75,0 0 0 3px #b98f3e}
+  :is(#app,#modal,#social-root) .admin-account header>div{flex:1 1 auto;min-width:0}
+  :is(#app,#modal,#social-root) .admin-account header>.status-chip{flex:none;align-self:flex-start}
+  :is(#app,#modal,#social-root) .admin-account dl{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:6px 0;border:1px solid var(--cream-line);border-radius:10px;background:var(--cream-panel2);text-align:center}
+  :is(#app,#modal,#social-root) .admin-account dl>div+div{border-left:1px solid var(--cream-line)}
+  :is(#app,#modal,#social-root) .admin-account dd{font-weight:900;white-space:nowrap}
+}
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .admin-summary{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)}
+  :is(#app,#modal,#social-root) .admin-summary>div{padding:8px}
+  :is(#app,#modal,#social-root) .admin-summary span{gap:3px;font-size:11px}
+  :is(#app,#modal,#social-root) .admin-summary span::before{width:14px;height:14px}
+  :is(#app,#modal,#social-root) .admin-toolbar>button.button{padding:0 8px;font-size:12px}
+  :is(#app,#modal,#social-root) .admin-toolbar input[type=search]{padding:0 8px;font-size:12px}
+  :is(#app,#modal,#social-root) main#main:has(>.ranking-panel)>.view-switch .button{padding:0 8px;font-size:12px}
+  :is(#app,#modal,#social-root) .club-main div.own-rank>strong{font-size:30px}
+  :is(#app,#modal,#social-root) .club-main div.own-rank>b{font-size:20px}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-option .avatar{width:42px;height:42px;font-size:19px}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-option .avatar>span{font-size:19px}
+  :is(#app,#modal,#social-root) .profile-layout .avatar-options{gap:6px}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance) h1{padding-inline:40px}
+  :is(#app,#modal,#social-root) main#main>.page-heading:has(.collection-balance)::after{width:40px;height:26px}
+}
+
+/* 7 首屏尾巴（主 Claude 決定：停用中、不能點的格子不受 44px 限制）。
+   爬塔、礦區在「等待開局」「結算後」（.between-hands 出現、而且沒有任何可點的格子）時，格子縮小，讓「開始遊戲／開下一局」回到首屏；
+   開局後有可點樓層就維持 44px。只用既有 class 與 :has() 判斷，不動 JS。
+   以下是手機（≤760）；桌機另見下方。 */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))){gap:2px}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))) .tower-floor{grid-template-columns:46px repeat(4,minmax(0,1fr));column-gap:4px;padding-block:0}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid.tower-options-3:not(:has([data-risk-cell]:not([disabled]))) .tower-floor{grid-template-columns:46px repeat(3,minmax(0,1fr))}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))) .risk-cell{min-height:20px;height:20px;padding:0;border-radius:6px}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))) .risk-cell :is(svg,img){width:16px;height:16px}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))) .risk-cell>span{font-size:13px;line-height:1}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))) .tower-floor>span{font-size:11px;line-height:1.1;white-space:nowrap}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-grid:not(:has([data-risk-cell]:not([disabled]))) .tower-floor>span small{display:inline;margin:0 0 0 2px;font-size:10px}
+  /* 「4 選 1 · 每層 1 雷」：每層標籤已寫雷數、格子數看得到，開局前／結算後收起這一行（:has 不能巢狀，所以只看 .between-hands） */
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .tower-mode{display:none}
+  /* 結算後的各步總返還：一列六格（只留層數與點數，倍率在規則說明裡） */
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .risk-returns{grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;margin-top:6px}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .risk-returns>span{padding:2px 1px;font-size:10.5px;line-height:1.25}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .risk-returns b{font-size:11px}
+  :is(#app,#modal,#social-root) .arcade-tower:has(.between-hands) .risk-returns b small{display:none}
+  /* 難度：兩顆鈕本身就寫著「固定難度／越爬越難」，標題「本局難度」改成只給報讀器（仍是 fieldset 的名稱） */
+  :is(#app,#modal,#social-root) .arcade-tower .between-hands .tower-difficulty legend{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+}
+/* 桌機（>760）爬塔：結算後「開下一局」在 1366×900 會掉到首屏外（右側面板太高）。比照手機，不重複顯示面板頂端的「本局已結算」標題與摘要
+   （結果已寫在棋盤下方的狀態列與莊家紀錄）；棋盤格子維持原尺寸 */
+@media(min-width:761px){
+  :is(#app,#modal,#social-root) .arcade-tower .between-hands>div:first-child{display:none}
+}
+
+/* 礦區（手機）：結算後（以及開局前）沒有可點格時，格子 28px；桌機原本就在首屏內，不動 */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-mines:has(.between-hands) .mines-grid:not(:has([data-risk-cell]:not([disabled]))){gap:4px}
+  :is(#app,#modal,#social-root) .arcade-mines:has(.between-hands) .mines-grid:not(:has([data-risk-cell]:not([disabled]))) .risk-cell{min-height:28px;height:28px;padding:0;border-radius:7px}
+  :is(#app,#modal,#social-root) .arcade-mines:has(.between-hands) .mines-grid:not(:has([data-risk-cell]:not([disabled]))) .risk-cell :is(svg,img){width:20px;height:20px}
+}
+
+/* 9 21 點 6 人桌「確認下注」進首屏：下注名單一人一行（矮列），兩顆鈕的字不換行（原本 320 寬「已確認，等待同桌」折成兩行 68px） */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-wagers{gap:2px}
+  :is(#app,#modal,#social-root) .blackjack-wagers li{min-height:0;padding:3px 8px;line-height:1.3}
+  :is(#app,#modal,#social-root) .blackjack-wagers li>.avatar{width:22px;height:22px;font-size:10px}
+  :is(#app,#modal,#social-root) .arcade-blackjack .between-buttons .button{white-space:nowrap}
+}
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .arcade-blackjack .between-buttons .button{padding-inline:10px;font-size:13px}
+}
+@media(max-width:340px){
+  /* 取代第 2 批修正的兩列排法：暱稱省略、金額與狀態同一行 */
+  :is(#app,#modal,#social-root) .blackjack-wagers li{grid-template-columns:auto minmax(0,1fr) auto auto;column-gap:5px;row-gap:0}
+  :is(#app,#modal,#social-root) .blackjack-wagers li>.avatar{grid-row:auto}
+  :is(#app,#modal,#social-root) .blackjack-wagers li>span:not(.avatar){grid-column:auto;grid-row:auto;font-size:13px}
+  :is(#app,#modal,#social-root) .blackjack-wagers li>b{grid-column:auto;grid-row:auto;font-size:12px}
+  :is(#app,#modal,#social-root) .blackjack-wagers li>small{grid-column:auto;grid-row:auto;font-size:11px}
+}
+
+/* 8 拉霸 844×390 等橫向矮螢幕：機台與下注面板左右並排（縮短「轉動拉霸」的距離）；錯誤訊息比照手機直向，疊在機台頂部，不推動按鈕 */
+@media(min-width:761px) and (max-height:500px){
+  :is(#app,#modal,#social-root) .arcade-slot .arcade-surface{position:relative;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start;column-gap:12px}
+  :is(#app,#modal,#social-root) .arcade-slot .arcade-surface>*{min-width:0}
+  :is(#app,#modal,#social-root) .arcade-slot .arcade-surface>:not(.arcade-board,#table-controls){grid-column:1/-1}
+  :is(#app,#modal,#social-root) .arcade-slot .arcade-surface>.arcade-board{grid-column:1}
+  :is(#app,#modal,#social-root) .arcade-slot .arcade-surface>#table-controls{grid-column:2;position:static;margin:0}
+  :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{position:absolute;top:10px;left:10px;right:10px;z-index:6;margin:0;box-shadow:0 6px 18px #0000004d}
+}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* Keep all five community cards clear of the foreground pair on narrow tables. */

@@ -2519,3 +2519,8 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data
  :is(#app,#modal,#social-root) .live-room .table-tools .button{width:44px;min-width:44px;padding:0;justify-content:center}
  :is(#app,#modal,#social-root) .arcade-slot .slot-machine>p[role=status]{margin-bottom:0}
 }
+/* PR #9 在 374 以下把百家樂押注改成兩欄（閒 莊／和 略過）；「?」和「略過」共用第 2 列第 2 欄，「?」靠右，兩顆都保有 44px。 */
+@media(max-width:374px){
+ :is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>[data-arcade-action=skip]{grid-column:2;grid-row:2;margin-right:52px;min-height:48px}
+ :is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>.table-help-button{grid-column:2;grid-row:2}
+}

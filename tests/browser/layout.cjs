@@ -76,10 +76,13 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       inspected++;
      }
      if(name==='slot'&&mobile){
-      await context.route('**/assets/pieces/*',r=>r.abort());
-      await page.reload();await page.waitForSelector('.slot-reel>span>.sym');await pause(150);
-      assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('pieces-ready')),false,'Failed artwork must keep SVG fallback');
-      assert.equal(await page.locator('.slot-reel>span>.sym:visible').count(),3,'Slot fallback must show all three symbols');
+      const fallback=await context.newPage();
+      fallback.on('pageerror',e=>errors.push(engine+' slot fallback: '+e.message));
+      await fallback.route('**/assets/pieces/*',r=>r.abort());
+      await fallback.goto(base+'/#'+route);await fallback.waitForSelector('.slot-reel>span>.sym');await pause(150);
+      assert.equal(await fallback.evaluate(()=>document.documentElement.classList.contains('pieces-ready')),false,'Failed artwork must keep SVG fallback');
+      assert.equal(await fallback.locator('.slot-reel>span>.sym:visible').count(),3,'Slot fallback must show all three symbols');
+      await fallback.close();
      }
      await context.close();
     }

@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python -m unittest discover -v
+      - run: python -m unittest discover -s tests/python -t . -v
       - run: node scripts/check-js.cjs
       - run: node scripts/check-docs.cjs
   browser:

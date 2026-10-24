@@ -19,7 +19,7 @@ flowchart TD
   G --> V["聊天／語音 dialog"]
 ~~~
 
-/ledger 是舊記帳入口，使用 static/ledger.html、ledger.js、ledger.css。static/app.js 與 style.css 是歷史檔案；目前線上首頁入口是 index.html → game.js，不能只改 app.js 就預期全站改版。
+/ledger 是仍保留的歷史記帳入口，使用 static/ledger.html、ledger.js、ledger.css。目前線上首頁入口是 index.html → game.js。無任何頁面引用的 static/app.js 與 style.css 已移除，舊內容仍可從 Git 歷史取得；不要把它們重新當成現行入口。
 
 ## 頁面到檔案
 

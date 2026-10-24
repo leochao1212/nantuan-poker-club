@@ -1,10 +1,10 @@
 # 系統架構
 
-更新：2026-10-23。本文件以此程式庫的程式為準，取代原先混合歷次更新的交接說明。
+更新：2026-10-24。本文件以此程式庫的程式為準，取代原先混合歷次更新的交接說明。
 
 ## 系統邊界
 
-這是一個單程序、標準庫 Python 網站，搭配原生 JavaScript 單頁介面與 SQLite WAL。Docker 是執行封裝；Cloudflare Tunnel 提供正式 HTTPS/WSS 入口。GitHub 是協作與檢查入口，尚未接上自動正式部署。
+這是一個單程序、標準庫 Python 網站，搭配原生 JavaScript 單頁介面與 SQLite WAL。Docker 是執行封裝；Cloudflare Tunnel 提供正式 HTTPS/WSS 入口。GitHub 負責協作、自動測試與版本化映像建置；正式部署由 Actions 手動觸發，受限 runner 驗證同 SHA 的成功檢查後才更新。詳見 [CI/CD](CI-CD.md)。
 
 ~~~mermaid
 flowchart LR
@@ -48,7 +48,8 @@ result_stats.py           歷史結算統計投影
 backup.py                 SQLite Backup API
 manage_admin.py           由主機操作者建立獨立管理員
 static/                   不需打包的網站與素材
-test_*.py                 40 個測試檔
+tests/python/test_*.py    後端回歸測試（45 檔，使用套件相對引用）
+tests/browser/            瀏覽器互動與排版測試
 ~~~
 
 ## 一次遊戲操作

@@ -1,14 +1,14 @@
 # 測試與驗證
 
-交接基準曾通過 351 個 Python 測試；最新手機會所修正另做 34 組響應式檢查。這些是當時驗證，不代表之後每次 PR 自動繼承通過結果。
+Python 測試已集中至 tests/python/，與 tests/browser/ 分開。整理時完整保留 45 個檔案、386 個測試案例；之後以每次 CI 的實際結果為準。
 
 ## 後端
 
 ~~~sh
-python -m unittest discover -v
+python -m unittest discover -s tests/python -t . -v
 ~~~
 
-40 個 test_*.py 包含規則、API、交易、SSE、語音、資金守恆與恢復。測試使用 TemporaryDirectory 與獨立 SQLite，會在 loopback 啟動測試服務，不接正式資料。
+45 個 tests/python/test_*.py 包含規則、API、交易、SSE、語音、資金守恆與恢復。每個檔案的用途與共用 fixture 見 [Python 測試清單](../tests/python/README.md)。測試使用 TemporaryDirectory 與獨立 SQLite，會在 loopback 啟動測試服務，不接正式資料。
 
 | 修改面向 | 先跑的檔案 |
 | --- | --- |
@@ -19,6 +19,8 @@ python -m unittest discover -v
 | 會所與員工 | test_income、test_upgrades、test_clubhouse_speed、test_staff |
 | 語音 | test_voice |
 | 個人資料／管理／轉帳 | test_profiles、test_admin、test_transfers |
+
+從根目錄單跑檔案：`python -m unittest tests.python.test_transfers -v`；單跑類別／案例可接續 `.TransferRules` 或方法名。不要直接執行資料夾內的 .py 檔。
 
 測試包含固定時間與效能閾值；若 CI 在共用 runner 超時，先看程序與網路等待，不以放寬規則或移除守恆斷言解決。可重跑有證據的資源競爭失敗。
 

@@ -2217,7 +2217,9 @@ html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(
 
 /* 6 金框（九宮格）：牌桌雕花框（三層金線＋四角卷草與菱釘）換掉 --frame 的內嵌 SVG，切片、寬度、往外 4px 的寫法和原本一樣（盒子尺寸不變，畫在子元素底下、不吃點擊）；
    操作卡（.table-control-area）換細雙線金框＋四角金菱：border 寬不變（圖畫在邊框層，往內 14px，蓋在內距上、在內容底下），原本的內雙線陰影拿掉免得疊三層。
-   border-image 不跟圓角走，卡片圓角收小到 8px，讓四角金菱蓋住轉角。德州、麻將的胡桃木框不受影響。 */
+   border-image 不跟圓角走，卡片圓角收小到 8px，讓四角金菱蓋住轉角。德州、麻將的胡桃木框不受影響。
+   審查 H1：牌桌框邊條在 108 切片裡收到 40～42px（顯示約 13.7px，往外 4px 後吃進盒子約 9.7px，比舊 SVG 框的 10.7px 還細一點），
+   手機礦區、爬塔棋盤最後一行說明字整行在絨布上、和金條隔約 1px；做法見 美術稿/按鈕設計/第2版/腳本/frame_slim.py（CSS 不變）。 */
 html.buttons2-ready{--frame:url("/assets/buttons/frame-table.webp") 108 / 36px / 4px stretch}
 html.buttons2-ready :is(#app,#modal,#social-root) .table-control-area{border-image:url("/assets/buttons/frame-card.webp") 42 / 14px / 0 stretch;border-radius:8px;box-shadow:var(--shadow-soft)}
 

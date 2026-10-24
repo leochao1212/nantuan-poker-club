@@ -2459,9 +2459,13 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data
   html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{font-size:12px;letter-spacing:normal}
 }
 /*==== P23／P24 牌桌首屏（主題區塊外；只改畫面）====*/
-/* P24-1：「已恢復」提示條浮在頂欄下緣，不佔位置；沒訊息時不擋點擊。 */
-.recovery-notice{position:absolute;left:0;right:0;z-index:30;box-shadow:0 2px 6px #4a372014}
-.recovery-notice:not(.has-message){pointer-events:none}
+/* P24-1／P25：手機牌桌的提示條疊在頂欄按鈕下緣與標題列按鈕上緣之間的空隙（約 18px），不佔位置（上下負邊距相抵）；
+   整條不接收點擊，只有「重新同步」可按，所以有訊息時也不擋返回、聊天、紀錄、離開與頂欄按鈕。桌面版維持原本佔位的寫法，不蓋左側選單。 */
+@media(max-width:760px){
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice{position:relative;z-index:30;box-sizing:border-box;height:18px;min-height:18px;margin:-8px 0 -10px;padding:0 12px;border-bottom:0;font-size:12px;line-height:16px;white-space:nowrap;overflow:hidden;pointer-events:none;justify-content:center}
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice .text-button{pointer-events:auto;min-height:16px;height:16px;padding:0 6px;font-size:12px;line-height:16px}
+}
 /* P23：標題列「離開」（窄螢幕跟聊天／紀錄一樣只剩圖示，名稱看 aria-label）。 */
 .live-room .table-tools .table-leave,.mj-room .mj-heading>.table-leave{flex-shrink:0}
 /* P24-2：說明收進「?」；原文留在隱藏的 .table-help-source，按下用同一套對話框。 */
@@ -2488,7 +2492,6 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data
  :is(#app,#modal,#social-root) .bet-submit-bar:is(:has(#dice-roll:not(:disabled)),:has(#roulette-confirm:not(:disabled))){position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--cream-panel);border-top:2px solid var(--gold-line);box-shadow:0 -6px 18px #3b2a1426}
  .live-room:has(.bet-submit-bar #dice-roll:not(:disabled),.bet-submit-bar #roulette-confirm:not(:disabled)){padding-bottom:72px}
  body:has(.bet-submit-bar #dice-roll:not(:disabled),.bet-submit-bar #roulette-confirm:not(:disabled)) #voice-dock{bottom:calc(76px + env(safe-area-inset-bottom))}
- body:has(.bet-submit-bar #dice-roll:not(:disabled),.bet-submit-bar #roulette-confirm:not(:disabled)) #toast{bottom:84px}
 }
 /* P24-3：矮螢幕（扣掉網址列約 660 高）德州牌桌依高度縮；只縮牌桌與自己的兩張大牌，字級不變。 */
 @media(max-width:760px) and (max-height:740px){

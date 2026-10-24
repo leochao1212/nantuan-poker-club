@@ -28,7 +28,7 @@ class ArtworkCaching(ServerTestCase):
                 self.assertGreater(len(body),100)
                 etag='"'+hashlib.sha256(body).hexdigest()+'"'
                 self.assertEqual(headers['ETag'],etag)
-                self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate')
+                self.assertEqual(headers['Cache-Control'],'no-cache')
                 status,cached,empty=self.fetch(path,{'If-None-Match':'W/'+etag})
                 self.assertEqual(status,304)
                 self.assertEqual(empty,b'')

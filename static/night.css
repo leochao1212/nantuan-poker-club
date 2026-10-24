@@ -1928,6 +1928,36 @@ html.pieces-ready :is(#app,#modal,#social-root) .slot-reel>span:is([aria-label="
 html.pieces-ready :is(#app,#modal,#social-root) .die-face:is([aria-label="等待收注開獎"],[aria-label="1 點"],[aria-label="2 點"],[aria-label="3 點"],[aria-label="4 點"],[aria-label="5 點"],[aria-label="6 點"])::after{content:"";position:absolute;inset:calc(-6.2% - 1.2px);pointer-events:none;
   background:var(--piece) center/contain no-repeat}
 
+/* P20 第 2 組零件：尋寶礦區、爬塔（Steven：「三張都換，？號改成牌的背景」）。
+   1) 翻開後的寶石、炸彈換成寫實插畫（static/assets/pieces/mine-gem.webp、mine-bomb.webp，256px）。用既有 class 分辨：.risk-cell.safe＝寶石、.risk-cell.hazard＝炸彈
+      （bonus.js 只在翻開後加這兩個 class，未翻的格子兩個都沒有）。做法同第 1 組：新圖畫在 ::after（absolute、不吃點擊），
+      只在 html.pieces-ready（bonus.js 預載 15 張全部成功）時生效，同時把原本的 SVG visibility:hidden；慢或失敗時原 SVG 照常顯示。薄荷綠、粉紅格底色不動。
+   2) 未翻的格子（.risk-cell 沒有 .safe／.hazard）改成撲克牌牌背：沿用第 5 批 21 點、德州的預設酒紅牌背（--card-back-red：底色 #8a2f38、
+      #fff5df 2px 象牙邊、#dfbd75 金色內框＋對角與菱形花紋、中央金色黑桃）。格子是橫的（礦區約 1.43、爬塔約 1.55），所以不直接拉伸直式的
+      --card-back-red，而是拆成兩層：花紋層用 preserveAspectRatio=none＋vector-effect:non-scaling-stroke（線條隨格子比例延伸、粗細不變形），
+      黑桃層固定比例置中（不會被拉扁）。這是 CSS，不依賴預載；不是收藏牌背，不跟 html[data-card-back]。
+      象牙邊多出的 1px 用 inset 陰影補，不改 border 寬度（0 位移）。原本的「?」（本來就在 aria-hidden 的 span 裡，報讀器念的是按鈕 aria-label）
+      只做視覺隱藏、不刪除。
+   3) 狀態：可點（:enabled）亮色；停用（礦區開局前、爬塔非目前層、開局前）降飽和變暗；爬塔目前層可點的格子另加金色外光；
+      hover 變亮（原本的上浮 2px 保留）、按下變暗並內縮陰影；焦點框沿用既有 #f0d59a 3px。 */
+:is(#app,#modal,#social-root) .risk-cell.safe{--piece:url(/assets/pieces/mine-gem.webp)}
+:is(#app,#modal,#social-root) .risk-cell.hazard{--piece:url(/assets/pieces/mine-bomb.webp)}
+:is(#app,#modal,#social-root) .risk-cell:is(.safe,.hazard){position:relative}
+html.pieces-ready :is(#app,#modal,#social-root) .risk-cell:is(.safe,.hazard)::after{content:"";position:absolute;inset:8%;pointer-events:none;background:var(--piece) center/contain no-repeat}
+html.pieces-ready :is(#app,#modal,#social-root) .risk-cell:is(.safe,.hazard)>span>.sym{visibility:hidden}
+:is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard){position:relative;
+  --tile-lattice:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='none' stroke='%23dfbd75' stroke-width='2.4' vector-effect='non-scaling-stroke'/%3E%3Cpath d='M0 0L100 100M100 0L0 100M50 0L100 50L50 100L0 50Z' fill='none' stroke='%23dfbd75' stroke-width='.9' opacity='.7' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  --tile-spade:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23dfbd75' stroke='%238a2f38' stroke-width='1.6' paint-order='stroke' stroke-linejoin='round' d='M12 2C9 6.5 3.5 9.5 3.5 14a4.5 4.5 0 0 0 7.2 3.6L9.5 22h5l-1.2-4.4A4.5 4.5 0 0 0 20.5 14C20.5 9.5 15 6.5 12 2z'/%3E%3C/svg%3E");
+  background:var(--tile-spade) center/auto 46% no-repeat,var(--tile-lattice) center/calc(100% - 8px) calc(100% - 8px) no-repeat,#8a2f38;
+  border-color:#fff5df;color:#dfbd75;box-shadow:inset 0 0 0 1px #fff5df,0 2px 0 #00000040;transition:background .15s,transform .15s,filter .15s,box-shadow .15s}
+:is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard)>span{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+:is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard):disabled{opacity:1;filter:saturate(.45) brightness(.72)}
+:is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard):enabled:hover{filter:brightness(1.14)}
+:is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard):enabled:active{filter:brightness(.82);box-shadow:inset 0 0 0 1px #fff5df,inset 0 2px 6px #0000008c}
+:is(#app,#modal,#social-root) .tower-floor.current .risk-cell:not(.safe,.hazard):enabled{box-shadow:inset 0 0 0 1px #fff5df,0 0 0 1px #f0d59a,0 0 10px #f0d59acc}
+:is(#app,#modal,#social-root) .tower-floor.current .risk-cell:not(.safe,.hazard):enabled:active{box-shadow:inset 0 0 0 1px #fff5df,inset 0 2px 6px #0000008c,0 0 0 1px #f0d59a}
+@media(prefers-reduced-motion:reduce){:is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard){transition:none}}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* PR #4 integration: keep recovery next to the slot controls, after the spin

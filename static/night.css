@@ -2185,3 +2185,15 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:auto}
 }
 /* Narrow rank glyphs (especially J) must not crop the square suit artwork. */
 :is(#app,#modal,#social-root) .playing-card[data-suit]>b>i{background-size:contain;background-position:center}
+
+/* PR #7 integration: an opaque light outline keeps small labels legible
+   across the illustrated plaque's dark bands, including pressed states.
+   Shadows surround the glyphs without changing layout or replacing the art. */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *){
+  --p22-label-halo:1px 0 0 #fff3cc,-1px 0 0 #fff3cc,0 1px 0 #fff3cc,0 -1px 0 #fff3cc,.7px .7px 0 #fff3cc,-.7px .7px 0 #fff3cc,.7px -.7px 0 #fff3cc,-.7px -.7px 0 #fff3cc;
+  text-shadow:var(--p22-label-halo)}
+html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{text-shadow:var(--p22-label-halo)}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):is(:disabled,[aria-disabled=true]){text-shadow:none}
+/* The smallest controls have a 42px inner height. Limit both dimensions:
+   a height percentage alone enlarges circular artwork in portrait boxes. */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){background-size:min(92%,40px) auto}

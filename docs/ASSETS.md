@@ -12,6 +12,8 @@
 | 會所 Lv.4 | [桌機圖片](../static/assets/clubhouse/tier-4.webp)／[手機圖片](../static/assets/clubhouse/tier-4-small.webp) | 曜金行宮，3:2 展示區 |
 | 大廳主圖 | [poker-night.webp](../static/assets/poker-night.webp) | 大廳主圖區（左側留白給標題） |
 | 遊戲封面 ×11 | static/assets/covers/*.webp（德州、大老二、21 點、輪盤、百家樂、拉霸、礦區、骰寶、爬塔、射龍門、麻將） | 大廳遊戲卡封面，經 `.game-art::before` 疊上；需後端白名單放行 `/assets/covers/` |
+| 遊戲零件 ×18 | static/assets/pieces/*.webp | 拉霸、骰面、礦區與人像牌；全部解碼成功後才套用，失敗保留 SVG／CSS 替代樣式 |
+| 按鈕零件 ×11 | static/assets/buttons/*.webp | 金牌匾完整／窄版切片、四色籌碼及金幣；獨立預載，失敗保留原 CSS 按鈕 |
 | 網站圖示 | [favicon.svg](../static/favicon.svg) | 瀏覽器標誌 |
 
 ## 新素材的來源（奶油白主題）

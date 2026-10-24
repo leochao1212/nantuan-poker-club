@@ -31,7 +31,7 @@ class StaticTextCaching(unittest.TestCase):
         head,_,body=data.partition(b'\r\n\r\n');return head.decode('latin-1'),body
 
     def test_gzip_when_accepted(self):
-        for path,ctype in (('/night.css','text/css; charset=utf-8'),('/bonus.js','text/javascript; charset=utf-8'),('/app.js','text/javascript; charset=utf-8'),('/favicon.svg','image/svg+xml; charset=utf-8')):
+        for path,ctype in (('/night.css','text/css; charset=utf-8'),('/bonus.js','text/javascript; charset=utf-8'),('/game.js','text/javascript; charset=utf-8'),('/favicon.svg','image/svg+xml; charset=utf-8')):
             with self.subTest(path=path):
                 status,headers,body=self.get(path,{'Accept-Encoding':'gzip, deflate, br'})
                 original=(STATIC/path[1:]).read_bytes()
@@ -103,7 +103,7 @@ class StaticTextCaching(unittest.TestCase):
         self.assertTrue(body.startswith(b'{'))
 
     def test_outside_whitelist_404(self):
-        for path in ('/server.py','/static/night.css','/night.css/','/NIGHT.css','/../server.py','/nope.js','/%6eight.css','/night.css%00.js'):
+        for path in ('/app.js','/style.css','/server.py','/static/night.css','/night.css/','/NIGHT.css','/../server.py','/nope.js','/%6eight.css','/night.css%00.js'):
             status,headers,_=self.get(path,{'Accept-Encoding':'gzip'})
             self.assertEqual(status,404,path);self.assertNotIn('Content-Encoding',headers);self.assertNotIn('ETag',headers)
 

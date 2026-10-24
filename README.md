@@ -2,7 +2,7 @@
 
 私人多人網頁遊戲與會所。這個程式庫供 leochao1212 與 livangvang 協作程式、介面和頁面設計。
 
-交接基準：2026-10-23，對應 estate-mobile-20261023 上線版本。21 個後端執行模組與 33 個前端入口檔案的雜湊見 [來源基準](docs/source-baseline.json)。包含現有 42 個前端檔案與素材、40 個 Python 測試檔；沒有正式資料庫、玩家紀錄、Cookie、密碼、邀請碼或伺服器登入資料。
+唯一正式程式目錄是本程式庫；桌面外層的歷史修補副本與測試報告不屬於發布來源。目錄責任與封存原則見 [專案結構](docs/PROJECT-STRUCTURE.md)。初次交接的歷史雜湊保留在 [2026-10-23 來源基準](docs/source-baseline.json)，它不是目前版本清單；目前發布內容以 Git 提交與 CI release manifest 為準。
 
 ## 先讀這裡
 

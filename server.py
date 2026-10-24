@@ -408,7 +408,7 @@ class Handler(BaseHTTPRequestHandler):
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=0, must-revalidate',etag=etag)
-            elif path in ("/mahjong.js", "/mahjong.css", "/game-settings.js", "/game-settings.css", "/", "/index.html", "/app.js", "/style.css", "/game.js", "/profile.js", "/clubhouse-scene.js", "/clubhouse-scene.css", "/night.css", "/profile.css", "/effects.css", "/features.js", "/features.css", "/transfers.js", "/transfers.css", "/casino.css", "/ui.css", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/arcade.css", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/mahjong.js", "/mahjong.css", "/game-settings.js", "/game-settings.css", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/clubhouse-scene.css", "/night.css", "/profile.css", "/effects.css", "/features.js", "/features.css", "/transfers.js", "/transfers.css", "/casino.css", "/ui.css", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/arcade.css", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
                 ext = name.rsplit(".",1)[-1]

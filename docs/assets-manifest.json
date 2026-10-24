@@ -1,5 +1,60 @@
 [
   {
+    "path": "static/assets/buttons/btn-primary-l.webp",
+    "bytes": 6314,
+    "sha256": "693a13934921ee53dd60e85692c5294a3abc70a2fc1b9e2d50d0f043c07246fd"
+  },
+  {
+    "path": "static/assets/buttons/btn-primary-m.webp",
+    "bytes": 364,
+    "sha256": "93c73a9447188dc9b6c22549508af40ea597e2c9a0a156a291f7a11a2732eaec"
+  },
+  {
+    "path": "static/assets/buttons/btn-primary-r.webp",
+    "bytes": 6328,
+    "sha256": "7110ec92a2126fbc7ea04170002acbd785d73bd0ebac597cff97a9e2301c34cc"
+  },
+  {
+    "path": "static/assets/buttons/btn-primary-sm-l.webp",
+    "bytes": 3372,
+    "sha256": "cfa3e97b0d30ba35dcc0d996dfc2d6ed19c07f55d7e2e3526c79803b512b8938"
+  },
+  {
+    "path": "static/assets/buttons/btn-primary-sm-m.webp",
+    "bytes": 356,
+    "sha256": "31f695350d118a4533e41c4a106e269e0deb61f8b2fee7549114bae5d682c5f2"
+  },
+  {
+    "path": "static/assets/buttons/btn-primary-sm-r.webp",
+    "bytes": 3248,
+    "sha256": "12975707dcc6807274d95a4352c52bcce3dc2d6cc93c613a35f45124e92a4884"
+  },
+  {
+    "path": "static/assets/buttons/chip-10.webp",
+    "bytes": 5494,
+    "sha256": "31ede14b9b975f24a45ce4479b35436aff7820a65b71447ca4934eeb3e31ca52"
+  },
+  {
+    "path": "static/assets/buttons/chip-100.webp",
+    "bytes": 5420,
+    "sha256": "eb9c7156aa1a08643218d4ecd1b7152211b90ab2b9583cb58ac277d8b73fd7d6"
+  },
+  {
+    "path": "static/assets/buttons/chip-50.webp",
+    "bytes": 5568,
+    "sha256": "1e9deabad501b3e7521f515b5c447c08a20195d41085efb8b941d26a44eeade7"
+  },
+  {
+    "path": "static/assets/buttons/chip-500.webp",
+    "bytes": 5598,
+    "sha256": "3ffc02353d2fa3c5f48b1e3d6dfe385c7fc817293b3de9c6d11febbba27b5081"
+  },
+  {
+    "path": "static/assets/buttons/coin.webp",
+    "bytes": 6052,
+    "sha256": "a47882dd7c4009c9726e858a4ec91b157bb00e74f00e4694585af0b340d32ed6"
+  },
+  {
     "path": "static/assets/clubhouse/tier-1-small.webp",
     "bytes": 35976,
     "sha256": "b2a7ab737ab54100a99182460ee98a038e1d3bd1027273499c3438f559c999cc"
@@ -95,13 +150,98 @@
     "sha256": "24b505f7a9c7595be0351b7a039c448d7222f16c668219bd797b7cd1821b660d"
   },
   {
+    "path": "static/assets/pieces/card-j.webp",
+    "bytes": 20816,
+    "sha256": "cfd819f7f05a400e1993a85392c72fdea2e462b7d2299f6bb5649e851a190290"
+  },
+  {
+    "path": "static/assets/pieces/card-k.webp",
+    "bytes": 17424,
+    "sha256": "f51073e98839b55b86945cfd7a3fe63d0b3c9089e6a5c300b86160dc041b905f"
+  },
+  {
+    "path": "static/assets/pieces/card-q.webp",
+    "bytes": 16192,
+    "sha256": "5743c98415dc2b36db64ce0aac9d4c704e519222a3ca3f303334537abdbc03d6"
+  },
+  {
+    "path": "static/assets/pieces/dice-1.webp",
+    "bytes": 4840,
+    "sha256": "93f8ec35be6459690b2d89e6259621cf9b6653c0aebf676f1fc89a2f3c92609c"
+  },
+  {
+    "path": "static/assets/pieces/dice-2.webp",
+    "bytes": 5408,
+    "sha256": "e08c473873248886cb29e75d1ffad7709e623caf23bf597a90877599265cfef2"
+  },
+  {
+    "path": "static/assets/pieces/dice-3.webp",
+    "bytes": 5924,
+    "sha256": "b41d5918c191b55435128558c09fd4708798cbb211f168fb0880c02b86ae4ca4"
+  },
+  {
+    "path": "static/assets/pieces/dice-4.webp",
+    "bytes": 6682,
+    "sha256": "58f6c720508a543f37142629a5b5da568d8675bdbed8a4629828a1be56de1800"
+  },
+  {
+    "path": "static/assets/pieces/dice-5.webp",
+    "bytes": 6886,
+    "sha256": "f7b0f03b32324f5defa3dc349c7dbba6a5c50c7b1ea7cb5d0d6464eda32f37c6"
+  },
+  {
+    "path": "static/assets/pieces/dice-6.webp",
+    "bytes": 7622,
+    "sha256": "9f012ae6e9256cbdf0d9136fc50be66562b2e0a00ad570226a6b03bf6367ad6e"
+  },
+  {
+    "path": "static/assets/pieces/dice-q.webp",
+    "bytes": 6204,
+    "sha256": "f787a2ecb6203738d78e26dd57ef25a056bb61938f04d21f70d94717e0acd89d"
+  },
+  {
+    "path": "static/assets/pieces/mine-bomb.webp",
+    "bytes": 9130,
+    "sha256": "db57bdf4c7b075ca101c907e72154ad91cf5adeb1b7e442fd41c7befbe2598cf"
+  },
+  {
+    "path": "static/assets/pieces/mine-gem.webp",
+    "bytes": 13640,
+    "sha256": "35f9c0edc994c766631d558ebac1e80cf494387f8ea318531e50238df7fc99db"
+  },
+  {
+    "path": "static/assets/pieces/slot-777.webp",
+    "bytes": 11710,
+    "sha256": "f04ef1825ec39811e015a2dfa5ea27a8ea2a363b9e05acb62fc0af5d64b7f069"
+  },
+  {
+    "path": "static/assets/pieces/slot-bar.webp",
+    "bytes": 7104,
+    "sha256": "c9f7bde6bdc8316f870b155feab950d1afb7b7435cfef63615dc382232ff5c22"
+  },
+  {
+    "path": "static/assets/pieces/slot-bell.webp",
+    "bytes": 11234,
+    "sha256": "d1eaed751612bb96d01aad2ab06e5c7e8e078fc70527fdb326d4a396d984c76f"
+  },
+  {
+    "path": "static/assets/pieces/slot-cherry.webp",
+    "bytes": 13342,
+    "sha256": "55a5487add4fb4a5f77fd33a12c661aef97b2cc9ba7988248bdbc6d5b8c6aacb"
+  },
+  {
+    "path": "static/assets/pieces/slot-crown.webp",
+    "bytes": 15848,
+    "sha256": "6065e7ef7a02ab2c23eaec78855253e4ecb0b0c0f327c02921efbedac53f24a6"
+  },
+  {
+    "path": "static/assets/pieces/slot-diamond.webp",
+    "bytes": 12332,
+    "sha256": "53b8702e9ec43d1924b408ce131c5c76ca357175a55d096af5a2ae812edd81e2"
+  },
+  {
     "path": "static/assets/poker-night.webp",
     "bytes": 80676,
     "sha256": "63dbb83cdfa5b0b099bebdb5df00e8e8ce3c50fb4346b4be1bfc9e5086d4cf75"
-  },
-  {
-    "path": "static/favicon.svg",
-    "bytes": 488,
-    "sha256": "60fa86c96703702e07c5f37fdcafe1b83dd91f90b21cacf00648acd3b4bc83d4"
   }
 ]

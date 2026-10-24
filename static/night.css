@@ -2466,6 +2466,11 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data
 }
 /* P23：標題列「離開」（窄螢幕跟聊天／紀錄一樣只剩圖示，名稱看 aria-label）。 */
 .live-room .table-tools .table-leave,.mj-room .mj-heading>.table-leave{flex-shrink:0}
+/* P24 CI 修正：761～899 寬（iPad 直立）標題列放不下三顆有字的按鈕，Linux 字型更寬時整頁會多出 5px。這個寬度「離開」只留圖示，聊天／紀錄照舊有字。 */
+@media(min-width:761px) and (max-width:899px){
+ html.buttons2-ready :is(#app,#modal,#social-root) .live-room .table-tools>.table-leave:not([aria-pressed]),html.buttons2-ready :is(#app,#modal,#social-root) .mj-room .mj-heading>.table-leave:not([aria-pressed]),.live-room .table-tools>.table-leave,.mj-room .mj-heading>.table-leave{width:44px;min-width:44px;min-height:44px;padding:8px;gap:0;font-size:0}
+ .live-room .table-tools>.table-leave .icon,.mj-room .mj-heading>.table-leave .icon{width:20px;height:20px}
+}
 /* P24-2：說明收進「?」；原文留在隱藏的 .table-help-source，按下用同一套對話框。 */
 .table-help-source{display:none!important}
 :is(#app,#modal,#social-root) .table-help-button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;font-size:19px;font-weight:700;line-height:1}
@@ -2522,10 +2527,3 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data
  :is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>[data-arcade-action=skip]{grid-column:2;grid-row:2;margin-right:52px;min-height:48px}
  :is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>.table-help-button{grid-column:2;grid-row:2}
 }
-
-/* The three gate cards need a full row before the tablet grid becomes narrow. */
-@media(max-width:1000px){
- :is(#app,#modal,#social-root) .arcade-inbetween .arcade-surface{grid-template-columns:minmax(0,1fr)}
- :is(#app,#modal,#social-root) .arcade-inbetween .gate-board{min-width:0}
-}
-.gate-board.has-help>.bonus-caption{min-width:0;overflow-wrap:anywhere}

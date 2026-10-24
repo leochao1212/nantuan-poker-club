@@ -166,9 +166,9 @@ def start_hand(room,clock,deck=None,settings=None):
             for p in players:p['cards'].append(_draw(hand))
         for p in players:p['cards'].sort(key=card_key)
         first=min((card_key(c),c,p['user_id']) for p in players for c in p['cards'])
-        previous=next((p for p in players if p['user_id']==room.get('big2_last_winner')),None)
-        hand.update(first_card=None if previous else first[1],first_play=True,current_play=[],last_player=None,passes=[])
-        _turn(room,previous['user_id'] if previous else first[2],clock)
+        # Every deal starts with club three, regardless of the previous winner.
+        hand.update(first_card=first[1],first_play=True,current_play=[],last_player=None,passes=[])
+        _turn(room,first[2],clock)
     elif kind=='blackjack':
         for s in room['seats']:s.pop('blackjack_ready_for',None)
         room['blackjack_shoe']=shoe_state

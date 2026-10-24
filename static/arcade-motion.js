@@ -63,7 +63,18 @@ window.ClubArcadeMotion=(()=>{
     const clip=scroller.getBoundingClientRect();return box.right>clip.left&&box.left<clip.right;
   }
   function reveal(job){const el=target(job);el?.classList.remove('arcade-card-pending');if(state?.jobs.get(job.key)===job)state.jobs.delete(job.key);}
+  // CSP (style-src 'self') blocks the template's style attribute and patchNode's setAttribute('style'),
+  // so the resting rotor angle is written through CSSOM. The un-filled spin animation then ends on it.
+  const rest=new WeakMap();
+  function settle(){
+    for(const rotor of document.querySelectorAll('.roulette-wheel>.roulette-rotor')){
+      const value=rotor.parentElement.dataset.winningNumber,index=value===''?0:order.indexOf(Number(value)),angle=index>0?-index*360/37:0,last=rest.get(rotor);
+      rest.set(rotor,{angle,from:last?last.angle:0});
+      rotor.style.transform=`rotate(${angle}deg)`;
+    }
+  }
   function play(){
+    settle();
     if(!state)return;
     // Reapply pending state after an SSE DOM patch; never hide controls or totals.
     for(const job of state.jobs.values())if(job.kind!=='back')target(job)?.classList.add('arcade-card-pending');
@@ -97,7 +108,7 @@ window.ClubArcadeMotion=(()=>{
   }
   function spin(){
     let wheel=document.querySelector('.roulette-wheel');if(!wheel)return;
-    let popover=null;
+    let popover=null;const from=rest.get(wheel.querySelector('.roulette-rotor'))?.from||0;
     const originalBox=wheel.getBoundingClientRect();
     if(!visible(wheel,originalBox)||originalBox.top<56||originalBox.bottom>innerHeight-8){
       removeResult();popover=document.createElement('aside');popover.className='roulette-result-popover';
@@ -111,7 +122,7 @@ window.ClubArcadeMotion=(()=>{
     const box=wheel.getBoundingClientRect();
     const token=epoch,number=Number(wheel.dataset.winningNumber),angle=-order.indexOf(number)*360/37;
     wheel.classList.add('is-spinning');
-    watch(rotor,[{transform:'rotate(0deg)'},{transform:`rotate(${1440+angle}deg)`}],{duration:2350,easing:'cubic-bezier(.12,.4,.18,1)'});
+    watch(rotor,[{transform:`rotate(${from}deg)`},{transform:`rotate(${1440+angle}deg)`}],{duration:2350,easing:'cubic-bezier(.12,.4,.18,1)'});
     watch(orbit,[{transform:'rotate(0deg)'},{transform:'rotate(-1440deg)'}],{duration:2350,easing:'cubic-bezier(.1,.38,.2,1)'});
     watch(ball,[{transform:`translateY(${-box.width*.09}px)`,offset:0},{transform:`translateY(${-box.width*.09}px)`,offset:.65},{transform:'translateY(3px)',offset:.84},{transform:'translateY(-2px)',offset:.9},{transform:'translateY(0)',offset:1}],{duration:2350,easing:'ease-out'},()=>{if(token===epoch)wheel.classList.remove('is-spinning');});
     later(()=>{if(token===epoch){for(const a of effects)a.cancel();effects.clear();wheel.classList.remove('is-spinning');}},2600);

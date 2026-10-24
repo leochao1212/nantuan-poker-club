@@ -1,5 +1,20 @@
 [
   {
+    "path": "static/assets/buttons/btn-danger-sm-l.webp",
+    "bytes": 3262,
+    "sha256": "23e50981b1d1fb81afe78875cd2ea25c680d2583af485abbeb705530bdc54b36"
+  },
+  {
+    "path": "static/assets/buttons/btn-danger-sm-m.webp",
+    "bytes": 354,
+    "sha256": "660a40a446c14d837e035caab5a2765d603a399a3a34c0a0676cbb0eb27e8872"
+  },
+  {
+    "path": "static/assets/buttons/btn-danger-sm-r.webp",
+    "bytes": 3124,
+    "sha256": "6f46e99458fb39f548798b24a1fd722a281bb12d3f44b121a446c1a65a7bf74c"
+  },
+  {
     "path": "static/assets/buttons/btn-primary-l.webp",
     "bytes": 6314,
     "sha256": "693a13934921ee53dd60e85692c5294a3abc70a2fc1b9e2d50d0f043c07246fd"
@@ -30,6 +45,36 @@
     "sha256": "12975707dcc6807274d95a4352c52bcce3dc2d6cc93c613a35f45124e92a4884"
   },
   {
+    "path": "static/assets/buttons/btn-secondary-l.webp",
+    "bytes": 5254,
+    "sha256": "ad254aaf164c6c7877167d3acff56b8e375fbf6a0b0754552e553393439158cd"
+  },
+  {
+    "path": "static/assets/buttons/btn-secondary-m.webp",
+    "bytes": 316,
+    "sha256": "ac721d5db00dd1b0cd12d34620cb60cde091864eb0291d597ed08b8522a0ee1e"
+  },
+  {
+    "path": "static/assets/buttons/btn-secondary-r.webp",
+    "bytes": 5244,
+    "sha256": "cde304c9febffb8c183d277d1f236ef40a2fd2dbd85ac9055a03e2f7a123d523"
+  },
+  {
+    "path": "static/assets/buttons/btn-secondary-sm-l.webp",
+    "bytes": 3176,
+    "sha256": "5271a9015802574a6d873318b00e7f1d204fd8c678c902f26e97876b4a4f216e"
+  },
+  {
+    "path": "static/assets/buttons/btn-secondary-sm-m.webp",
+    "bytes": 334,
+    "sha256": "d879d4549acd4eaae8c8258d78b4bda1a454e3f0937cb7c0aa517b0bdd4f562c"
+  },
+  {
+    "path": "static/assets/buttons/btn-secondary-sm-r.webp",
+    "bytes": 3200,
+    "sha256": "78394f6a4b7f761e7316df330e4b723f0a878e86a910cf24a903c66706865934"
+  },
+  {
     "path": "static/assets/buttons/chip-10.webp",
     "bytes": 5494,
     "sha256": "31ede14b9b975f24a45ce4479b35436aff7820a65b71447ca4934eeb3e31ca52"
@@ -53,6 +98,46 @@
     "path": "static/assets/buttons/coin.webp",
     "bytes": 6052,
     "sha256": "a47882dd7c4009c9726e858a4ec91b157bb00e74f00e4694585af0b340d32ed6"
+  },
+  {
+    "path": "static/assets/buttons/frame-card.webp",
+    "bytes": 5594,
+    "sha256": "b4ac9bea9630d999e7d866bd123740b36df330c8b305f09be34cc3b4f2ec21af"
+  },
+  {
+    "path": "static/assets/buttons/frame-table.webp",
+    "bytes": 14928,
+    "sha256": "98c2e1a1bd4e0ec2e14d8cd1ac95af19085e117467cdb5cf7b9e3b8876cc6b76"
+  },
+  {
+    "path": "static/assets/buttons/tab-off-l.webp",
+    "bytes": 3110,
+    "sha256": "522879c52c6d52939c26799dd8358a5eabb5407782fedcf90c5412f58c13a710"
+  },
+  {
+    "path": "static/assets/buttons/tab-off-m.webp",
+    "bytes": 302,
+    "sha256": "de54a95669c76c6cdbb60ed10fd916d3c0567a13a309e4f7c915bd6de5a27756"
+  },
+  {
+    "path": "static/assets/buttons/tab-off-r.webp",
+    "bytes": 3152,
+    "sha256": "327e5898aebbf9146992ebc3d323f16174f89e86b4820674c90986423039cee6"
+  },
+  {
+    "path": "static/assets/buttons/tab-on-l.webp",
+    "bytes": 3374,
+    "sha256": "d631c65fc5bc9afe48e6c2584b87b6e0855171e41f3230b5c739548309a0223e"
+  },
+  {
+    "path": "static/assets/buttons/tab-on-m.webp",
+    "bytes": 338,
+    "sha256": "0a39e1de161872b60c42da4ac5cec72779601c1793748d078afe561c60037670"
+  },
+  {
+    "path": "static/assets/buttons/tab-on-r.webp",
+    "bytes": 3366,
+    "sha256": "82c8c0ca672b2adb252109cc444b1679c3a59ffc5b719a9a4512e69d34ea2d76"
   },
   {
     "path": "static/assets/clubhouse/tier-1-small.webp",
@@ -150,6 +235,16 @@
     "sha256": "24b505f7a9c7595be0351b7a039c448d7222f16c668219bd797b7cd1821b660d"
   },
   {
+    "path": "static/assets/pieces/bet-chips.webp",
+    "bytes": 1312,
+    "sha256": "5b994124ec29ba377a5a1c600af52c854b1152ed4ce85a62a4cd22dbcf0411bc"
+  },
+  {
+    "path": "static/assets/pieces/bj-shoe.webp",
+    "bytes": 4278,
+    "sha256": "623a4b7fc3841ee3865c7c9bd4c3b7aa00bed2b4b39c5256df32fab4c047aace"
+  },
+  {
     "path": "static/assets/pieces/card-j.webp",
     "bytes": 20816,
     "sha256": "cfd819f7f05a400e1993a85392c72fdea2e462b7d2299f6bb5649e851a190290"
@@ -163,6 +258,11 @@
     "path": "static/assets/pieces/card-q.webp",
     "bytes": 16192,
     "sha256": "5743c98415dc2b36db64ce0aac9d4c704e519222a3ca3f303334537abdbc03d6"
+  },
+  {
+    "path": "static/assets/pieces/dealer-btn.webp",
+    "bytes": 1260,
+    "sha256": "46950ad80576d0cc04e8a431f3f25c900e49118fb2cd92ab03121b6b192cb5e1"
   },
   {
     "path": "static/assets/pieces/dice-1.webp",
@@ -208,6 +308,66 @@
     "path": "static/assets/pieces/mine-gem.webp",
     "bytes": 13640,
     "sha256": "35f9c0edc994c766631d558ebac1e80cf494387f8ea318531e50238df7fc99db"
+  },
+  {
+    "path": "static/assets/pieces/mj-bird.webp",
+    "bytes": 13808,
+    "sha256": "b037f0ad711d961cedf53cc9a24bd6136e28a3af2deba650a6c3ac76de41b0e6"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-autumn.webp",
+    "bytes": 9158,
+    "sha256": "91b2abc80ed9ec78ee4012757db595bbfa244fc9a3283cadd3724e99d06dff47"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-bamboo.webp",
+    "bytes": 7416,
+    "sha256": "dae69f33bd57f6340b93ee2ce7e44459e554863fac4d4822c12dbcc6a427f244"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-chrys.webp",
+    "bytes": 10548,
+    "sha256": "1b7cdad78617b05c01c77ef9e986fbc2a0ade0b4b2c59f8dab6fd5216d8ba504"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-orchid.webp",
+    "bytes": 7464,
+    "sha256": "521cfc262634242af245a3ea7c22ce115cfa121642064fdf17c47fd663f2536b"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-plum.webp",
+    "bytes": 6134,
+    "sha256": "3b202c2657638cb8df74be028150018db810cc422e44d8ef47b1d0e37cac3402"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-spring.webp",
+    "bytes": 8684,
+    "sha256": "a6cb783584b6c011fc27d110f98cf0b71bd4524e8ef4fba87beb9416f6c84a57"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-summer.webp",
+    "bytes": 8832,
+    "sha256": "4bf15f9788de2990259cb37e46b23ceb5dc9e11826e395c29f60a4b79759900a"
+  },
+  {
+    "path": "static/assets/pieces/mj-f-winter.webp",
+    "bytes": 9236,
+    "sha256": "a3456037628847edab92b032b08267c1e1175d029ff4fac7573f5af378347a8e"
+  },
+  {
+    "path": "static/assets/pieces/mj-tiles.svg",
+    "bytes": 141574,
+    "sha256": "25f7bf5f09371b44e4ed079346f81733eece08bbb51e61d0039d507110ce945f"
+  },
+  {
+    "path": "static/assets/pieces/roul-frame.webp",
+    "bytes": 20212,
+    "sha256": "59592ba671337ec0ad09ba46df70ed2738c1b8afb3c07e7120126ee7419b9727"
+  },
+  {
+    "path": "static/assets/pieces/roul-hub.webp",
+    "bytes": 9938,
+    "sha256": "ccea518fd416f7083ee5e338c100fd25cab1e976064a1f4b824caddb556a5125"
   },
   {
     "path": "static/assets/pieces/slot-777.webp",

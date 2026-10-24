@@ -2008,6 +2008,46 @@ html.pieces-ready :is(#app,#modal,#social-root) .playing-card[data-suit]:is([dat
   html.pieces-ready :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])>b>i{display:block;font-size:7px;height:7px;margin-top:1px}
 }
 
+/* ========== P18 第 7 批：大廳遊戲卡 ========== */
+/* 遊戲名移到封面圖左下（h2 與 .game-art 疊在同一格，h2 自己的底是由下往上的暗色漸層，手機約佔圖高 50%、桌機約 43%，象牙色大字）；
+   漸層在字的頂端仍有約 66% 不透明，底下就算是純白，象牙字對比也 ≥4.5；
+   圖下原本的名字列拿掉，「玩法＋」、人數、「設定」「開桌」排在圖下。footer 用 display:contents 讓人數與按鈕直接排進卡片的格線，
+   DOM 與 Tab 順序不變（玩法 → 設定 → 開桌）。卡片寬度夠（約 ≥270px）時四個排成一列：容器查詢不能查自己，所以查遊戲列表 .game-catalog 的寬度，
+   桌機 3 欄（761～1439px）或 4 欄（≥1440px）時列表 ≥842px 等於每張卡 ≥270px（4 欄時列表一定 ≥1128px）；
+   手機兩欄放不下一列（四個點擊範圍 44px 加人數就超過卡寬），改成兩列：上列「玩法＋…人數」、下列「設定｜開桌」。
+   「玩法」展開時內容出現在「玩法」那列下面（手機在按鈕列上面），人數與按鈕固定在列的頂端、不蓋到展開內容。
+   「玩法」summary 仍撐滿整列（點擊範圍跟改前一樣）：人數疊在上面但 pointer-events:none；一列時設定／開桌疊在 summary 上面（z-index），點得到。 */
+:is(#app,#modal,#social-root) .night-lobby .game-catalog{container:gamecat/inline-size}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{display:grid;grid-template-columns:4px auto minmax(0,1fr) 4px;
+  grid-template-rows:auto auto auto;align-content:start;column-gap:6px;row-gap:4px;padding:0 0 8px}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>.game-art{grid-column:1/-1;grid-row:1;margin:0}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>h2{grid-column:1/-1;grid-row:1;align-self:end;position:relative;z-index:2;margin:0;
+  padding:16px 10px 6px;font-size:19px;line-height:1.15;color:var(--ivory);text-shadow:0 1px 2px #000000a6;
+  background:linear-gradient(0deg,#160e08e6 0%,#160e08d6 40%,#160e08a8 72%,#160e0800 100%);pointer-events:none}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details{grid-column:2/4;grid-row:2;padding:0;min-width:0}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer{display:contents}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span{grid-column:3;grid-row:2;justify-self:end;align-self:start;width:auto;min-height:44px;
+  display:flex;align-items:center;margin:0;padding:0;font-size:12px;white-space:nowrap;pointer-events:none;position:relative;z-index:1}
+/* .game-short-rules 本來是 position:relative，會畫在沒定位的按鈕上面；按鈕也定位並墊高一層，才點得到 */
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>button{position:relative;z-index:1}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>.game-configure{grid-column:2;grid-row:3;align-self:start;margin:0}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>[data-create]{grid-column:3;grid-row:3;align-self:start;width:auto;min-width:0;margin:0}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span+[data-create]{grid-column:2/4}
+@media(min-width:761px){
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>h2{padding:30px 12px 9px;font-size:22px}
+}
+@container gamecat (min-width:842px){
+  /* 一列：玩法＋（左）…人數｜設定｜開桌 */
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{grid-template-columns:4px minmax(0,1fr) auto auto 4px;column-gap:8px;row-gap:6px;padding-bottom:10px}
+  /* 收起時「玩法」只佔左欄（焦點框不圈到按鈕）；展開時撐滿整列，說明文字用整張卡的寬度 */
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details{grid-column:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details[open]{grid-column:2/5}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span{grid-column:2;grid-row:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>.game-configure{grid-column:3;grid-row:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>[data-create]{grid-column:4;grid-row:2;min-width:96px}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span+[data-create]{grid-column:3/5}
+}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* PR #4 integration: keep recovery next to the slot controls, after the spin

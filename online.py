@@ -40,6 +40,7 @@ def rules(room):
 
 def initialize(db):
     db.executescript("""
+    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS poker_rooms (
         id INTEGER PRIMARY KEY, name TEXT NOT NULL, owner_id INTEGER NOT NULL REFERENCES users(id),
         status TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, state TEXT NOT NULL,

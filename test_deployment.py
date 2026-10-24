@@ -164,6 +164,19 @@ class DrainGame(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT sum(balance) FROM wallets').fetchone()[0], before)
         self.assertIn('id', self.call('/api/online/rooms', {}, at=121))
 
+    def test_shared_dice_accepts_existing_round_bets_while_paused(self):
+        rid = self.call('/api/online/rooms', {'game_type': 'dice'})['id'];path = '/api/online/rooms/' + str(rid)
+        self.call(path+'/join', {'operation_id': 'deploy_dice_join_000001'}, uid=2)
+        self.call(path+'/start', {'operation_id': 'deploy_dice_start_00001', 'expected_hand_number': 1, 'bets': [{'key': 'big', 'amount': 20}]}, at=2)
+        self.pause()
+        request = {'operation_id': 'deploy_dice_second_0001', 'expected_hand_number': 1, 'bets': [{'key': 'small', 'amount': 30}]}
+        self.call(path+'/start', request, uid=2, at=3)
+        room = online.get_room(self.db, rid)
+        self.assertEqual(room['hand_no'], 1);self.assertEqual(room['status'], 'waiting')
+        balances = [seat['stack'] for seat in room['seats']]
+        self.assertTrue(self.call(path+'/start', request, uid=2, at=4)['replayed'])
+        self.assertEqual([seat['stack'] for seat in online.get_room(self.db, rid)['seats']], balances)
+
     def test_running_hand_and_duplicate_operation_continue_during_drain(self):
         operation = {'operation_id': 'deploy_room_create_0001', 'game_type': 'inbetween'}
         rid = self.call('/api/online/rooms', operation)['id'];path = '/api/online/rooms/' + str(rid)

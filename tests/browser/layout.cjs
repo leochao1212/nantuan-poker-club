@@ -49,8 +49,23 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
      }
      for(const [width,height] of mobile?[[320,800],[375,812],[393,852],[844,390]]:[[768,1024],[1366,900],[1920,1080]]){
       await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));await pause(40);
-      const m=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src),main:!!document.querySelector('#main')}));
+      const m=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src),main:!!document.querySelector('#main')}));
       assert.ok(m.main,name+' missing main');assert.ok(m.scroll<=m.width+1,engine+' '+name+' overflow '+JSON.stringify(m));assert.deepEqual(m.broken,[],engine+' '+name+' broken images');
+      if(name==='slot'){
+       await page.waitForFunction(()=>document.documentElement.classList.contains('pieces-ready'));
+       for(const scale of ['100%','130%']){
+        await page.evaluate(s=>{document.documentElement.style.fontSize=s;scrollTo(0,0);},scale);
+        const before=await page.locator('#deal-hand').evaluate(e=>e.getBoundingClientRect().top);
+        await page.evaluate(()=>{pendingOperation={action:'start'};feedback('連線中斷，正在確認這筆操作。請確認原本的操作結果，避免重複下注。'.repeat(3),true);});
+        const g=await page.evaluate(()=>{const a=document.querySelector('#retry-operation'),r=a.getBoundingClientRect(),f=document.querySelector('#action-feedback').getBoundingClientRect(),h=document.querySelector('.topbar').getBoundingClientRect(),d=document.querySelector('#deal-hand').getBoundingClientRect();return {height:r.height,inside:r.top>=f.top&&r.bottom<=f.bottom,headerClear:r.top>=h.bottom,spinTop:d.top,width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth};});
+        assert.ok(g.height>=44&&g.inside&&g.headerClear,engine+' slot recovery control obscured '+JSON.stringify(g));
+        assert.ok(Math.abs(g.spinTop-before)<2,engine+' slot spin button moved on error');
+        assert.ok(g.scroll<=g.width+1,engine+' slot error overflows at '+scale);
+        await page.locator('#retry-operation').scrollIntoViewIfNeeded();
+        assert.ok(await page.locator('#retry-operation').evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),'Slot retry cannot be tapped');
+        await page.evaluate(()=>{pendingOperation=null;actionFeedback=null;refreshControls();document.documentElement.style.fontSize='';scrollTo(0,0);});
+       }
+      }
       if(name==='holdem'){
        assert.equal(await page.locator('.is-me .seat-cards .playing-card').count(),2);
        const g=await page.evaluate(()=>({captionBottom:document.querySelector('.spot-3 .seat-caption').getBoundingClientRect().bottom,potTop:document.querySelector('.pot-total').getBoundingClientRect().top,boardBottom:document.querySelector('.community-cards').getBoundingClientRect().bottom,holeTop:Math.min(...[...document.querySelectorAll('.is-me .seat-cards .playing-card')].map(e=>e.getBoundingClientRect().top))}));
@@ -60,13 +75,22 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       if(width===393||width===1366||width===844&&name==='holdem')await page.screenshot({path:path.join(out,engine+'-'+name+'-'+width+'.png')});
       inspected++;
      }
+     if(name==='slot'&&mobile){
+      const fallback=await context.newPage();
+      fallback.on('pageerror',e=>errors.push(engine+' slot fallback: '+e.message));
+      await fallback.route('**/assets/pieces/*',r=>r.abort());
+      await fallback.goto(base+'/#'+route);await fallback.waitForSelector('.slot-reel>span>.sym');await pause(150);
+      assert.equal(await fallback.evaluate(()=>document.documentElement.classList.contains('pieces-ready')),false,'Failed artwork must keep SVG fallback');
+      assert.equal(await fallback.locator('.slot-reel>span>.sym:visible').count(),3,'Slot fallback must show all three symbols');
+      await fallback.close();
+     }
      await context.close();
     }
    }
    results.push({name,route,viewports:inspected});console.log('layout OK: '+name+' ('+inspected+' views)');
   }
   for(const [route,name,selector] of [['lobby','lobby','#lobby-games'],['stats','ranking','.rank-row'],['members','members','.member-panel'],['clubhouse','clubhouse','.clubhouse-scene'],['collection','collection','.collection-card'],['profile','profile','#profile-console'],['wallet','transfers','#transfer-form'],['admin','admin','#admin-console']])await checkRoute(route==='admin'?admin:member,route,name,selector);
-  const games=[['holdem',6,'.table-arena'],['big2',4,'.arcade-surface'],['blackjack',2,'.blackjack-player'],['mahjong',4,'.mj-table'],['roulette',1,'.roulette-stage'],['baccarat',1,'.arcade-surface'],['slot',1,'.slot-machine'],['mines',1,'.risk-cell'],['tower',1,'.tower-floor'],['dice',2,'.dice-board'],['inbetween',1,'.gate-board']];
+  const games=[['holdem',6,'.table-arena'],['big2',4,'.arcade-surface'],['blackjack',6,'.blackjack-player'],['mahjong',4,'.mj-table'],['roulette',1,'.roulette-stage'],['baccarat',1,'.arcade-surface'],['slot',1,'.slot-machine'],['mines',1,'.risk-cell'],['tower',1,'.tower-floor'],['dice',2,'.dice-board'],['inbetween',1,'.gate-board']];
   for(const [kind,count,selector] of games){
    if(only.size&&!only.has(kind==='inbetween'?'gate':kind))continue;
    const members=[];for(let i=0;i<count;i++)members.push(await account());const owner=members[0];

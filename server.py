@@ -1,4 +1,4 @@
-"""楠團德州扑克 — private, six-member, LAN poker ledger. Python 3.10+."""
+"""楠團牌室 — private online card room and poker ledger. Python 3.10+."""
 from __future__ import annotations
 
 import argparse
@@ -173,8 +173,8 @@ class Handler(BaseHTTPRequestHandler):
         encoded_at=time.monotonic()
         body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode()
         # Static images may be revalidated: the browser keeps a copy and gets 304 when unchanged.
-        if etag and status == 200:
-            tags=[t.strip().removeprefix("W/") for t in self.headers.get("If-None-Match","").split(",")]
+        if etag and status == 200 and self.command == "GET":
+            tags=[t.strip().removeprefix("W/") for t in ",".join(self.headers.get_all("If-None-Match") or []).split(",")]
             if etag in tags or "*" in tags:
                 status,body=304,b""
         if hasattr(self,'timings'):
@@ -190,8 +190,8 @@ class Handler(BaseHTTPRequestHandler):
         if hasattr(self,"request_id"):
             self.send_header("X-Request-ID",self.request_id)
             self.send_header("Server-Timing",", ".join(f"{k};dur={v:.2f}" for k,v in self.timings.items()))
-        self.send_header("Content-Type", content_type)
-        if status != 304:
+        if status != 304:  # RFC 9110: a 304 carries no body, so no Content-Type or Content-Length
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache_control)
         if etag:
@@ -353,7 +353,7 @@ class Handler(BaseHTTPRequestHandler):
                                         cell(people[e["user_id"]]["nickname"]), f'{e["buy_in"]/100:.2f}',
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
-            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path):
+            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6])\.webp',path):
                 artwork=(ROOT/'static'/path[1:]).read_bytes()
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
                 self.reply(200,artwork,content_type='image/webp',
@@ -860,7 +860,7 @@ def main():
                 pass
         print(f"无法启动：{ex}。若已启动，请打开 http://localhost:{args.port}", flush=True)
         raise SystemExit(1)
-    print(f"楠團德州扑克已启动：http://localhost:{args.port}\n数据库：{DB_PATH}\n关闭此窗口将停止服务。", flush=True)
+    print(f"楠團牌室已启动：http://localhost:{args.port}\n数据库：{DB_PATH}\n关闭此窗口将停止服务。", flush=True)
     try:
         ips = set(socket.gethostbyname_ex(socket.gethostname())[2])
         for ip in sorted(ips):

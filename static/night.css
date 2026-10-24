@@ -2289,6 +2289,73 @@ html.buttons2-ready :is(#app,#modal,#social-root) .table-control-area{border-ima
    圖沒載好或被擋時看到原本的牌靴（小一點，不會空白）。 */
 :is(#app,#modal,#social-root) .arcade-blackjack :is(.arcade-empty-state,.blackjack-dealer)::after,:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-shoe::before{background:url("/assets/pieces/bj-shoe.webp") center/contain no-repeat,var(--bj-shoe) 12.9% 15.2%/69% 69% no-repeat}
 
+
+/* ==== P20 第 5 組：麻將牌（MJ-01～21：萬、筒、條、字牌、花牌、暗牌、選取中、摸進、小張；字形＝全字庫正楷體） ====
+   設計見 美術稿/零件設計/第5組/（牌面總覽.png、實作評估.md、D30）。畫法＝實作評估的 A 案：
+   1) 牌身用 CSS（不必下載，圖沒載好也照樣套）：象牙漸層牌面＋底部翠綠背殼＋象牙側邊。翠綠背殼就是原本的下框（手牌 5px、小張 3px，寬度不變），
+      側邊與高光是 inset 陰影；盒子大小、框寬、內距都不變（版面 0 位移）。暗牌（別人的暗槓）反過來：翠綠牌背＋底部象牙。
+   2) 牌面＝一個合併 SVG（static/assets/pieces/mj-tiles.svg，43 種大牌面＋43 種小張排成一條；gzip 後約 28KB），當精靈圖用（見下方 ::before 的說明），
+      畫在 ::before：高＝牌面區（內距與側邊以外，--mj-fh），寬＝高的 4/5，水平置中（手機手牌接近正方形，左右會留白，不變形）。
+      牌高 ≤43px 的 .small（副露、花牌、牌河、叫牌提示、結算、重播）用小張版（字加粗、點位簡化）。
+      一條的鳥、8 張花牌的插畫是獨立 webp，疊在牌面 SVG 下層（SVG 當背景圖不能再載外部圖）；位置照設計檔：鳥置中，花牌靠右下（大 42×48／小 35×41，以 48×60 牌面為準）。
+   3) 按頁載入：只有麻將頁會載。mahjong.js 的 table()（只在麻將牌桌畫面呼叫）先載 mj-tiles.svg 與 mj-bird.webp，兩張都載好才加 html.mj-tiles-ready；
+      之後才畫 ::before、把原本的字與小 SVG 設成透明（仍在 DOM 與無障礙樹）。慢、失敗或被擋時維持原本的字牌（套新牌身），不會空白。
+      花牌插畫不預載，第一次出現時才下載（沒載好時仍看得到花名字與印章）。pieces-ready／buttons-ready／buttons2-ready 都不動。
+   4) 選取中照現有程式：上浮 6px＋金框兩圈（減少動態時不上浮、金框照留）；摸進的牌照 mahjong.css 原意畫 2px 金色內框
+      （原本被主題的 :is(#app,#modal,#social-root) .mj-tile 陰影蓋掉，看不出來）。兩種狀態都和牌身的 inset 陰影合併寫。
+   5) 字形是全字庫正楷體（數位發展部，政府資料開放授權條款第 1 版），授權要求標示出處：
+      麻將頁「本桌規則與完整台表」摺疊區最後一行（mahjong.js 的 rules()），見 美術稿/零件設計/第5組/字型/授權說明.md。 */
+:is(#app,#modal,#social-root) .mj-tile{--mj-side:2px;--mj-pad:2px;--mj-fh:46px;--mj-body:inset 0 -1px 0 #9fd6bb,inset 0 calc(-1px - var(--mj-side)) 0 #dcc595,inset 1px 1px 0 #fffc;
+  border-color:#c9ab72;border-bottom-color:#2f8a66;
+  background:linear-gradient(165deg,#fffdf6 0%,#f8efda 55%,#eddcb5 100%);
+  box-shadow:var(--mj-body),0 1px 0 #17573f,0 2px 4px #3a2a0d4d}
+/* 牌面框高 --mj-fh（px）＝牌高 − 上框 1 − 下框（手牌 5、小張 3）− 側邊 − 上下內距；各處牌高是現有 CSS 寫死的 px：
+   手牌 58（手機、橫式、矮桌機）／72（桌機高 ≥851），副露、花牌、叫牌提示、桌機牌河 22×31，手機牌河 16×24，結算與重播 30×43。
+   用 px 不用百分比：WebKit 算百分比的背景位置會差 1～2px，精靈圖會露出隔壁格。 */
+:is(#app,#modal,#social-root) .mj-tile.small{--mj-side:1px;--mj-pad:1.5px;--mj-fh:23px}
+:is(#app,#modal,#social-root) .mj-winning-tiles .mj-tile.small{--mj-side:2px;--mj-pad:2px;--mj-fh:33px}
+@media(max-width:760px){:is(#app,#modal,#social-root) .mj-room .mj-river .mj-tile.small{--mj-pad:1px;--mj-fh:17px}}
+@media(min-width:761px) and (min-height:851px){:is(#app,#modal,#social-root) .mj-hand .mj-tile{--mj-side:3px;--mj-pad:4px;--mj-fh:55px}}
+/* 暗牌：翠綠牌背＋底部象牙（下框）＋深綠側邊 */
+:is(#app,#modal,#social-root) .mj-tile.back{--mj-body:inset 0 calc(-1 * var(--mj-side)) 0 #0e4a38,inset 1px 1px 0 #ffffff40;
+  border-color:#0e4632;border-bottom-color:#e6d3a6;
+  background:linear-gradient(165deg,#3a9472 0%,#22735a 55%,#155a44 100%);
+  box-shadow:var(--mj-body),0 1px 0 #a88a52,0 2px 4px #3a2a0d4d}
+/* 摸進的牌：2px 金色內框 */
+:is(#app,#modal,#social-root) .mj-hand .mj-tile.drawn{box-shadow:inset 0 0 0 2px #c19332,var(--mj-body),0 1px 0 #17573f,0 2px 4px #3a2a0d4d}
+/* 選取中：金框兩圈（和原本一樣）＋往下的影子；上浮 6px 照 mahjong.css */
+:is(#app,#modal,#social-root) .mj-hand .mj-tile.chosen{box-shadow:0 0 0 3px #f0d59a,0 0 0 5px #101f1b,0 6px 10px #0006,var(--mj-body)}
+:is(#app,#modal,#social-root) .mj-hand .mj-tile.chosen.drawn{box-shadow:0 0 0 3px #f0d59a,0 0 0 5px #101f1b,0 6px 10px #0006,inset 0 0 0 2px #c19332,var(--mj-body)}
+/* 牌面在合併 SVG 裡的格號 --mj-i（大牌面第 i 格、小張第 43＋i 格；每格 48×60、間距 50，整張 4300×60） */
+:is(#app,#modal,#social-root) .mj-tile[data-k=m1]{--mj-i:0} :is(#app,#modal,#social-root) .mj-tile[data-k=m2]{--mj-i:1} :is(#app,#modal,#social-root) .mj-tile[data-k=m3]{--mj-i:2} :is(#app,#modal,#social-root) .mj-tile[data-k=m4]{--mj-i:3} :is(#app,#modal,#social-root) .mj-tile[data-k=m5]{--mj-i:4} :is(#app,#modal,#social-root) .mj-tile[data-k=m6]{--mj-i:5} :is(#app,#modal,#social-root) .mj-tile[data-k=m7]{--mj-i:6} :is(#app,#modal,#social-root) .mj-tile[data-k=m8]{--mj-i:7} :is(#app,#modal,#social-root) .mj-tile[data-k=m9]{--mj-i:8}
+:is(#app,#modal,#social-root) .mj-tile[data-k=p1]{--mj-i:9} :is(#app,#modal,#social-root) .mj-tile[data-k=p2]{--mj-i:10} :is(#app,#modal,#social-root) .mj-tile[data-k=p3]{--mj-i:11} :is(#app,#modal,#social-root) .mj-tile[data-k=p4]{--mj-i:12} :is(#app,#modal,#social-root) .mj-tile[data-k=p5]{--mj-i:13} :is(#app,#modal,#social-root) .mj-tile[data-k=p6]{--mj-i:14} :is(#app,#modal,#social-root) .mj-tile[data-k=p7]{--mj-i:15} :is(#app,#modal,#social-root) .mj-tile[data-k=p8]{--mj-i:16} :is(#app,#modal,#social-root) .mj-tile[data-k=p9]{--mj-i:17}
+:is(#app,#modal,#social-root) .mj-tile[data-k=s1]{--mj-i:18} :is(#app,#modal,#social-root) .mj-tile[data-k=s2]{--mj-i:19} :is(#app,#modal,#social-root) .mj-tile[data-k=s3]{--mj-i:20} :is(#app,#modal,#social-root) .mj-tile[data-k=s4]{--mj-i:21} :is(#app,#modal,#social-root) .mj-tile[data-k=s5]{--mj-i:22} :is(#app,#modal,#social-root) .mj-tile[data-k=s6]{--mj-i:23} :is(#app,#modal,#social-root) .mj-tile[data-k=s7]{--mj-i:24} :is(#app,#modal,#social-root) .mj-tile[data-k=s8]{--mj-i:25} :is(#app,#modal,#social-root) .mj-tile[data-k=s9]{--mj-i:26}
+:is(#app,#modal,#social-root) .mj-tile[data-k=z1]{--mj-i:27} :is(#app,#modal,#social-root) .mj-tile[data-k=z2]{--mj-i:28} :is(#app,#modal,#social-root) .mj-tile[data-k=z3]{--mj-i:29} :is(#app,#modal,#social-root) .mj-tile[data-k=z4]{--mj-i:30} :is(#app,#modal,#social-root) .mj-tile[data-k=z5]{--mj-i:31} :is(#app,#modal,#social-root) .mj-tile[data-k=z6]{--mj-i:32} :is(#app,#modal,#social-root) .mj-tile[data-k=z7]{--mj-i:33} :is(#app,#modal,#social-root) .mj-tile[data-k=f1]{--mj-i:34} :is(#app,#modal,#social-root) .mj-tile[data-k=f2]{--mj-i:35}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f3]{--mj-i:36} :is(#app,#modal,#social-root) .mj-tile[data-k=f4]{--mj-i:37} :is(#app,#modal,#social-root) .mj-tile[data-k=f5]{--mj-i:38} :is(#app,#modal,#social-root) .mj-tile[data-k=f6]{--mj-i:39} :is(#app,#modal,#social-root) .mj-tile[data-k=f7]{--mj-i:40} :is(#app,#modal,#social-root) .mj-tile[data-k=f8]{--mj-i:41} :is(#app,#modal,#social-root) .mj-tile[data-k=back]{--mj-i:42}
+/* 插畫：一條的鳥（置中）、花牌（靠右下；秋、菊比較寬，寬度先碰到框）。大小以牌面框高 --mj-fh 計（設計檔 48×60 的格子） */
+:is(#app,#modal,#social-root) .mj-tile[data-k=s1]{--mj-art:url("/assets/pieces/mj-bird.webp");--mj-art-at:center;--mj-art-size:auto calc(var(--mj-fh) * .967)}
+:is(#app,#modal,#social-root) .mj-tile.small[data-k=s1]{--mj-art-size:auto var(--mj-fh)}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f1]{--mj-art:url("/assets/pieces/mj-f-spring.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f2]{--mj-art:url("/assets/pieces/mj-f-summer.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f3]{--mj-art:url("/assets/pieces/mj-f-autumn.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f4]{--mj-art:url("/assets/pieces/mj-f-winter.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f5]{--mj-art:url("/assets/pieces/mj-f-plum.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f6]{--mj-art:url("/assets/pieces/mj-f-orchid.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f7]{--mj-art:url("/assets/pieces/mj-f-chrys.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k=f8]{--mj-art:url("/assets/pieces/mj-f-bamboo.webp")}
+:is(#app,#modal,#social-root) .mj-tile[data-k^=f]{--mj-art-at:right bottom;--mj-art-size:auto calc(var(--mj-fh) * .8)}
+:is(#app,#modal,#social-root) .mj-tile.small[data-k^=f]{--mj-art-size:auto calc(var(--mj-fh) * .683)}
+:is(#app,#modal,#social-root) .mj-tile:is([data-k=f3],[data-k=f7]){--mj-art-size:calc(var(--mj-fh) * .7) auto}
+:is(#app,#modal,#social-root) .mj-tile.small:is([data-k=f3],[data-k=f7]){--mj-art-size:calc(var(--mj-fh) * .583) auto}
+/* 合併 SVG 當 CSS 精靈圖用（不用 #m1 這種 <view> 片段：WebKit／Safari 的 CSS 背景圖不認 SVG 片段，會把整條 4300×60 縮進一格）：
+   牌面框 = 高 --mj-fh、寬 0.8 倍（48×60），水平置中；整條圖高＝框高、寬 4300/60 倍，第 n 格往左移 n×50/60 個框高。 */
+html.mj-tiles-ready :is(#app,#modal,#social-root) .mj-tile[data-k]::before{content:"";position:absolute;left:50%;top:var(--mj-pad);height:var(--mj-fh);width:calc(var(--mj-fh) * .8);
+  transform:translateX(-50%);pointer-events:none;
+  background:url("/assets/pieces/mj-tiles.svg") calc(var(--mj-i) * var(--mj-fh) * -50 / 60) 0/calc(var(--mj-fh) * 4300 / 60) var(--mj-fh) no-repeat,
+    var(--mj-art,none) var(--mj-art-at,center)/var(--mj-art-size,contain) no-repeat}
+html.mj-tiles-ready :is(#app,#modal,#social-root) .mj-tile.small[data-k]::before{background-position:calc((var(--mj-i) + 43) * var(--mj-fh) * -50 / 60) 0,var(--mj-art-at,center)}
+html.mj-tiles-ready :is(#app,#modal,#social-root) .mj-tile[data-k]>*{opacity:0}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* PR #4 integration: keep recovery next to the slot controls, after the spin

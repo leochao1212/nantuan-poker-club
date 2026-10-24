@@ -1,0 +1,64 @@
+name: Deploy production
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: nantuan-production
+  cancel-in-progress: false
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.select.outputs.sha }}
+      ci_run_id: ${{ steps.select.outputs.ci_run_id }}
+    steps:
+      - name: Select tested main release
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          DEPLOY_ENABLED: ${{ vars.PRODUCTION_DEPLOY_ENABLED }}
+        shell: python
+        run: |
+          import json,os,time,urllib.request
+          if os.environ['GITHUB_REF']!='refs/heads/main':raise SystemExit('Select the main branch')
+          if os.environ['DEPLOY_ENABLED']!='true':raise SystemExit('Production runner setup is not enabled yet')
+          repo=os.environ['REPO'];sha=os.environ['SHA']
+          def api(path):
+              r=urllib.request.Request('https://api.github.com/repos/'+repo+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(r,timeout=30) as response:return json.load(response)
+          for _ in range(100):
+              if api('/commits/main')['sha']!=sha:raise SystemExit('main changed; start a new deployment')
+              runs=api('/actions/workflows/ci.yml/runs?branch=main&per_page=50')['workflow_runs']
+              matching=[r for r in runs if r['head_sha']==sha and r['event'] in ('push','workflow_dispatch')]
+              valid=next((r for r in matching if r['conclusion']=='success'),None)
+              if valid:
+                  artifacts=api('/actions/runs/'+str(valid['id'])+'/artifacts')['artifacts']
+                  if any(a['name']=='release-'+sha and not a['expired'] for a in artifacts):break
+              if matching and all(r['status']=='completed' for r in matching):raise SystemExit('Checks/build failed or release expired; rerun Checks on main')
+              time.sleep(10)
+          else:raise SystemExit('Timed out waiting for a tested release')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:out.write('sha='+sha+'\nci_run_id='+str(valid['id'])+'\n')
+  deploy:
+    needs: select
+    runs-on: [nantuan-deploy]
+    timeout-minutes: 25
+    steps:
+      # No checkout, build, Docker socket or standing PAT on this runner.
+      - name: Deploy verified release
+        env:
+          DEPLOY_TOKEN: ${{ github.token }}
+          DEPLOY_RUN_ID: ${{ github.run_id }}
+          CI_RUN_ID: ${{ needs.select.outputs.ci_run_id }}
+          RELEASE_SHA: ${{ needs.select.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY' | sudo -n -u leoserver /usr/local/lib/nantuan/deploy.py
+          import json,os
+          print(json.dumps({k:os.environ[v] for k,v in {'token':'DEPLOY_TOKEN','run_id':'DEPLOY_RUN_ID','ci_run_id':'CI_RUN_ID','sha':'RELEASE_SHA'}.items()}))
+          PY

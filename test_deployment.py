@@ -87,6 +87,17 @@ class DeploymentPolicy(unittest.TestCase):
         (root / 'release.json').write_text(json.dumps(release))
         return release
 
+    def test_loaded_image_identity_across_docker_storage_backends(self):
+        release = {'sha': SHA, 'image_id': 'sha256:'+'b'*64}
+        info = {'Id': 'sha256:'+'c'*64, 'Os': 'linux', 'Architecture': 'amd64', 'Config': {'Labels': {'org.opencontainers.image.revision': SHA}}}
+        with patch.object(d, 'run', return_value=SimpleNamespace(stdout=json.dumps(info))):
+            d.resolve_loaded_image(release)
+        self.assertEqual(release['build_image_id'], 'sha256:'+'b'*64)
+        self.assertEqual(release['image_id'], 'sha256:'+'c'*64)
+        info['Config']['Labels']['org.opencontainers.image.revision'] = 'f'*40
+        with patch.object(d, 'run', return_value=SimpleNamespace(stdout=json.dumps(info))):
+            with self.assertRaises(d.Refused):d.resolve_loaded_image(release)
+
     def test_archive_manifest_and_symlink_validation(self):
         for malicious in [False, True]:
             with tempfile.TemporaryDirectory() as tmp:
@@ -116,7 +127,7 @@ class DeploymentPolicy(unittest.TestCase):
             commands = []
             def command(args, **kwargs):
                 commands.append(args)
-                value = json.dumps({'org.opencontainers.image.revision': SHA}) if 'image' in args and 'inspect' in args else json.dumps({'users': 2, 'poker_hands': 3, 'poker_operations': 4})
+                value = json.dumps({'Id': 'sha256:'+'b'*64, 'Os': 'linux', 'Architecture': 'amd64', 'Config': {'Labels': {'org.opencontainers.image.revision': SHA}}}) if 'image' in args and 'inspect' in args else json.dumps({'users': 2, 'poker_hands': 3, 'poker_operations': 4})
                 return SimpleNamespace(stdout=value, returncode=0)
             github = SimpleNamespace(api=self.api, open=lambda _: io.BytesIO(zipped.getvalue()))
             with patch.object(d, 'ROOT', production), patch.object(d, 'STATE', root / 'state'), \

@@ -158,6 +158,18 @@ print(json.dumps(counts))
     return code
 
 
+def resolve_loaded_image(release):
+    # Legacy and containerd image stores can report different IDs for the same
+    # saved image. The authenticated archive checksum is the transport identity.
+    tag = 'nantuan-poker:' + release['sha']
+    info = json.loads(run(['docker', 'image', 'inspect', '--format', '{{json .}}', tag]).stdout)
+    require(info['Config']['Labels'].get('org.opencontainers.image.revision') == release['sha'], 'Image revision mismatch')
+    require(info['Os'] == 'linux' and info['Architecture'] == 'amd64', 'Wrong image platform')
+    require(re.fullmatch(r'sha256:[0-9a-f]{64}', info['Id']), 'Invalid loaded image ID')
+    release['build_image_id'] = release['image_id']
+    release['image_id'] = info['Id']
+
+
 def smoke_image(release, run_id):
     name = 'nantuan-candidate-' + run_id
     try:
@@ -266,8 +278,7 @@ def deploy(request, github):
             archive.extractall(folder)
         release, source = unpack_release(folder, request['sha'])
         run(['docker', 'load', '-i', str(folder / 'image.tar.gz')], timeout=300)
-        labels = json.loads(run(['docker', 'image', 'inspect', '--format', '{{json .Config.Labels}}', release['image_id']]).stdout)
-        require(labels.get('org.opencontainers.image.revision') == request['sha'], 'Image revision mismatch')
+        resolve_loaded_image(release)
         smoke_image(release, request['run_id'])
         print('Verified image; waiting for current hands to finish', flush=True)
         previous = None
@@ -300,7 +311,7 @@ def deploy(request, github):
             require(all(counts[t] >= value for t, value in baseline.items()), 'Persistent records disappeared')
             public_check(release, folder)
             receipt.write_text(json.dumps({'sha': request['sha'], 'image': release['image_id'], 'backup': str(saved),
-                                           'previous_image': previous, 'counts': counts, 'at': time.time()}, indent=2))
+                                           'previous_image': previous, 'build_image': release['build_image_id'], 'counts': counts, 'at': time.time()}, indent=2))
             print('Deployment healthy: ' + request['sha'], flush=True)
         except BaseException:
             if switching and previous:

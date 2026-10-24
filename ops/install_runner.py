@@ -47,7 +47,7 @@ def install(request):
              '--name', 'nantuan-deploy-leoserver', '--labels', 'nantuan-deploy',
              '--no-default-labels', '--work', '_work'], cwd=RUNNER)
     else:
-        assert json.loads((RUNNER / '.runner').read_text())['gitHubUrl'].rstrip('/') == 'https://github.com/leochao1212/nantuan-poker-club'
+        assert json.loads((RUNNER / '.runner').read_text(encoding='utf-8-sig'))['gitHubUrl'].rstrip('/') == 'https://github.com/leochao1212/nantuan-poker-club'
     GATEWAY.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
     pending_gateway = GATEWAY.with_suffix('.new')
     pending_gateway.write_bytes(Path(__file__).with_name('deploy.py').read_bytes().replace(b'\r\n', b'\n'))
@@ -60,7 +60,7 @@ def install(request):
     run(['visudo', '-cf', str(pending_sudoers)])
     pending_sudoers.replace(sudoers)
     if not (RUNNER / '.service').exists():run(['./svc.sh', 'install', USER], cwd=RUNNER)
-    service = (RUNNER / '.service').read_text().strip()
+    service = (RUNNER / '.service').read_text(encoding='utf-8-sig').strip()
     dropin = Path('/etc/systemd/system') / (service + '.d')
     dropin.mkdir(parents=True, exist_ok=True)
     (dropin / 'isolation.conf').write_text('''[Service]

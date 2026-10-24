@@ -7,7 +7,7 @@ import server
 from realtime import Hub,WriteQueue
 
 COVERS=('holdem','big2','blackjack','roulette','baccarat','slot','mines','dice','tower','inbetween','mahjong')
-PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6')
+PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb','card-j','card-q','card-k')
 
 class StaticImages(unittest.TestCase):
     def setUp(self):
@@ -31,7 +31,7 @@ class StaticImages(unittest.TestCase):
         for path in ('/assets/covers/nope.webp','/assets/covers/HOLDEM.webp','/assets/covers/holdem.webp/','/assets/covers/../poker-night.webp','/assets/covers/holdem.png','/assets/covers/%68oldem.webp'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_every_piece_is_served(self):
-        self.assertEqual(len(PIECES),13)
+        self.assertEqual(len(PIECES),18)
         for name in PIECES:
             status,headers,body=self.get(f'/assets/pieces/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
@@ -41,7 +41,10 @@ class StaticImages(unittest.TestCase):
         for path in ('/assets/pieces/nope.webp','/assets/pieces/dice-0.webp','/assets/pieces/dice-7.webp','/assets/pieces/dice-1-256.webp','/assets/pieces/slot-seven.webp',
                      '/assets/pieces/SLOT-777.webp','/assets/pieces/slot-777.webp/','/assets/pieces/slot-777.png','/assets/pieces/%73lot-777.webp','/assets/pieces/',
                      '/assets/pieces/../covers/dice.webp','/assets/pieces/..%2Fcovers%2Fdice.webp','/assets/pieces/%2e%2e/covers/dice.webp','/assets/pieces//slot-777.webp',
-                     '/assets/pieces/../../server.py','/assets/pieces/dice-1.webp%00.png'):
+                     '/assets/pieces/../../server.py','/assets/pieces/dice-1.webp%00.png',
+                     '/assets/pieces/mine-tile-q.webp','/assets/pieces/mine-gem-256.webp','/assets/pieces/mine-gems.webp','/assets/pieces/MINE-GEM.webp','/assets/pieces/mine-.webp','/assets/pieces/mine-bomb.png',
+                     '/assets/pieces/card-a.webp','/assets/pieces/card-2.webp','/assets/pieces/card-J.webp','/assets/pieces/CARD-K.webp','/assets/pieces/card-jq.webp','/assets/pieces/card-.webp',
+                     '/assets/pieces/card-k-256.webp','/assets/pieces/card-q.png','/assets/pieces/card-j.webp/','/assets/pieces/%63ard-k.webp','/assets/pieces/../pieces/card-k.webp'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_images_revalidate_with_etag(self):
         status,headers,body=self.get('/assets/covers/holdem.webp')

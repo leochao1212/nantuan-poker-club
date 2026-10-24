@@ -84,6 +84,7 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       assert.equal(await fallback.locator('.slot-reel>span>.sym:visible').count(),3,'Slot fallback must show all three symbols');
       await fallback.close();
      }
+     if(name==='lobby'&&!mobile)await require('./round4-checks.cjs')(page,engine,out);
      await context.close();
     }
    }

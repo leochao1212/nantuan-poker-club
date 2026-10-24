@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 from contextlib import contextmanager
 import hashlib
 import hmac
@@ -51,6 +52,51 @@ SNAPSHOTS = threading.Semaphore(1)
 LOBBY_SNAPSHOTS = threading.Semaphore(1)
 # Interactive replies must not queue behind every SSE viewer.
 HTTP_SNAPSHOTS = threading.Semaphore(2)
+# Whitelisted text files: raw and gzip bytes with their ETags, rebuilt only when the file changes.
+STATIC_TEXT_CACHE: dict[Path, tuple] = {}
+STATIC_TEXT_LOCK = threading.Lock()
+
+
+def static_text(file: Path):
+    """Return (raw, raw_etag, gz, gz_etag); gzip work happens once per file version."""
+    stat = file.stat()
+    stamp = (stat.st_mtime_ns, stat.st_size)
+    cached = STATIC_TEXT_CACHE.get(file)
+    if cached and cached[0] == stamp:
+        return cached[1]
+    # Several clients can refresh immediately after deployment. Recheck inside
+    # the lock so only one request compresses each cold file version.
+    with STATIC_TEXT_LOCK:
+        stat = file.stat()
+        stamp = (stat.st_mtime_ns, stat.st_size)
+        cached = STATIC_TEXT_CACHE.get(file)
+        if cached and cached[0] == stamp:
+            return cached[1]
+        raw = file.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        # mtime=0 keeps gzip bytes deterministic for this runtime and content.
+        entry = (raw, f'"{digest}"', gzip.compress(raw, compresslevel=9, mtime=0), f'"{digest}-gz"')
+        STATIC_TEXT_CACHE[file] = (stamp, entry)
+        return entry
+
+
+def accepts_gzip(header: str | None) -> bool:
+    """True when Accept-Encoding allows gzip (explicitly or via *) with a non-zero q."""
+    named = {}
+    for part in (header or "").split(","):
+        token, _, params = part.strip().partition(";")
+        q = 1.0
+        for param in params.split(";"):
+            key, _, value = param.strip().partition("=")
+            if key.strip().lower() == "q":
+                try:
+                    q = float(value)
+                except ValueError:
+                    q = 0.0
+        if token:
+            named[token.strip().lower()] = q
+    q = named.get("gzip", named.get("x-gzip", named.get("*", 0.0)))
+    return q > 0
 
 
 @dataclass
@@ -167,7 +213,7 @@ class Handler(BaseHTTPRequestHandler):
         # Never log request bodies, passwords, or cookies.
         print(f"[{now()}] {self.address_string()} {fmt % args}", flush=True)
 
-    def reply(self, status, value, cookie=None, content_type="application/json; charset=utf-8", attachment=None, cache_control="no-store", etag=None):
+    def reply(self, status, value, cookie=None, content_type="application/json; charset=utf-8", attachment=None, cache_control="no-store", etag=None, content_encoding=None, vary=None):
         if hasattr(self,'request_id') and isinstance(value,dict):
             value={**value,'request_id':self.request_id}
         encoded_at=time.monotonic()
@@ -193,6 +239,10 @@ class Handler(BaseHTTPRequestHandler):
         if status != 304:  # RFC 9110: a 304 carries no body, so no Content-Type or Content-Length
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
+            if content_encoding:
+                self.send_header("Content-Encoding", content_encoding)
+        if vary:
+            self.send_header("Vary", vary)
         self.send_header("Cache-Control", cache_control)
         if etag:
             self.send_header("ETag", etag)
@@ -353,7 +403,7 @@ class Handler(BaseHTTPRequestHandler):
                                         cell(people[e["user_id"]]["nickname"]), f'{e["buy_in"]/100:.2f}',
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
-            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6])\.webp',path):
+            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-[jqk])\.webp',path):
                 artwork=(ROOT/'static'/path[1:]).read_bytes()
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
                 self.reply(200,artwork,content_type='image/webp',
@@ -361,7 +411,17 @@ class Handler(BaseHTTPRequestHandler):
             elif path in ("/mahjong.js", "/mahjong.css", "/game-settings.js", "/game-settings.css", "/", "/index.html", "/app.js", "/style.css", "/game.js", "/profile.js", "/clubhouse-scene.js", "/clubhouse-scene.css", "/night.css", "/profile.css", "/effects.css", "/features.js", "/features.css", "/transfers.js", "/transfers.css", "/casino.css", "/ui.css", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/arcade.css", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
-                self.reply(200, (ROOT / "static" / name).read_bytes(), content_type=types[name.rsplit(".",1)[-1]]+"; charset=utf-8")
+                ext = name.rsplit(".",1)[-1]
+                raw, raw_etag, packed, packed_etag = static_text(ROOT / "static" / name)
+                zipped = accepts_gzip(self.headers.get("Accept-Encoding"))
+                # HTML stays no-store (it names the current assets); CSS/JS/SVG revalidate by ETag.
+                # no-cache, not max-age=0: Cloudflare's Browser Cache TTL stretches max-age=0 to 4 hours.
+                # The gzip and identity bytes differ, so each keeps its own strong ETag.
+                cacheable = ext != "html"
+                self.reply(200, packed if zipped else raw, content_type=types[ext]+"; charset=utf-8",
+                           cache_control="no-cache" if cacheable else "no-store",
+                           etag=(packed_etag if zipped else raw_etag) if cacheable else None,
+                           content_encoding="gzip" if zipped else None, vary="Accept-Encoding")
             else:
                 raise Problem("页面不存在。", 404)
         except (club_admin.AdminError,transfers.TransferError,member_accounts.AccountError) as ex:

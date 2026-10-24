@@ -12,6 +12,8 @@ BUTTONS2=('btn-secondary-l','btn-secondary-m','btn-secondary-r','btn-secondary-s
           'btn-danger-sm-l','btn-danger-sm-m','btn-danger-sm-r',
           'tab-on-l','tab-on-m','tab-on-r','tab-off-l','tab-off-m','tab-off-r','frame-table','frame-card')
 PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb','card-j','card-q','card-k')
+# P20 group 4: loaded per page by CSS (only the roulette, hold'em and blackjack tables reference them), not preloaded
+TABLE_PIECES=('roul-frame','roul-hub','dealer-btn','bet-chips','bj-shoe')
 
 class StaticImages(unittest.TestCase):
     def setUp(self):
@@ -49,6 +51,22 @@ class StaticImages(unittest.TestCase):
                      '/assets/pieces/mine-tile-q.webp','/assets/pieces/mine-gem-256.webp','/assets/pieces/mine-gems.webp','/assets/pieces/MINE-GEM.webp','/assets/pieces/mine-.webp','/assets/pieces/mine-bomb.png',
                      '/assets/pieces/card-a.webp','/assets/pieces/card-2.webp','/assets/pieces/card-J.webp','/assets/pieces/CARD-K.webp','/assets/pieces/card-jq.webp','/assets/pieces/card-.webp',
                      '/assets/pieces/card-k-256.webp','/assets/pieces/card-q.png','/assets/pieces/card-j.webp/','/assets/pieces/%63ard-k.webp','/assets/pieces/../pieces/card-k.webp'):
+            self.assertEqual(self.get(path)[0],404,path)
+    def test_every_table_piece_is_served(self):
+        self.assertEqual(len(TABLE_PIECES),5)
+        for name in TABLE_PIECES:
+            status,headers,body=self.get(f'/assets/pieces/{name}.webp')
+            self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
+            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name)
+            self.assertEqual(headers['ETag'],'"'+hashlib.sha256(body).hexdigest()+'"',name)
+            self.assertEqual(self.get(f'/assets/pieces/{name}.webp',{'If-None-Match':headers['ETag']})[0],304,name)
+    def test_unknown_or_tricky_table_piece_paths_are_404(self):
+        for path in ('/assets/pieces/roul.webp','/assets/pieces/roul-.webp','/assets/pieces/roul-rim.webp','/assets/pieces/roul-frame-2x.webp','/assets/pieces/ROUL-FRAME.webp',
+                     '/assets/pieces/roul-frame.png','/assets/pieces/roul-frame.webp/','/assets/pieces/roul-hubs.webp','/assets/pieces/%72oul-hub.webp',
+                     '/assets/pieces/dealer.webp','/assets/pieces/dealer-btn-2.webp','/assets/pieces/Dealer-Btn.webp','/assets/pieces/dealer-btn.webp%00.png',
+                     '/assets/pieces/bet-chip.webp','/assets/pieces/bet-chips.png','/assets/pieces/bet-chipss.webp','/assets/pieces//bet-chips.webp',
+                     '/assets/pieces/bj-shoe-152.webp','/assets/pieces/BJ-SHOE.webp','/assets/pieces/bj-.webp','/assets/pieces/../pieces/bj-shoe.webp',
+                     '/assets/pieces/..%2Fpieces%2Fbj-shoe.webp','/assets/covers/roul-frame.webp','/assets/buttons/bj-shoe.webp','/assets/roul-hub.webp','/assets/dealer-btn.webp'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_every_button_image_is_served(self):
         self.assertEqual(len(BUTTONS),11)

@@ -2221,6 +2221,72 @@ html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(
 html.buttons2-ready{--frame:url("/assets/buttons/frame-table.webp") 108 / 36px / 4px stretch}
 html.buttons2-ready :is(#app,#modal,#social-root) .table-control-area{border-image:url("/assets/buttons/frame-card.webp") 42 / 14px / 0 stretch;border-radius:8px;box-shadow:var(--shadow-soft)}
 
+/* ==== P20 第 4 組：輪盤外框與轉軸、莊家鈕、德州下注籌碼小堆、21 點牌靴（Steven 選輪盤外框 Codex 版） ====
+   按頁載入：這 5 張圖只寫在只有該遊戲桌才有的元素上（CSS 背景圖要等元素出現在畫面上才會下載），不加進 bonus.js 的預載（pieces-ready、buttons-ready、buttons2-ready 都不動）：
+   roul-frame、roul-hub 只在輪盤桌；dealer-btn、bet-chips 只在德州；bj-shoe 只在 21 點。大廳、會所與其他小遊戲不會下載。
+   新圖疊在舊圖上：新圖畫在偽元素或背景最上層，原本的 CSS／SVG 照舊畫在下面；圖還沒載好、被擋或失敗時看到的就是原本的樣子，載好後由新圖的不透明部分把舊的整個蓋住。
+   圖以手機 2 倍螢幕輸出：外框 460px、轉軸 254px、莊家鈕 46px、籌碼 44px、牌靴 152×120。 */
+
+/* 1 輪盤：37 格數字環、開獎角度、珠子照舊是 arcade-motion.js 的 SVG 與動畫（開獎只轉 .roulette-rotor 與珠子軌道）。
+   外框畫在 .roulette-wheel::before：不轉（照實物）、往外多畫轉盤的 10%，內孔 0.95 倍轉盤，蓋住數字環外緣、原本的金邊與木框金線。
+   轉軸畫在 .wheel-hub::before：不轉，直徑＝轉盤的 66%；z-index:-1 → 在 hub 自己的綠底金邊之上、號碼與 ♠ 之下（hub 是 30%＋3px 邊，inset 換算成 66%）。
+   陰影用 drop-shadow，圖沒載好時不會多出一圈陰影。外框要畫到方框外，所以拿掉 overflow:hidden 與 contain 的 paint
+   （保留 layout，仍是獨立的堆疊層，黏頂的操作卡照樣蓋在上面）；轉盤內容本來就是圓形，不會多露出東西。
+   轉盤方框改小、margin 加大，佔的寬高和原本一樣（版面 0 位移），外框看起來和原本含木框金線的大小差不多；號碼字級約為轉盤的 13.5%，放得進中央圓章。 */
+:is(#app,#modal,#social-root) .roulette-wheel,.roulette-result-popover .roulette-wheel{overflow:visible;contain:layout}
+:is(#app,#modal,#social-root) .roulette-wheel::before,.roulette-result-popover .roulette-wheel::before{content:"";position:absolute;inset:-10%;z-index:1;pointer-events:none;background:url("/assets/pieces/roul-frame.webp") center/100% 100% no-repeat;filter:drop-shadow(0 4px 6px #00000070)}
+:is(#app,#modal,#social-root) .roulette-wheel .wheel-hub::before,.roulette-result-popover .wheel-hub::before{content:"";position:absolute;inset:calc(-60% - 6.6px);z-index:-1;border-radius:50%;pointer-events:none;background:url("/assets/pieces/roul-hub.webp") center/100% 100% no-repeat;filter:drop-shadow(0 3px 5px #00000066)}
+:is(#app,#modal,#social-root) .roulette-wheel .wheel-hub,.roulette-result-popover .wheel-hub{text-shadow:0 1px 2px #000a}
+:is(#app,#modal,#social-root) .roulette-rotor text,.roulette-result-popover .roulette-rotor text{font-size:8.6px}
+/* 桌機：280 → 248＋16px margin（轉盤 238px，外框 286px） */
+@media(min-width:761px){
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel{width:248px;height:248px;margin:16px}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel .wheel-hub{font-size:32px}
+}
+/* 手機矮螢幕（左右並排）：136 → 132＋2px margin（轉盤 124px，外框 149px，和原本含木框金線一樣）；≤360 的 112px 不變（轉盤 104px），
+   外框多畫到 11%（127px），才蓋得住原本 6.5px 木框金線的最外圈金線（內孔只大 0.3px，看不出來） */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel{width:132px;height:132px;margin:2px}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel .wheel-hub{font-size:17px}
+}
+@media(max-width:360px){
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel{width:112px;height:112px;margin:0}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel::before{inset:-11%}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel .wheel-hub{font-size:14px}
+}
+/* 手機高螢幕（上下排）：min(216,100vw−132) → min(200,100vw−148)，上下 margin 6／2 → 14／10，總高度不變（393：轉盤 192px、外框 230px） */
+@media(max-width:760px) and (min-height:800px){
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel{width:min(200px,calc(100vw - 148px));height:min(200px,calc(100vw - 148px));margin:14px 0 10px}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel::before{inset:-10%}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel .wheel-hub{font-size:min(26px,calc(13.5vw - 21px))}
+}
+/* 結果小視窗（輪盤不在畫面內時，arcade-motion.js 複製整個輪盤放在右下角；在 :is(#app,#modal,#social-root) 外面，所以另寫）：
+   桌機 180 → 165、手機 128 → 120，轉盤中心與小視窗大小不變（下 margin 和說明文字的 10px margin 會合併，所以下方多留一些），外框離小視窗邊框還有約 11px／5px */
+.roulette-result-popover .roulette-wheel{width:165px;height:165px;margin:7.5px 7.5px 17.5px}
+.roulette-result-popover .roulette-wheel .wheel-hub{font-size:21px}
+@media(max-width:760px){
+  .roulette-result-popover .roulette-wheel{width:120px;height:120px;margin:4px 4px 14px}
+  .roulette-result-popover .roulette-wheel .wheel-hub{font-size:15px}
+}
+
+/* 2 莊家鈕 D（HOLD-05）：大小、位置不變（手機 19px、桌機 23px）。新圖（象牙圓鈕＋襯線 D）畫在 ::after，比圓鈕大半像素、圖放大 4% 由圓角裁邊，連抗鋸齒的邊緣也蓋住原本的金邊；
+   原本的「D」文字照舊在 HTML 裡（報讀器照舊念），圖載好後被圖蓋住看不到；圖沒載好時看到原本的圓鈕和 D。 */
+:is(#app,#modal,#social-root) .dealer-disc::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;pointer-events:none;background:url("/assets/pieces/dealer-btn.webp") center/104% 104% no-repeat}
+
+/* 3 德州下注籌碼小堆（HOLD-06）：原本 12px（桌機 15px）的單枚籌碼圓點大小不動（版面 0 位移），新圖畫在它的 ::after，置中放大到 18px（桌機 22px），
+   左右各多 3px 落在圓點與數字的間距（4／5px）內，不碰數字；數字照舊是 HTML。只改 .seat-bet>i，「已安排離桌」的 .small-chip 不動。 */
+:is(#app,#modal,#social-root) .seat-bet>i{position:relative}
+:is(#app,#modal,#social-root) .seat-bet>i::after{content:"";position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;pointer-events:none;background:url("/assets/pieces/bet-chips.webp") center/contain no-repeat}
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .seat-bet>i::after{width:18px;height:18px;margin:-9px 0 0 -9px}
+}
+
+/* 4 21 點牌靴（BJ-03）：空桌面（桌機 58×46、手機 66×52、高螢幕 76×60，桌機莊家區同一張）與牌靴資訊列行首（30×23）兩處，框的大小與位置不變。
+   新圖放最上層；原本的牌靴（--bj-shoe 的 SVG）照舊畫在下面，但縮成 69%、往左上靠，整個藏在新牌靴的不透明範圍裡：
+   新舊外形不同（舊的是寬扁木盒、新的是斜背牌靴），原尺寸疊在下面會從新圖邊緣露出來（重影）。縮小後圖載好時完全看不到舊的；
+   圖沒載好或被擋時看到原本的牌靴（小一點，不會空白）。 */
+:is(#app,#modal,#social-root) .arcade-blackjack :is(.arcade-empty-state,.blackjack-dealer)::after,:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-shoe::before{background:url("/assets/pieces/bj-shoe.webp") center/contain no-repeat,var(--bj-shoe) 12.9% 15.2%/69% 69% no-repeat}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* PR #4 integration: keep recovery next to the slot controls, after the spin

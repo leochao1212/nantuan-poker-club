@@ -104,3 +104,7 @@ window.ClubBonus=(()=>{
 (()=>{const load=name=>{const img=new Image();img.src='/assets/pieces/'+name+'.webp';return typeof img.decode==='function'?img.decode():new Promise((ok,fail)=>{img.onload=ok;img.onerror=fail;});};
  Promise.all(['slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb','card-j','card-q','card-k'].map(load)).then(()=>document.documentElement.classList.add('pieces-ready'),()=>{});
 })();
+// P22 第 1 批：主要按鈕金牌匾（完整版／窄版各左中右三張）、快捷籌碼 4 張、加減器金幣，共 11 張先在背景載好並解碼，全部成功才加 html.buttons-ready，CSS 才換圖（慢、失敗或被擋時維持原本的 CSS 按鈕；和上面零件的 pieces-ready 分開）。
+(()=>{const load=name=>{const img=new Image();img.src='/assets/buttons/'+name+'.webp';return typeof img.decode==='function'?img.decode():new Promise((ok,fail)=>{img.onload=ok;img.onerror=fail;});};
+ Promise.all(['btn-primary-l','btn-primary-m','btn-primary-r','btn-primary-sm-l','btn-primary-sm-m','btn-primary-sm-r','coin','chip-10','chip-50','chip-100','chip-500'].map(load)).then(()=>document.documentElement.classList.add('buttons-ready'),()=>{});
+})();

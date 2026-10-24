@@ -2048,6 +2048,69 @@ html.pieces-ready :is(#app,#modal,#social-root) .playing-card[data-suit]:is([dat
   :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span+[data-create]{grid-column:3/5}
 }
 
+/* ========== P22 按鈕第 1 批：主要按鈕金牌匾、快捷籌碼、加減器金幣 ========== */
+/* 圖在 static/assets/buttons/（11 張，約 47KB，3 倍螢幕 132px 高）。只在 html.buttons-ready 時生效：
+   bonus.js 檔尾先在背景把 11 張載好並解碼，全部成功才加這個 class；慢、失敗或被擋時維持原本的 CSS 按鈕（和零件的 pieces-ready 分開）。
+   不改 border 寬、padding、寬高、位置、文字，不用 transform、不加 !important。字仍是 HTML。
+   主要按鈕用 background 三層，不用 border-image：border-image 的端頭寬只能寫死 px（百分比是對寬度算的），
+   按鈕高 44～66px 都有，寫死會把端頭的黑桃章壓扁；background 端頭用「auto 100%」會跟著按鈕高度等比縮放。
+   三層：左端（靠左）、右端（靠右），底下是左右一樣的 4px 中段條拉滿整顆（端頭不透明的部分蓋住它，圓角 999px 把兩端裁成膠囊，和端頭外形吻合）。
+   中段條每一列都取兩端接縫那一欄的顏色，所以按鈕多寬、端頭多大，接縫都對得上。
+   完整版（兩端墨綠黑桃章）只給寬度在 320 與 393 都 ≥150px 的按鈕，用選擇器列出；其他都用窄版（兩端只有圓弧金邊）。不用 JS 量寬度。
+   德州「加注」(#raise-form) 是酒紅鍵，屬第 2 批，這批不動。 */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *){
+  --p22-l:url("/assets/buttons/btn-primary-sm-l.webp");--p22-r:url("/assets/buttons/btn-primary-sm-r.webp");--p22-m:url("/assets/buttons/btn-primary-sm-m.webp");
+  background:var(--p22-l) left center/auto 100% no-repeat,var(--p22-r) right center/auto 100% no-repeat,var(--p22-m) center/100% 100% no-repeat;
+  background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 5px #3a2a0d33;
+  color:var(--ink-deep);text-shadow:0 1px 0 #fff3cc80;opacity:1;filter:none}
+/* 完整版：#deal-hand、輪盤確認、骰寶確認、麻將出牌、轉帳送出、整列寬的 .full、每日／每小時領取、會所收益領取、升級會所、員工領取與派遣、大廳空狀態「選遊戲開桌」、礦區／爬塔「收手」。
+   不能整個寫 .gold-button：牌局紀錄「重播／結果」82px、重播「自動播放」74～98px、後台「調整籌碼」76～110px、「重新讀取重播」126px 也是 gold-button，放完整版兩端章會壓到字（審查 H1），這些走窄版。
+   例外改回窄版：21 點已確認時 #deal-hand 旁邊多一顆「修改下注」（320 寬只剩 156px，字放不進兩個黑桃章中間）；
+   骰寶 320 寬三顆並排（確認／清除／本局略過）時 #dice-roll 只剩 138px。選擇器前綴和上一條相同再加條件，權重才蓋得過。 */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):is(#deal-hand,#roulette-confirm,#dice-roll,#mj-discard,#transfer-submit,.full,#daily-claim,#hourly-claim,[data-passive-claim],[data-open-upgrades],[data-staff-collect],[data-staff-dispatch],.empty-tables>[data-lobby-jump],.risk-actions>*){
+  --p22-l:url("/assets/buttons/btn-primary-l.webp");--p22-r:url("/assets/buttons/btn-primary-r.webp");--p22-m:url("/assets/buttons/btn-primary-m.webp")}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *).button:is(.between-buttons>#deal-hand:not(:only-child)){
+  --p22-l:url("/assets/buttons/btn-primary-sm-l.webp");--p22-r:url("/assets/buttons/btn-primary-sm-r.webp");--p22-m:url("/assets/buttons/btn-primary-sm-m.webp")}
+@media(max-width:359px){
+  html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *).button:is(.dice-submit>#dice-roll:nth-last-child(3)){
+    --p22-l:url("/assets/buttons/btn-primary-sm-l.webp");--p22-r:url("/assets/buttons/btn-primary-sm-r.webp");--p22-m:url("/assets/buttons/btn-primary-sm-m.webp")}
+}
+/* 懸停微亮；按下：內陰影做出凹陷＋略暗（不位移）；停用：褪成灰金、字仍是深色可讀，和一般態一眼分得出；焦點沿用全站 3px 外框（跟著 999px 圓角） */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):hover:not(:disabled){filter:brightness(1.06) saturate(1.05)}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):active:not(:disabled){
+  filter:brightness(.92);box-shadow:inset 0 3px 7px #3a2200a6,inset 0 -1px 2px #fff3cc66}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):is(:disabled,[aria-disabled=true]){
+  filter:grayscale(.85) brightness(1.05) contrast(.85);opacity:.75;box-shadow:none;text-shadow:none}
+
+/* 快捷籌碼 10／50／100／500：照面額配色（10 墨綠、50 酒紅、100 墨黑、500 古金），籌碼畫在原本按鈕盒子正中央（直徑＝按鈕高 44px），盒子與點擊範圍不變。
+   數字：深金 #a87b16 加 1px 黑框。用 8 個方向的 text-shadow 描邊，不用 -webkit-text-stroke＋paint-order：
+   後者在 Chromium 123 以前與舊版 iOS Safari 不支援 HTML 文字的 paint-order，描邊會壓在字上把細的數字吃掉；text-shadow 兩個引擎結果一樣。 */
+html.buttons-ready :is(#app,#modal,#social-root) .point-presets>.button[data-point-preset]{
+  background:url("/assets/buttons/chip-10.webp") center/contain no-repeat;background-color:transparent;border-color:transparent;box-shadow:none;
+  color:#a87b16;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  text-shadow:1px 0 0 #000,-1px 0 0 #000,0 1px 0 #000,0 -1px 0 #000,.7px .7px 0 #000,-.7px .7px 0 #000,.7px -.7px 0 #000,-.7px -.7px 0 #000}
+html.buttons-ready :is(#app,#modal,#social-root) .point-presets>.button[data-point-preset="50"]{background-image:url("/assets/buttons/chip-50.webp")}
+html.buttons-ready :is(#app,#modal,#social-root) .point-presets>.button[data-point-preset="100"]{background-image:url("/assets/buttons/chip-100.webp")}
+html.buttons-ready :is(#app,#modal,#social-root) .point-presets>.button[data-point-preset="500"]{background-image:url("/assets/buttons/chip-500.webp")}
+
+/* 加減器 −／＋：金幣圓鈕（象牙圓心＋滾邊金圈），畫在原本盒子正中央，44px 點擊範圍不變；符號照舊是 HTML，墨綠 */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-stepper>.button[data-point-step],.raise-stepper>.raise-step){
+  background:url("/assets/buttons/coin.webp") center/contain no-repeat;background-color:transparent;border-color:transparent;box-shadow:none;color:var(--ink-deep)}
+
+/* 長字窄按鈕個別縮字級（不加寬）：百家樂押注鈕在 320 寬只有 86px，窄版兩端圓弧金邊會壓到第二行「淨贏 0.95:1」，該行 12px→11px */
+@media(max-width:374px){
+  html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{font-size:11px;letter-spacing:-.01em}
+}
+
+/* 百家樂「押莊」第二行「淨贏 0.95:1」：按鈕高 66px，第二行落在中段條高度 55～80% 的較暗區，墨綠字對底只有約 3.0～3.8。
+   不重出中段條（會破壞和兩端接縫的顏色），改給這行小字淺色光暈（和按鈕的奶金色同色），字外圈變亮、字仍是 HTML。 */
+html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{text-shadow:0 0 2px #fff3cc,0 0 1px #fff3cc}
+
+/* 籌碼與金幣的懸停、按下、停用（同一套）：按下時圖縮到 92% 並略暗，像被壓進去；停用時去色變淡 */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):hover:not(:disabled){filter:brightness(1.06)}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){background-size:auto 92%;filter:brightness(.9)}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):disabled{filter:grayscale(1) brightness(1.08);opacity:.55}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* PR #4 integration: keep recovery next to the slot controls, after the spin
@@ -2122,3 +2185,15 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:auto}
 }
 /* Narrow rank glyphs (especially J) must not crop the square suit artwork. */
 :is(#app,#modal,#social-root) .playing-card[data-suit]>b>i{background-size:contain;background-position:center}
+
+/* PR #7 integration: an opaque light outline keeps small labels legible
+   across the illustrated plaque's dark bands, including pressed states.
+   Shadows surround the glyphs without changing layout or replacing the art. */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *){
+  --p22-label-halo:1px 0 0 #fff3cc,-1px 0 0 #fff3cc,0 1px 0 #fff3cc,0 -1px 0 #fff3cc,.7px .7px 0 #fff3cc,-.7px .7px 0 #fff3cc,.7px -.7px 0 #fff3cc,-.7px -.7px 0 #fff3cc;
+  text-shadow:var(--p22-label-halo)}
+html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{text-shadow:var(--p22-label-halo)}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):is(:disabled,[aria-disabled=true]){text-shadow:none}
+/* The smallest controls have a 42px inner height. Limit both dimensions:
+   a height percentage alone enlarges circular artwork in portrait boxes. */
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){background-size:min(92%,40px) auto}

@@ -1901,6 +1901,37 @@ html:where([data-card-back=crimson],[data-card-back=jade]) :is(#app,#modal,#soci
 :is(#app,#modal,#social-root) details.night-supply>summary::after{content:"";flex:none;width:9px;height:15px;margin-left:auto;background:var(--chev) center/contain no-repeat;color:inherit;transition:transform .2s}
 :is(#app,#modal,#social-root) details.night-supply[open]>summary::after{content:"";transform:rotate(90deg)}
 
+/* P20 第 1 組零件：拉霸六種符號、骰寶骰面（?、1–6）換成寫實插畫（static/assets/pieces/*.webp，256px：手機上符號約 56px、骰子 58–64px，×3 倍螢幕要 168–192px）。
+   只用 CSS：用既有的 aria-label 分辨符號與點數（不改 JS）。新圖畫在 ::after（absolute，不佔版面、不吃點擊），跟著原節點一起做開獎動畫與傾斜。
+   圖載入失敗的退路：
+   - 骰子：新圖是不透明的整顆骰子，蓋住原本的象牙骰面、SVG 點數與「?」；圖沒載入時 ::after 是空的，原本的骰面照常看得到。
+   - 拉霸：新圖去背、有透明處，所以原本的 SVG 用 mask 藏起來——mask 第二層是同一張圖放大 40 倍、只取圖中一塊全不透明的區域，和第一層全黑做 XOR：
+     圖載入成功＝整塊不透明→XOR 後全透明（SVG 看不到）；圖載入失敗＝依規格當成透明黑→XOR 後全黑（SVG 照常顯示）。
+   拉霸開獎前的「?」（aria-label＝準備開轉）不換。 */
+:is(#app,#modal,#social-root) .slot-reel>span[aria-label="七"]{--piece:url(/assets/pieces/slot-777.webp)}
+:is(#app,#modal,#social-root) .slot-reel>span[aria-label="皇冠"]{--piece:url(/assets/pieces/slot-crown.webp)}
+:is(#app,#modal,#social-root) .slot-reel>span[aria-label="鑽石"]{--piece:url(/assets/pieces/slot-diamond.webp)}
+:is(#app,#modal,#social-root) .slot-reel>span[aria-label="鈴鐺"]{--piece:url(/assets/pieces/slot-bell.webp)}
+:is(#app,#modal,#social-root) .slot-reel>span[aria-label="櫻桃"]{--piece:url(/assets/pieces/slot-cherry.webp)}
+:is(#app,#modal,#social-root) .slot-reel>span[aria-label="BAR"]{--piece:url(/assets/pieces/slot-bar.webp)}
+:is(#app,#modal,#social-root) .slot-reel>span:is([aria-label="七"],[aria-label="皇冠"],[aria-label="鑽石"],[aria-label="鈴鐺"],[aria-label="櫻桃"],[aria-label="BAR"]){position:relative}
+:is(#app,#modal,#social-root) .slot-reel>span:is([aria-label="七"],[aria-label="皇冠"],[aria-label="鑽石"],[aria-label="鈴鐺"],[aria-label="櫻桃"],[aria-label="BAR"])::after{content:"";position:absolute;inset:13% 0;pointer-events:none;
+  background:var(--piece) center/contain no-repeat}
+/* 圖中 (120,133)/256 附近 13px 內六張都全不透明：mask 放大 4000%，位置 46.8% 52% 讓這一點落在 SVG 正中 */
+:is(#app,#modal,#social-root) .slot-reel>span:is([aria-label="七"],[aria-label="皇冠"],[aria-label="鑽石"],[aria-label="鈴鐺"],[aria-label="櫻桃"],[aria-label="BAR"])>.sym{
+  -webkit-mask:linear-gradient(#000 0 0),var(--piece) 46.8% 52%/4000% 4000% no-repeat;-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0),var(--piece) 46.8% 52%/4000% 4000% no-repeat;mask-composite:exclude}
+:is(#app,#modal,#social-root) .die-face[aria-label="等待收注開獎"]{--piece:url(/assets/pieces/dice-q.webp)}
+:is(#app,#modal,#social-root) .die-face[aria-label="1 點"]{--piece:url(/assets/pieces/dice-1.webp)}
+:is(#app,#modal,#social-root) .die-face[aria-label="2 點"]{--piece:url(/assets/pieces/dice-2.webp)}
+:is(#app,#modal,#social-root) .die-face[aria-label="3 點"]{--piece:url(/assets/pieces/dice-3.webp)}
+:is(#app,#modal,#social-root) .die-face[aria-label="4 點"]{--piece:url(/assets/pieces/dice-4.webp)}
+:is(#app,#modal,#social-root) .die-face[aria-label="5 點"]{--piece:url(/assets/pieces/dice-5.webp)}
+:is(#app,#modal,#social-root) .die-face[aria-label="6 點"]{--piece:url(/assets/pieces/dice-6.webp)}
+/* 骰身在圖中佔 14–242／256（89%）：往外擴 6.2%＋1.2px，讓骰身剛好蓋住原本骰面含 1px 金邊 */
+:is(#app,#modal,#social-root) .die-face:is([aria-label="等待收注開獎"],[aria-label="1 點"],[aria-label="2 點"],[aria-label="3 點"],[aria-label="4 點"],[aria-label="5 點"],[aria-label="6 點"])::after{content:"";position:absolute;inset:calc(-6.2% - 1.2px);pointer-events:none;
+  background:var(--piece) center/contain no-repeat}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* Keep all five community cards clear of the foreground pair on narrow tables. */

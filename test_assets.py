@@ -7,6 +7,7 @@ import server
 from realtime import Hub,WriteQueue
 
 COVERS=('holdem','big2','blackjack','roulette','baccarat','slot','mines','dice','tower','inbetween','mahjong')
+PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6')
 
 class StaticImages(unittest.TestCase):
     def setUp(self):
@@ -28,6 +29,19 @@ class StaticImages(unittest.TestCase):
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
     def test_unknown_or_tricky_cover_paths_are_404(self):
         for path in ('/assets/covers/nope.webp','/assets/covers/HOLDEM.webp','/assets/covers/holdem.webp/','/assets/covers/../poker-night.webp','/assets/covers/holdem.png','/assets/covers/%68oldem.webp'):
+            self.assertEqual(self.get(path)[0],404,path)
+    def test_every_piece_is_served(self):
+        self.assertEqual(len(PIECES),13)
+        for name in PIECES:
+            status,headers,body=self.get(f'/assets/pieces/{name}.webp')
+            self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
+            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name);self.assertIn('ETag',headers)
+            self.assertEqual(self.get(f'/assets/pieces/{name}.webp',{'If-None-Match':headers['ETag']})[0],304,name)
+    def test_unknown_or_tricky_piece_paths_are_404(self):
+        for path in ('/assets/pieces/nope.webp','/assets/pieces/dice-0.webp','/assets/pieces/dice-7.webp','/assets/pieces/dice-1-256.webp','/assets/pieces/slot-seven.webp',
+                     '/assets/pieces/SLOT-777.webp','/assets/pieces/slot-777.webp/','/assets/pieces/slot-777.png','/assets/pieces/%73lot-777.webp','/assets/pieces/',
+                     '/assets/pieces/../covers/dice.webp','/assets/pieces/..%2Fcovers%2Fdice.webp','/assets/pieces/%2e%2e/covers/dice.webp','/assets/pieces//slot-777.webp',
+                     '/assets/pieces/../../server.py','/assets/pieces/dice-1.webp%00.png'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_images_revalidate_with_etag(self):
         status,headers,body=self.get('/assets/covers/holdem.webp')

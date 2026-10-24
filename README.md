@@ -53,8 +53,10 @@ docker compose logs -f poker
 
 ## 測試
 
+Python 測試集中在 tests/python/，瀏覽器測試在 tests/browser/；各檔用途與單跑方式見 [測試目錄](tests/README.md)。
+
 ~~~sh
-python -m unittest discover -v
+python -m unittest discover -s tests/python -t . -v
 node scripts/check-js.cjs
 ~~~
 

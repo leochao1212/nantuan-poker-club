@@ -48,7 +48,8 @@ result_stats.py           歷史結算統計投影
 backup.py                 SQLite Backup API
 manage_admin.py           由主機操作者建立獨立管理員
 static/                   不需打包的網站與素材
-test_*.py                 後端回歸測試（保留，不列為垃圾檔）
+tests/python/test_*.py    後端回歸測試（45 檔，使用套件相對引用）
+tests/browser/            瀏覽器互動與排版測試
 ~~~
 
 ## 一次遊戲操作

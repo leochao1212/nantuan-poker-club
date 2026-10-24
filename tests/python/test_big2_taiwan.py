@@ -44,15 +44,33 @@ class TaiwanBigTwo(unittest.TestCase):
         self.assertGreater(a.big2_score(['4s','4c']),a.big2_score(['4h','4d']))
         self.assertGreater(a.big2_score('3s 5s 7s 9s Qs'.split()),a.big2_score('3s 5s 7s 9s Js'.split()))
 
-    def test_first_club_three_then_previous_winner_then_fallback_on_departure(self):
+    def test_every_hand_requires_club_three_even_when_previous_winner_stays(self):
+        r=room('big2',4,stack=10000)
+        for number in range(4):
+            clock=101+number*10
+            # Rotate the full deck so all four seats hold club three in turn.
+            deck=list(p.DECK[number:])+list(p.DECK[:number])
+            a.start_hand(r,clock,deck=deck);h=r['hand']
+            starter=next(q for q in h['players'] if '3c' in q['cards'])
+            self.assertEqual(h['first_card'],'3c');self.assertEqual(h['actor'],starter['user_id'])
+            self.assertEqual(a.legal_actions(r,starter['user_id'])['first_card'],'3c')
+            if number:self.assertNotEqual(h['actor'],r['big2_last_winner'])
+            other=next(c for c in starter['cards'] if c!='3c');before=copy.deepcopy(r)
+            with self.assertRaises(p.RuleError):a.act(r,starter['user_id'],'play',clock+1,{'cards':[other]})
+            self.assertEqual(r,before)
+            a.act(r,starter['user_id'],'play',clock+1,{'cards':['3c']})
+            self.assertEqual(h['current_play'],['3c'])
+            self.assertEqual(h['actor'],a._big2_order(r,h['players'],starter['seat'])[0]['user_id'])
+            self.assertIsNone(a.legal_actions(r,h['actor'])['first_card'])
+            winner=starter['user_id'];starter['cards']=[];a._finish_big2(r,winner,clock+2)
+
+    def test_replacement_player_can_start_with_club_three_after_winner_leaves(self):
         r=room('big2',4,stack=10000);a.start_hand(r,101,deck=p.DECK)
-        self.assertEqual(r['hand']['first_card'],'3c');self.assertIn('3c',a._player(r,r['hand']['actor'])['cards'])
-        winner=2;r['hand']['players'][1]['cards']=[];a._finish_big2(r,winner,102)
-        a.start_hand(r,106,deck=p.DECK);self.assertEqual(r['hand']['actor'],winner);self.assertIsNone(r['hand']['first_card'])
-        own=a._player(r,winner);a.act(r,winner,'play',107,{'cards':[own['cards'][-1]]})
-        self.assertEqual(r['hand']['actor'],1)  # Seat 1 -> seat 0, counter-clockwise.
-        a._finish_big2(r,winner,108);a.leave(r,winner,109);a.sit(r,5,'Replacement',109,buy_in=10000)
-        a.start_hand(r,112,deck=p.DECK);self.assertEqual(r['hand']['first_card'],'3c')
+        winner=r['hand']['actor'];a._player(r,winner)['cards']=[];a._finish_big2(r,winner,102)
+        a.leave(r,winner,103);a.sit(r,5,'Replacement',103,buy_in=10000)
+        a.start_hand(r,106,deck=p.DECK)
+        self.assertEqual(r['hand']['first_card'],'3c')
+        self.assertIn('3c',a._player(r,r['hand']['actor'])['cards'])
 
     def test_top_card_is_enforced_and_timeout_lead_obeys_it(self):
         r=room('big2',4);a.start_hand(r,101);h=r['hand']

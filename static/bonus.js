@@ -108,3 +108,7 @@ window.ClubBonus=(()=>{
 (()=>{const load=name=>{const img=new Image();img.src='/assets/buttons/'+name+'.webp';return typeof img.decode==='function'?img.decode():new Promise((ok,fail)=>{img.onload=ok;img.onerror=fail;});};
  Promise.all(['btn-primary-l','btn-primary-m','btn-primary-r','btn-primary-sm-l','btn-primary-sm-m','btn-primary-sm-r','coin','chip-10','chip-50','chip-100','chip-500'].map(load)).then(()=>document.documentElement.classList.add('buttons-ready'),()=>{});
 })();
+// P22 第 2 批：次要按鈕（象牙琺瑯）完整版／窄版各左中右三張、危險按鈕（酒紅漆面）窄版三張、分頁膠囊選中／未選各三張、牌桌與操作卡金框，加上圓形圖示鈕與轉帳加減器用的金幣，共 18 張先在背景載好並解碼，全部成功才加 html.buttons2-ready，CSS 才換圖（慢、失敗或被擋時維持原本的 CSS 樣式；和第 1 批的 buttons-ready 分開，互不拖累）。
+(()=>{const load=name=>{const img=new Image();img.src='/assets/buttons/'+name+'.webp';return typeof img.decode==='function'?img.decode():new Promise((ok,fail)=>{img.onload=ok;img.onerror=fail;});};
+ Promise.all(['btn-secondary-l','btn-secondary-m','btn-secondary-r','btn-secondary-sm-l','btn-secondary-sm-m','btn-secondary-sm-r','btn-danger-sm-l','btn-danger-sm-m','btn-danger-sm-r','tab-on-l','tab-on-m','tab-on-r','tab-off-l','tab-off-m','tab-off-r','frame-table','frame-card','coin'].map(load)).then(()=>document.documentElement.classList.add('buttons2-ready'),()=>{});
+})();

@@ -8,6 +8,9 @@ from realtime import Hub,WriteQueue
 
 COVERS=('holdem','big2','blackjack','roulette','baccarat','slot','mines','dice','tower','inbetween','mahjong')
 BUTTONS=('btn-primary-l','btn-primary-m','btn-primary-r','btn-primary-sm-l','btn-primary-sm-m','btn-primary-sm-r','coin','chip-10','chip-50','chip-100','chip-500')
+BUTTONS2=('btn-secondary-l','btn-secondary-m','btn-secondary-r','btn-secondary-sm-l','btn-secondary-sm-m','btn-secondary-sm-r',
+          'btn-danger-sm-l','btn-danger-sm-m','btn-danger-sm-r',
+          'tab-on-l','tab-on-m','tab-on-r','tab-off-l','tab-off-m','tab-off-r','frame-table','frame-card')
 PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb','card-j','card-q','card-k')
 
 class StaticImages(unittest.TestCase):
@@ -60,12 +63,33 @@ class StaticImages(unittest.TestCase):
             self.assertEqual(self.get(f'/assets/buttons/{name}.webp',{'If-None-Match':'"stale"'})[0],200,name)
     def test_unknown_or_tricky_button_paths_are_404(self):
         for path in ('/assets/buttons/nope.webp','/assets/buttons/btn-primary.webp','/assets/buttons/btn-primary-sm.webp','/assets/buttons/btn-primary-x.webp',
-                     '/assets/buttons/btn-primary-lm.webp','/assets/buttons/btn-secondary-l.webp','/assets/buttons/btn-primary-sm-l-256.webp',
+                     '/assets/buttons/btn-primary-lm.webp','/assets/buttons/btn-tertiary-l.webp','/assets/buttons/btn-primary-sm-l-256.webp',
                      '/assets/buttons/BTN-PRIMARY-L.webp','/assets/buttons/coin.png','/assets/buttons/coin.webp/','/assets/buttons/coins.webp','/assets/buttons/coin-pressed.webp',
                      '/assets/buttons/chip-5.webp','/assets/buttons/chip-1000.webp','/assets/buttons/chip-.webp','/assets/buttons/chip-10.png','/assets/buttons/CHIP-10.webp',
                      '/assets/buttons/%63oin.webp','/assets/buttons/','/assets/buttons//coin.webp','/assets/buttons/../pieces/dice-1.webp',
                      '/assets/buttons/..%2Fpieces%2Fdice-1.webp','/assets/buttons/%2e%2e/covers/dice.webp','/assets/buttons/../../server.py','/assets/buttons/coin.webp%00.png',
                      '/assets/pieces/coin.webp','/assets/covers/chip-10.webp','/assets/chip-10.webp'):
+            self.assertEqual(self.get(path)[0],404,path)
+    def test_every_batch2_button_image_is_served(self):
+        # P22 batch 2: secondary plaques (full and narrow), the narrow danger plaque, tab pills and the two gold frames
+        self.assertEqual(len(BUTTONS2),17);self.assertEqual(len(set(BUTTONS2)&set(BUTTONS)),0)
+        for name in BUTTONS2:
+            status,headers,body=self.get(f'/assets/buttons/{name}.webp')
+            self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
+            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name)
+            self.assertEqual(headers['ETag'],'"'+hashlib.sha256(body).hexdigest()+'"',name)
+            status,_,again=self.get(f'/assets/buttons/{name}.webp',{'If-None-Match':headers['ETag']})
+            self.assertEqual(status,304,name);self.assertEqual(again,b'',name)
+            self.assertEqual(self.get(f'/assets/buttons/{name}.webp',{'If-None-Match':'"stale"'})[0],200,name)
+    def test_unknown_or_tricky_batch2_button_paths_are_404(self):
+        for path in ('/assets/buttons/btn-secondary.webp','/assets/buttons/btn-secondary-sm.webp','/assets/buttons/btn-secondary-x.webp','/assets/buttons/btn-secondary-lm.webp',
+                     '/assets/buttons/btn-secondary-pressed.webp','/assets/buttons/btn-secondary-disabled.webp','/assets/buttons/btn-secondary-sm-l-256.webp','/assets/buttons/BTN-SECONDARY-L.webp',
+                     '/assets/buttons/btn-danger.webp','/assets/buttons/btn-danger-sm.webp','/assets/buttons/btn-danger-l.webp','/assets/buttons/btn-danger-m.webp','/assets/buttons/btn-danger-r.webp','/assets/buttons/btn-danger-sm-x.webp','/assets/buttons/btn-danger-l.png','/assets/buttons/btn-dangers-l.webp',
+                     '/assets/buttons/btn-tab-on-l.webp','/assets/buttons/tab-on.webp','/assets/buttons/tab-off.webp','/assets/buttons/tab-on-x.webp','/assets/buttons/tab-sm-l.webp',
+                     '/assets/buttons/tab-on-sm-l.webp','/assets/buttons/tab-off-l.png','/assets/buttons/TAB-ON-L.webp','/assets/buttons/tab-on-l.webp/','/assets/buttons/%74ab-on-l.webp',
+                     '/assets/buttons/frame.webp','/assets/buttons/frame-tables.webp','/assets/buttons/frame-card-l.webp','/assets/buttons/frame-deco.webp','/assets/buttons/frame-table.png',
+                     '/assets/buttons/FRAME-CARD.webp','/assets/buttons/frame-card.webp%00.png','/assets/buttons/../buttons/frame-card.webp','/assets/buttons/..%2Fbuttons%2Ftab-on-l.webp',
+                     '/assets/buttons//tab-off-r.webp','/assets/pieces/frame-table.webp','/assets/covers/tab-on-l.webp','/assets/frame-card.webp','/assets/tab-off-m.webp'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_images_revalidate_with_etag(self):
         status,headers,body=self.get('/assets/covers/holdem.webp')

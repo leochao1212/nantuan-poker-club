@@ -403,7 +403,7 @@ class Handler(BaseHTTPRequestHandler):
                                         cell(people[e["user_id"]]["nickname"]), f'{e["buy_in"]/100:.2f}',
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
-            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-[jqk])\.webp',path) or re.fullmatch(r'/assets/buttons/(?:btn-primary(?:-sm)?-[lmr]|coin|chip-(?:10|50|100|500))\.webp',path):
+            elif path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-[jqk])\.webp',path) or re.fullmatch(r'/assets/buttons/(?:btn-(?:primary|secondary)(?:-sm)?-[lmr]|btn-danger-sm-[lmr]|tab-(?:on|off)-[lmr]|frame-(?:table|card)|coin|chip-(?:10|50|100|500))\.webp',path):
                 artwork=(ROOT/'static'/path[1:]).read_bytes()
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
                 self.reply(200,artwork,content_type='image/webp',

@@ -2106,10 +2106,120 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-stepper>.button[data
    不重出中段條（會破壞和兩端接縫的顏色），改給這行小字淺色光暈（和按鈕的奶金色同色），字外圈變亮、字仍是 HTML。 */
 html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{text-shadow:0 0 2px #fff3cc,0 0 1px #fff3cc}
 
-/* 籌碼與金幣的懸停、按下、停用（同一套）：按下時圖縮到 92% 並略暗，像被壓進去；停用時去色變淡 */
+/* 籌碼與金幣的懸停、按下、停用（同一套）：按下時圖縮到寬 92%（上限 40px：直立的 44×52 盒子也不會放大被切，和朋友 PR #7 整合修正相同）並略暗，像被壓進去；停用時去色變淡 */
 html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):hover:not(:disabled){filter:brightness(1.06)}
-html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){background-size:auto 92%;filter:brightness(.9)}
+html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){background-size:min(92%,40px) auto;filter:brightness(.9)}
 html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):disabled{filter:grayscale(1) brightness(1.08);opacity:.55}
+
+/* ========== P22 按鈕第 2 批：次要象牙琺瑯、危險酒紅漆面、圓形金幣圖示鈕、分頁／篩選膠囊、牌桌與操作卡金框 ========== */
+/* 圖在 static/assets/buttons/（新增 17 張，約 66KB，3 倍螢幕 132px 高；金幣沿用第 1 批 coin.webp）。只在 html.buttons2-ready 時生效：
+   bonus.js 檔尾第 2 批另一段預載，18 張（含 coin）全部載好並解碼才加這個 class；慢、失敗或被擋時維持原本的 CSS 按鈕。和第 1 批 buttons-ready 分開，互不拖累。
+   做法同第 1 批：三層 background（左端靠左、右端靠右、底下 4px 中段條拉滿），端頭「auto 100%」跟按鈕高度等比；圓角 999px 把兩端裁成膠囊。
+   不改 border 寬、padding、寬高、位置、文字、事件，不用 transform、不加 !important。按下／停用用 CSS（filter、內陰影），不另出圖。
+   完整版（兩端金菱釘＋葉飾）只給寬度夠的按鈕，用選擇器列出；其他都用窄版（兩端只有圓弧金邊）。
+   危險按鈕全站沒有一顆 ≥150px（手機、桌機都是 68～97px），只上窄版；完整版切片留在美術稿，不放進網站。 */
+
+/* 1 次要按鈕：象牙琺瑯＋金鑲邊、墨綠字。含牌桌底列有框的「離開牌桌／本局後離桌」(#leave-table)。排除：快捷籌碼／加減器（第 1 批籌碼、金幣）、轉帳加減器（本批金幣）、桌名列聊天／紀錄（手機是金幣，見 3）、
+   切換鈕（有 aria-pressed，走分頁膠囊）、後台「刪除帳號」（字色被 profile.css 與上面第 278 行既有的 !important 鎖成酒紅，維持原樣）。 */
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]){
+  --p22b-l:url("/assets/buttons/btn-secondary-sm-l.webp");--p22b-r:url("/assets/buttons/btn-secondary-sm-r.webp");--p22b-m:url("/assets/buttons/btn-secondary-sm-m.webp");
+  background:var(--p22b-l) left center/auto 100% no-repeat,var(--p22b-r) right center/auto 100% no-repeat,var(--p22b-m) center/100% 100% no-repeat;
+  background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 4px #3a2a0d29;
+  color:var(--ink-deep);text-shadow:0 1px 0 #fffaf099}
+/* 完整版（每種寬度都 ≥150px）：桌上「從錢包帶入籌碼」、會所未解鎖員工「招募」、整列寬的 .full、錢包「點數轉帳／紀錄」 */
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):is(#rebuy-table,.staff-card .button,.full,.wallet-transfer-link){
+  --p22b-l:url("/assets/buttons/btn-secondary-l.webp");--p22b-r:url("/assets/buttons/btn-secondary-r.webp");--p22b-m:url("/assets/buttons/btn-secondary-m.webp")}
+/* 只有手機版（≤760px）夠寬：成員頁「查看我的名片」、邀請「複製網址與邀請碼」、百家樂整列「略過」（桌機分別只剩 120、114、93px） */
+@media(max-width:760px){
+  html.buttons2-ready :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):is(#copy-invite,.page-heading>a,.baccarat-actions>[data-arcade-action=skip]){
+    --p22b-l:url("/assets/buttons/btn-secondary-l.webp");--p22b-r:url("/assets/buttons/btn-secondary-r.webp");--p22b-m:url("/assets/buttons/btn-secondary-m.webp")}
+}
+/* 桌機（≥761px）桌名列聊天／紀錄是有字的長鈕（95～134px），用次要窄版 */
+@media(min-width:761px){
+  html.buttons2-ready :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.button:not([aria-pressed]){
+    background:url("/assets/buttons/btn-secondary-sm-l.webp") left center/auto 100% no-repeat,url("/assets/buttons/btn-secondary-sm-r.webp") right center/auto 100% no-repeat,url("/assets/buttons/btn-secondary-sm-m.webp") center/100% 100% no-repeat;
+    background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 4px #3a2a0d29;color:var(--ink-deep);text-shadow:0 1px 0 #fffaf099}
+}
+/* 懸停微亮；按下：內陰影凹陷＋略暗（不位移）；停用：去色變淡（舊版也是半透明，WCAG 對停用元件豁免）；焦點沿用全站 3px 外框（跟著 999px 圓角） */
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):hover:not(:disabled){filter:brightness(1.03)}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):active:not(:disabled){
+  filter:brightness(.94);box-shadow:inset 0 3px 6px #3a220059,inset 0 -1px 2px #fff3cc66}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):is(:disabled,[aria-disabled=true]){
+  filter:grayscale(.8) contrast(.88);opacity:.65;box-shadow:none;text-shadow:none}
+
+/* 長字窄按鈕個別縮字級（不加寬）：會所設施「2,000 點 · 升級」手機 100～104px，字會壓到窄版兩端的圓弧金邊，12.5→11.5px（寬度是固定的，縮字不影響盒子；桌機 301px 不用縮）。
+   麻將底列「本局後離桌」「結束牌桌」寬度跟著字走，縮字會讓按鈕變窄，所以不縮（字離金邊內緣差約 1px，看不出來）。 */
+@media(max-width:760px){
+  html.buttons2-ready :is(#app,#modal,#social-root) .facility .button.ghost{font-size:11.5px}
+}
+
+/* 2 危險按鈕：酒紅漆面＋金鑲邊、淡金字（＋細暗影）。結束牌桌、德州 All-in、德州「加注」（第 1 批排除的那顆）。窄版。
+   :not([aria-pressed]) 只為了權重：要高過既有「加注」懸停時的漸層背景（#raise-form .button.primary:hover:not(:disabled)），這幾顆本來就不是切換鈕。
+   登出是圖示鈕（手機頂欄 32px 的 #mobile-logout 維持原樣；桌機側欄 #logout 走 3 的金幣圓鈕）。後台「刪除帳號」見 1 的說明，維持原樣。 */
+html.buttons2-ready :is(#app,#modal,#social-root) :is(#close-table,.button.allin-button,#raise-form .button.primary):not([aria-pressed]){
+  background:url("/assets/buttons/btn-danger-sm-l.webp") left center/auto 100% no-repeat,url("/assets/buttons/btn-danger-sm-r.webp") right center/auto 100% no-repeat,url("/assets/buttons/btn-danger-sm-m.webp") center/100% 100% no-repeat;
+  background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 5px #4a0d1033;
+  color:#ffe7b0;text-shadow:0 1px 1px #2a0709b3,0 0 2px #2a070966}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(#close-table,.button.allin-button,#raise-form .button.primary):not([aria-pressed]):hover:not(:disabled){filter:brightness(1.07)}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(#close-table,.button.allin-button,#raise-form .button.primary):not([aria-pressed]):active:not(:disabled){
+  filter:brightness(.9);box-shadow:inset 0 3px 7px #1a0003a6,inset 0 -1px 2px #ffb4a040}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(#close-table,.button.allin-button,#raise-form .button.primary):not([aria-pressed]):is(:disabled,[aria-disabled=true]){
+  filter:grayscale(.75) brightness(1.1) contrast(.85);opacity:.7;box-shadow:none}
+
+/* 3 圓形圖示鈕：金幣（滾邊金圈＋象牙圓心），圖示照舊是 HTML／SVG、墨綠。返回、對話框關閉、聊天關閉、桌機頂欄轉帳與側欄登出；
+   手機（≤760px）桌名列的聊天／紀錄（含麻將）本來就只顯示圖示，也換金幣。金幣畫在原本盒子正中央，盒子與點擊範圍不變（47×44 的鈕畫 44px 金幣）。
+   手機頂欄 32px 的登出、麥克風鈕維持原樣。 */
+html.buttons2-ready :is(#app,#modal,#social-root) .icon-button:not(.mobile-logout,.global-voice-mute){
+  background:url("/assets/buttons/coin.webp") center/contain no-repeat;background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:none;color:var(--ink-deep)}
+html.buttons2-ready :is(#app,#modal,#social-root) .icon-button:not(.mobile-logout,.global-voice-mute):hover:not(:disabled){filter:brightness(1.06)}
+/* 按下：金幣縮到 92% 並略暗（圖示鈕都是橫的或正方形，依高度算就是較短邊，不會放大被切） */
+html.buttons2-ready :is(#app,#modal,#social-root) .icon-button:not(.mobile-logout,.global-voice-mute):active:not(:disabled){background-size:auto 92%;filter:brightness(.9)}
+html.buttons2-ready :is(#app,#modal,#social-root) .icon-button:not(.mobile-logout,.global-voice-mute):disabled{filter:grayscale(1) brightness(1.08);opacity:.55}
+@media(max-width:760px){
+  /* :not([aria-pressed]) 只為了權重高過既有 .button.ghost 懸停時的底色規則 */
+  html.buttons2-ready :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.button:not([aria-pressed]){
+    background:url("/assets/buttons/coin.webp") center/contain no-repeat;background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:none;color:var(--ink-deep)}
+  html.buttons2-ready :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.button:not([aria-pressed]):hover:not(:disabled){filter:brightness(1.06)}
+  html.buttons2-ready :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.button:not([aria-pressed]):active:not(:disabled){background-size:auto 92%;filter:brightness(.9)}
+  /* 麻將桌名列「紀錄」手機版是字不是圖示（44px 金幣的象牙圓心約 28px），字縮到 11px 才不壓到金圈 */
+  html.buttons2-ready :is(#app,#modal,#social-root) .mj-heading>#show-history{font-size:11px}
+}
+
+/* 4 轉帳頁加減器 −／＋：改成第 1 批的金幣（48×62 直立盒子，金幣 48px 置中；按下依寬度 92%，直立盒子也不會放大被切）。
+   .ghost:not([aria-pressed]) 只為了權重高過既有 .button.ghost 懸停時的底色規則。 */
+html.buttons2-ready :is(#app,#modal,#social-root) .transfer-stepper>.button.ghost:not([aria-pressed]){
+  background:url("/assets/buttons/coin.webp") center/contain no-repeat;background-color:transparent;border-color:transparent;box-shadow:none;color:var(--ink-deep)}
+html.buttons2-ready :is(#app,#modal,#social-root) .transfer-stepper>.button.ghost:not([aria-pressed]):hover:not(:disabled){filter:brightness(1.06)}
+html.buttons2-ready :is(#app,#modal,#social-root) .transfer-stepper>.button.ghost:not([aria-pressed]):active:not(:disabled){background-size:92% auto;filter:brightness(.9)}
+html.buttons2-ready :is(#app,#modal,#social-root) .transfer-stepper>.button.ghost:not([aria-pressed]):disabled{filter:grayscale(1) brightness(1.08);opacity:.55}
+
+/* 5 分頁／篩選膠囊：未選＝奶油面＋細金邊、墨綠字；選中＝墨綠漆面＋金邊、淡金字（兩態底色深淺差很大，不只靠色相）。
+   所有 aria-pressed 的 .button（排行與帳號／後台分頁、收藏篩選、資產期間、語音頻道、輪盤「每次加注」、爬塔難度、射龍門方向），加上登入頁分頁（aria-selected）。
+   設計稿的膠囊沒有勾號，選中改用墨綠底表示，原本角落的 ✓ 拿掉（膠囊右上角在圓弧外，勾號會掉到按鈕外面）。語音的靜音／只聽（#voice-mute、#voice-listen）照舊。 */
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected]){
+  --p22t-l:url("/assets/buttons/tab-off-l.webp");--p22t-r:url("/assets/buttons/tab-off-r.webp");--p22t-m:url("/assets/buttons/tab-off-m.webp");
+  background:var(--p22t-l) left center/auto 100% no-repeat,var(--p22t-r) right center/auto 100% no-repeat,var(--p22t-m) center/100% 100% no-repeat;
+  background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 1px 3px #3a2a0d24;
+  color:var(--ink-deep);text-shadow:none}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected]) :is(small,span,b,strong){color:inherit}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected]) small{color:var(--ink-2)}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed=true]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected=true]){
+  --p22t-l:url("/assets/buttons/tab-on-l.webp");--p22t-r:url("/assets/buttons/tab-on-r.webp");--p22t-m:url("/assets/buttons/tab-on-m.webp");
+  box-shadow:0 2px 4px #0b241b47;color:#f3d58e;
+  /* 1px 墨綠描邊：兩行字的分頁（爬塔難度、射龍門方向）第一行會落在膠囊上緣的亮綠高光與金邊上，描邊讓字和底分開（同第 1 批主要按鈕的淺色描邊做法） */
+  text-shadow:1px 0 0 #06301c,-1px 0 0 #06301c,0 1px 0 #06301c,0 -1px 0 #06301c,.7px .7px 0 #06301c,-.7px .7px 0 #06301c,.7px -.7px 0 #06301c,-.7px -.7px 0 #06301c}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed=true]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected=true]) :is(small,span,b,strong){color:#f3d58e}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed=true]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected=true]) small{color:#efe0b8}
+html.buttons2-ready :is(#app,#modal,#social-root) .button[aria-pressed=true]:not(#voice-mute,#voice-listen)::after{content:none}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected]):hover:not(:disabled){filter:brightness(1.04)}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected]):active:not(:disabled){filter:brightness(.94);box-shadow:inset 0 2px 5px #1a120659}
+html.buttons2-ready :is(#app,#modal,#social-root) :is(.button[aria-pressed]:not(#voice-mute,#voice-listen),.auth-tabs>button[aria-selected]):disabled{filter:grayscale(.55) contrast(.9);opacity:.7;box-shadow:none}
+
+/* 6 金框（九宮格）：牌桌雕花框（三層金線＋四角卷草與菱釘）換掉 --frame 的內嵌 SVG，切片、寬度、往外 4px 的寫法和原本一樣（盒子尺寸不變，畫在子元素底下、不吃點擊）；
+   操作卡（.table-control-area）換細雙線金框＋四角金菱：border 寬不變（圖畫在邊框層，往內 14px，蓋在內距上、在內容底下），原本的內雙線陰影拿掉免得疊三層。
+   border-image 不跟圓角走，卡片圓角收小到 8px，讓四角金菱蓋住轉角。德州、麻將的胡桃木框不受影響。 */
+html.buttons2-ready{--frame:url("/assets/buttons/frame-table.webp") 108 / 36px / 4px stretch}
+html.buttons2-ready :is(#app,#modal,#social-root) .table-control-area{border-image:url("/assets/buttons/frame-card.webp") 42 / 14px / 0 stretch;border-radius:8px;box-shadow:var(--shadow-soft)}
 
 /*==== 奶油白主題 結束 ====*/
 

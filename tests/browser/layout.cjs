@@ -35,6 +35,7 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
      await page.goto(base+'/#'+route);await page.waitForFunction(()=>lobby&&liveReady);
      if(selector)try{await page.waitForSelector(selector,{timeout:10000});}catch(e){await page.screenshot({path:path.join(out,'failure-'+engine+'-'+name+'.png')});throw e;}
      await page.evaluate(()=>document.fonts.ready);await pause(120);
+     await require('./table-controls.cjs')(page,engine,mobile,name,out);
      if(name==='holdem'){const colors=await page.evaluate(()=>{const html=document.documentElement,old=html.dataset.cardBack,card=document.querySelector('.playing-card.covered'),values={};for(const key of ['jade','crimson']){html.dataset.cardBack=key;values[key]=getComputedStyle(card).backgroundColor;}if(old===undefined)delete html.dataset.cardBack;else html.dataset.cardBack=old;return values;});assert.deepEqual(colors,{jade:'rgb(22, 75, 63)',crimson:'rgb(101, 42, 58)'},'Equipped card backs must override the default theme');}
      if(name==='gate'){
       const choices=page.locator('[data-gate-direction]:not(:disabled)');
@@ -47,9 +48,12 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       const y=await page.locator('#deal-hand').evaluate(e=>e.getBoundingClientRect().top);
       for(let spin=0;spin<3;spin++){const before=await page.evaluate(()=>room.hand_no);await page.locator('#deal-hand').click();await page.waitForFunction(n=>room.hand_no>n&&!busy&&!pendingOperation,before);assert.ok(Math.abs((await page.locator('#deal-hand').evaluate(e=>e.getBoundingClientRect().top))-y)<2,'Slot start button moved after result');}
      }
-     for(const [width,height] of mobile?[[320,800],[375,812],[393,852],[844,390]]:[[768,1024],[1366,900],[1920,1080]]){
+     const sizes=mobile?[[320,800],[375,812],[393,852],[844,390]]:[[768,1024],[1366,900],[1920,1080]];
+     if(name==='gate')sizes.push([760,740],[761,740],[800,740],[1000,740],[1024,768]);
+     for(const [width,height] of sizes){
       await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));await pause(40);
       const m=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src),main:!!document.querySelector('#main')}));
+      if(m.scroll>m.width+1){await page.screenshot({path:path.join(out,`${engine}-${name}-${width}-overflow.png`),fullPage:true});const overflowing=await page.evaluate(()=>[...document.querySelectorAll('#main *')].map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,right:r.right,width:r.width};}).filter(e=>e.width>0&&e.right>innerWidth+1).slice(-20));fs.writeFileSync(path.join(out,`${engine}-${name}-${width}-overflow.json`),JSON.stringify(overflowing,null,2));}
       assert.ok(m.main,name+' missing main');assert.ok(m.scroll<=m.width+1,engine+' '+name+' overflow '+JSON.stringify(m));assert.deepEqual(m.broken,[],engine+' '+name+' broken images');
       if(name==='slot'){
        await page.waitForFunction(()=>document.documentElement.classList.contains('pieces-ready'));

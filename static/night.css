@@ -80,7 +80,7 @@
 .rules-game-label{align-items:center;gap:12px}.rules-game-label>select{flex:1 1 180px;width:auto;min-width:0}.rules-game-label{white-space:nowrap}
 .admin-summary{margin-bottom:18px}.admin-toolbar{position:relative}.admin-account{min-width:0}
 .recovery-notice{min-height:32px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:13px;color:#dce7f0;background:#172532;padding:0 12px;visibility:hidden}
-.recovery-notice.has-message{visibility:visible}.recovery-notice .text-button{min-height:32px;padding:3px 8px;font-size:13px}
+.recovery-notice.has-message{visibility:visible}.recovery-notice .text-button{min-height:44px;padding:3px 8px;font-size:13px}
 .holdem-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:18px;align-items:start}
 .holdem-layout>.table-arena{width:100%;height:clamp(390px,calc(100svh - 240px),560px);margin:0}
 .holdem-decision{min-width:0}.holdem-decision .table-control-area{position:static;margin:10px 0 0;padding:16px;min-height:0}
@@ -2454,4 +2454,76 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data
   :is(#app,#modal,#social-root) .baccarat-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
   :is(#app,#modal,#social-root) .baccarat-actions>[data-arcade-action=skip]{grid-column:auto;min-height:48px;align-self:center}
   html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{font-size:12px;letter-spacing:normal}
+}
+/*==== P23／P24 牌桌首屏（主題區塊外；只改畫面）====*/
+/* P24-1／P25：手機牌桌的提示條疊在頂欄按鈕下緣與標題列按鈕上緣之間的空隙（約 18px），不佔位置（上下負邊距相抵）；
+   整條不接收點擊，需要手動恢復時另外展開完整觸控列；一般狀態與操作送出期間不改變牌桌位置。桌面版維持原本佔位的寫法，不蓋左側選單。 */
+@media(max-width:760px){
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice{position:relative;z-index:30;box-sizing:border-box;height:18px;min-height:18px;margin:-8px 0 -10px;padding:0 12px;border-bottom:0;font-size:12px;line-height:16px;white-space:nowrap;overflow:hidden;pointer-events:none;justify-content:center}
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice .text-button{pointer-events:auto;min-height:44px;height:auto;padding:0 10px;font-size:13px;line-height:1.4}
+ :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice:has([data-resync]:not([hidden])){height:auto;min-height:52px;margin:0;padding:4px 12px;gap:8px;white-space:normal;overflow:visible;pointer-events:auto}
+}
+/* P23：標題列「離開」（窄螢幕跟聊天／紀錄一樣只剩圖示，名稱看 aria-label）。 */
+.live-room .table-tools .table-leave,.mj-room .mj-heading>.table-leave{flex-shrink:0}
+/* P24 CI 修正：761～899 寬（iPad 直立）標題列放不下三顆有字的按鈕，Linux 字型更寬時整頁會多出 5px。這個寬度「離開」只留圖示，聊天／紀錄照舊有字。 */
+@media(min-width:761px) and (max-width:899px){
+ html.buttons2-ready :is(#app,#modal,#social-root) .live-room .table-tools>.table-leave:not([aria-pressed]),html.buttons2-ready :is(#app,#modal,#social-root) .mj-room .mj-heading>.table-leave:not([aria-pressed]),.live-room .table-tools>.table-leave,.mj-room .mj-heading>.table-leave{width:44px;min-width:44px;min-height:44px;padding:8px;gap:0;font-size:0}
+ .live-room .table-tools>.table-leave .icon,.mj-room .mj-heading>.table-leave .icon{width:20px;height:20px}
+}
+/* P24-2：說明收進「?」；原文留在隱藏的 .table-help-source，按下用同一套對話框。 */
+.table-help-source{display:none!important}
+:is(#app,#modal,#social-root) .table-help-button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;font-size:19px;font-weight:700;line-height:1}
+.arcade-slot .slot-machine{position:relative}
+.arcade-slot .slot-machine>p[role=status]{padding-inline:48px}
+.arcade-slot .slot-machine>.table-help-button{position:absolute;left:8px;bottom:6px}
+.gate-board.has-help{position:relative}
+.gate-board.has-help>.bonus-caption{padding-inline:48px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.gate-board.has-help>.table-help-button{position:absolute;left:4px;bottom:4px}
+:is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>[data-arcade-action=skip]{grid-column:1/-1;grid-row:2;min-height:44px;margin-right:52px}
+:is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>.table-help-button{grid-column:3;grid-row:2;justify-self:end;align-self:center;flex-direction:row}
+#modal .table-help-dialog{max-width:420px}
+#modal .table-help-dialog p{font-size:14px;line-height:1.7;color:var(--ink-2);text-align:left;margin:8px 0}
+#modal .table-help-dialog .slot-rates summary{color:var(--ink-deep);justify-content:flex-start}
+#modal .table-help-dialog .slot-paytable>span{background:#fff8ea;border:1px solid var(--cream-line)}
+#modal .table-help-dialog .slot-paytable b{color:var(--ink-deep)}
+#modal .table-help-dialog .slot-paytable>span>small{color:var(--ink-2)}
+/* P24-5：骰寶／輪盤有押注、還沒確認時，「確認押注／清除／本局略過」浮在螢幕底部。
+   原位置留下等高的 .bet-submit-dock，押注格不會往上跳；頁面底部多留浮動列的高度，最後一排押注格與「離開牌桌」不會被蓋住。 */
+@media(max-width:760px){
+ .bet-submit-dock{min-height:48px}
+ :is(#app,#modal,#social-root) .bet-submit-dock[data-has-bets=true]>.bet-submit-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--cream-panel);border-top:2px solid var(--gold-line);box-shadow:0 -6px 18px #3b2a1426}
+ .live-room:has(.bet-submit-dock[data-has-bets=true]){padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+ body:has(.bet-submit-dock[data-has-bets=true]) #voice-dock{bottom:calc(76px + env(safe-area-inset-bottom))}
+}
+/* P24-3：矮螢幕（扣掉網址列約 660 高）德州牌桌依高度縮；只縮牌桌與自己的兩張大牌，字級不變。 */
+@media(max-width:760px) and (max-height:740px){
+ :is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:326px;min-height:326px}
+ :is(#app,#modal,#social-root) .holdem-room .board-area{top:109px}
+ :is(#app,#modal,#social-root) .holdem-room :is(.spot-2,.spot-4){top:20px}
+ :is(#app,#modal,#social-root) .holdem-room .spot-3{top:-6px}
+ :is(#app,#modal,#social-root) .holdem-room :is(.spot-1,.spot-5){bottom:40px}
+ :is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards{height:71px;min-height:71px;margin-bottom:-10px}
+ :is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards .playing-card{width:48px;height:68px;flex-basis:48px}
+ :is(#app,#modal,#social-root) .holdem-room .your-turn-heading{margin-bottom:4px}
+}
+/* 360 以下座位名字牌較窄、說明會換兩行，牌桌少縮一點，座位與公共牌才不重疊。 */
+@media(max-width:360px) and (max-height:740px){
+ :is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:346px;min-height:346px}
+ :is(#app,#modal,#social-root) .holdem-room .board-area{top:122px}
+}
+/* P23：窄螢幕標題列副標只留一行，不把標題列撐高（標題本身不截）。 */
+@media(max-width:760px){
+ .live-room .room-heading p,.mj-room .mj-heading p{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .live-room .room-heading p .live-light{display:inline-block;vertical-align:middle}
+ .live-room .room-heading-left>div{flex:1;min-width:0}
+ .live-room .room-heading h1{overflow-wrap:anywhere}
+ :is(#app,#modal,#social-root) .live-room .table-tools{gap:4px;flex-shrink:0}
+ :is(#app,#modal,#social-root) .live-room .table-tools .button{width:44px;min-width:44px;padding:0;justify-content:center}
+ :is(#app,#modal,#social-root) .arcade-slot .slot-machine>p[role=status]{margin-bottom:0}
+}
+/* PR #9 在 374 以下把百家樂押注改成兩欄（閒 莊／和 略過）；「?」和「略過」共用第 2 列第 2 欄，「?」靠右，兩顆都保有 44px。 */
+@media(max-width:374px){
+ :is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>[data-arcade-action=skip]{grid-column:2;grid-row:2;margin-right:52px;min-height:48px}
+ :is(#app,#modal,#social-root) .arcade-baccarat .baccarat-actions>.table-help-button{grid-column:2;grid-row:2}
 }

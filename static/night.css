@@ -1594,19 +1594,17 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line)}
 }
 
 /* M1 拉霸錯誤：固定在視窗頂部（安全區內），捲到「轉動拉霸」時也看得到；不在版面流裡，「轉動拉霸」不會移動（所有寬度）。
-   框本身不吃點擊（壓到下面的東西也點得到），只有「確認這筆操作」鈕可點。有錯誤時，牌桌頁頂端的 4 秒提示框（#toast）移到它下方，兩者不重疊 */
+   框本身不吃點擊（壓到下面的東西也點得到），只有「確認這筆操作」鈕可點。（現況：框已被主題區塊外的整合規則改回跟著版面流動，#toast 維持原位 top:8px，不再為它移位；2026-10-24 移除過時的 #toast 偏移與 top:auto） */
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(12px,calc(50% - 240px));right:max(12px,calc(50% - 240px));bottom:auto;z-index:90;margin:0;font-size:.875rem;font-weight:700;box-shadow:0 8px 24px #00000059;pointer-events:none}
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error .button{pointer-events:auto}
 /* P18 審查修正 4 H1：解除協作者 night.css 對拉霸狀態列的 44px 固定高（固定在頂部的錯誤框改成依內容長高），「確認這筆操作」鈕在框內、44px 高、一定看得到點得到。
    P18 審查修正 5 M1：文字區不吃觸控（改前文字區可捲動又吃觸控，蓋住頂欄點數、連線、語音、頭像、暫停跑馬燈），最多顯示 4 行、超過以「…」截斷；
    框有 role=alert，報讀器照樣唸全文。整個框只有「確認這筆操作」鈕吃觸控。
-   L1：框的字改用 rem（預設 14px／13px 不變），使用者放大字級時跟著放大；框最高 = 4 行 × 1.4 × 0.875rem + 內距 16 + 框線 2，
-   #toast 排在這個最高值下方：8 + 18 + 4.9rem + 8 → 36px + 4.9rem（預設約 114px），字級放大也不重疊。
+   L1：框的字改用 rem（預設 14px／13px 不變），使用者放大字級時跟著放大；框最高 = 4 行 × 1.4 × 0.875rem + 內距 16 + 框線 2。
    L2：有錯誤時「轉動拉霸」的 scroll-margin-top 同這個高度，被捲到頂端時停在框的下方（只影響捲動對齊，不改版面位置） */
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{height:auto;min-height:0;max-height:none;overflow:visible;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 10px;line-height:1.4}
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error>span{flex:1 1 auto;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden;pointer-events:none}
 :is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error .button{flex:none;min-height:44px;min-width:44px;margin:0;padding:4px 12px;font-size:.8125rem;line-height:1.3}
-body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inset-top,0px) + 36px + 4.9rem)}
 :is(#app,#modal,#social-root) .arcade-slot:has(#action-feedback.error) #deal-hand{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 36px + 4.9rem)}
 
 /* M2 後台帳號卡：頭像與名字同一列（桌機也套用；手機另有尺寸） */
@@ -2369,7 +2367,6 @@ html.mj-tiles-ready :is(#app,#modal,#social-root) .mj-tile[data-k]>*{opacity:0}
  display:block;overflow:visible;white-space:normal;overflow-wrap:anywhere;
  -webkit-line-clamp:unset;line-clamp:unset;
 }
-body:has(.arcade-slot #action-feedback.error) #toast{top:auto}
 :is(#app,#modal,#social-root) .arcade-slot:has(#action-feedback.error) #deal-hand{scroll-margin-top:120px}
 
 /* Keep all five community cards clear of the foreground pair on narrow tables. */

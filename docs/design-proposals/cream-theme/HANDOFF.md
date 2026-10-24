@@ -227,7 +227,7 @@
 - 可點元素至少 44×44px。唯一例外：礦區／爬塔的停用格只在「從沒開過局」（盤面沒有 `.safe`／`.hazard`）時縮小；結算後不縮。
 - 伺服器回應後，不能讓另一個可點元素移到使用者剛點的位置（例如剛按「收手」的地方變成「開下一局」，連點就會誤開新局）。
 
-第三輪沒有改 `index.html` 的 `?v=`（當時 JS／CSS 是 `no-store`）。**第四輪起 CSS／JS 是 `no-cache`＋ETag，且 `night.css`、`bonus.js`、`game.js` 的 `?v=` 已改為 `cream-round4-20261024`**；之後改這些檔案請記得一起換版本號。**第五輪起 `night.css`、`bonus.js` 的 `?v=` 為 `cream-round5-20261024`**（`game.js` 仍是 `cream-round4-20261024`，這輪沒改）。**第六輪起 `night.css`、`bonus.js`、`arcade-motion.js`、`mahjong.js` 的 `?v=` 為 `cream-round7-20261024`**。
+第三輪沒有改 `index.html` 的 `?v=`（當時 JS／CSS 是 `no-store`）。**第四輪起 CSS／JS 是 `no-cache`＋ETag，且 `night.css`、`bonus.js`、`game.js` 的 `?v=` 已改為 `cream-round4-20261024`**；之後改這些檔案請記得一起換版本號。**第五輪起 `night.css`、`bonus.js` 的 `?v=` 為 `cream-round5-20261024`**（`game.js` 仍是 `cream-round4-20261024`，這輪沒改）。**第六輪起 `night.css`、`bonus.js`、`arcade-motion.js`、`mahjong.js` 的 `?v=` 為 `cream-round7-20261024`**。**第八輪（拉霸出錯提示泡泡修正）起 `night.css` 的 `?v=` 為 `cream-round8-20261024`**（只改 CSS，其餘檔案不動）。
 
 素材的來源與提示詞見 [ASSETS.md](../../ASSETS.md) 和 [asset-prompts](../asset-prompts/)。
 

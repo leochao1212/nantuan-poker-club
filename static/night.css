@@ -2063,10 +2063,11 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gol
   background:var(--p22-l) left center/auto 100% no-repeat,var(--p22-r) right center/auto 100% no-repeat,var(--p22-m) center/100% 100% no-repeat;
   background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 5px #3a2a0d33;
   color:var(--ink-deep);text-shadow:0 1px 0 #fff3cc80;opacity:1;filter:none}
-/* 完整版：#deal-hand、輪盤確認、骰寶確認、麻將出牌、轉帳送出、整列寬的 .full、會所領取（gold-button）、會所派遣、大廳空狀態「選遊戲開桌」、礦區／爬塔「收手」。
+/* 完整版：#deal-hand、輪盤確認、骰寶確認、麻將出牌、轉帳送出、整列寬的 .full、每日／每小時領取、會所收益領取、升級會所、員工領取與派遣、大廳空狀態「選遊戲開桌」、礦區／爬塔「收手」。
+   不能整個寫 .gold-button：牌局紀錄「重播／結果」82px、重播「自動播放」74～98px、後台「調整籌碼」76～110px、「重新讀取重播」126px 也是 gold-button，放完整版兩端章會壓到字（審查 H1），這些走窄版。
    例外改回窄版：21 點已確認時 #deal-hand 旁邊多一顆「修改下注」（320 寬只剩 156px，字放不進兩個黑桃章中間）；
    骰寶 320 寬三顆並排（確認／清除／本局略過）時 #dice-roll 只剩 138px。選擇器前綴和上一條相同再加條件，權重才蓋得過。 */
-html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):is(#deal-hand,#roulette-confirm,#dice-roll,#mj-discard,#transfer-submit,.full,.gold-button,[data-staff-dispatch],.empty-tables>[data-lobby-jump],.risk-actions>*){
+html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *):is(#deal-hand,#roulette-confirm,#dice-roll,#mj-discard,#transfer-submit,.full,#daily-claim,#hourly-claim,[data-passive-claim],[data-open-upgrades],[data-staff-collect],[data-staff-dispatch],.empty-tables>[data-lobby-jump],.risk-actions>*){
   --p22-l:url("/assets/buttons/btn-primary-l.webp");--p22-r:url("/assets/buttons/btn-primary-r.webp");--p22-m:url("/assets/buttons/btn-primary-m.webp")}
 html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gold-button,.button.night-primary,.button.call-button):not(#raise-form *).button:is(.between-buttons>#deal-hand:not(:only-child)){
   --p22-l:url("/assets/buttons/btn-primary-sm-l.webp");--p22-r:url("/assets/buttons/btn-primary-sm-r.webp");--p22-m:url("/assets/buttons/btn-primary-sm-m.webp")}
@@ -2100,6 +2101,10 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.point-stepper>.button[data
 @media(max-width:374px){
   html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{font-size:11px;letter-spacing:-.01em}
 }
+
+/* 百家樂「押莊」第二行「淨贏 0.95:1」：按鈕高 66px，第二行落在中段條高度 55～80% 的較暗區，墨綠字對底只有約 3.0～3.8。
+   不重出中段條（會破壞和兩端接縫的顏色），改給這行小字淺色光暈（和按鈕的奶金色同色），字外圈變亮、字仍是 HTML。 */
+html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{text-shadow:0 0 2px #fff3cc,0 0 1px #fff3cc}
 
 /* 籌碼與金幣的懸停、按下、停用（同一套）：按下時圖縮到 92% 並略暗，像被壓進去；停用時去色變淡 */
 html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):hover:not(:disabled){filter:brightness(1.06)}

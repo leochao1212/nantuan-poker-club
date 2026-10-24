@@ -1839,6 +1839,61 @@ html:where([data-card-back=crimson],[data-card-back=jade]) :is(#app,#modal,#soci
 /* 11 提示泡泡（「輪到你了，30 秒內完成行動」等）：墨綠底＋奶油字＋金邊，位置不動 */
 #toast,#toast.visible{background:linear-gradient(180deg,#245c47,#1b4a39);color:var(--ivory);border:1.5px solid #c9a55c;box-shadow:inset 0 0 0 1px #0f2f27,inset 0 0 0 2px #dfbd7540,0 8px 22px #3a2a0d55}
 
+/*==== P18 第 6 批：登入金色盾徽、德州胡桃木桌緣、21 點莊家區加高與立體牌靴、輪盤放大、折疊列金色箭頭 ====*/
+:root{
+  --crest:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 46'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fff1c4'/%3E%3Cstop offset='.45' stop-color='%23d8b25c'/%3E%3Cstop offset='1' stop-color='%237a5418'/%3E%3C/linearGradient%3E%3CradialGradient id='f' cx='.5' cy='.3' r='.75'%3E%3Cstop offset='0' stop-color='%232f7a5d'/%3E%3Cstop offset='1' stop-color='%230f2f24'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M20 1 38.5 7v15c0 11.5-8.2 18.6-18.5 23C9.7 40.6 1.5 33.5 1.5 22V7z' fill='url(%23g)' stroke='%235c3f11' stroke-width='1'/%3E%3Cpath d='M20 5.6 34.3 10.3V22c0 8.8-6.2 14.6-14.3 18.4C11.9 36.6 5.7 30.8 5.7 22V10.3z' fill='url(%23f)' stroke='%23fff1c4' stroke-opacity='.7' stroke-width='.8'/%3E%3C/svg%3E");
+  --perk-robot:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%23f0d59a'%3E%3Cpath fill-rule='evenodd' d='M11 1.5h2v3.5h4a3 3 0 0 1 3 3v8.5a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h4zM9 9.4a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zm6 0a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM8.8 15v1.6h6.4V15z'/%3E%3Crect x='1' y='9.5' width='2.2' height='6' rx='1'/%3E%3Crect x='20.8' y='9.5' width='2.2' height='6' rx='1'/%3E%3Crect x='7.5' y='20.2' width='9' height='2.3' rx='1'/%3E%3C/g%3E%3C/svg%3E");
+  --perk-suits:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%23f0d59a'%3E%3Cpath d='M7 1.8C5.6 4 2.6 5.4 2.6 7.7a2.2 2.2 0 0 0 3.6 1.7L5.6 11.4h2.8l-.6-2a2.2 2.2 0 0 0 3.6-1.7C11.4 5.4 8.4 4 7 1.8z'/%3E%3Cpath d='M17 11.2 12.9 7.1A2.5 2.5 0 0 1 17 4.3a2.5 2.5 0 0 1 4.1 2.8z'/%3E%3Cpath d='M7 12.6l3.6 4.9L7 22.4l-3.6-4.9z'/%3E%3Ccircle cx='17' cy='14.5' r='2.1'/%3E%3Ccircle cx='14.9' cy='17.8' r='2.1'/%3E%3Ccircle cx='19.1' cy='17.8' r='2.1'/%3E%3Cpath d='M16.4 17.4h1.2l.8 4.6h-2.8z'/%3E%3C/g%3E%3C/svg%3E");
+  --perk-mail:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='5' width='19' height='14' rx='2' fill='%23f0d59a'/%3E%3Cpath d='M3.5 6.5 12 13.2l8.5-6.7' fill='none' stroke='%2314392c' stroke-width='1.7' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* 1 登入頁：左上品牌標誌改成金色盾徽（盾形是背景圖，原本的黑桃 svg 改成實心金色、放在盾心；節點不變）。
+   三個特色圖示改成實心金色（電腦莊家＝機器人、遊戲＝四花色、邀請碼＝信封）：圖示是墨綠圓章的背景圖，原本的線條 svg 只是不畫線（仍在、仍 aria-hidden） */
+:is(#app,#modal,#social-root) .auth-layout .brand-symbol{width:40px;height:46px;padding:0 0 5px;border:0;border-radius:0;background:var(--crest) center/contain no-repeat;box-shadow:none;filter:drop-shadow(0 2px 3px #3a2a0d55)}
+:is(#app,#modal,#social-root) .auth-layout .brand-symbol .icon{width:17px;height:17px;fill:#f0d59a;stroke:#f0d59a;stroke-width:1}
+:is(#app,#modal,#social-root) .auth-perks .icon{stroke:none;background-position:center,center;background-size:24px 24px,auto;background-repeat:no-repeat}
+:is(#app,#modal,#social-root) .auth-perks>span:nth-child(1) .icon{background-image:var(--perk-robot),radial-gradient(circle at 50% 35%,#2f7a5d,#14392c 75%)}
+:is(#app,#modal,#social-root) .auth-perks>span:nth-child(2) .icon{background-image:var(--perk-suits),radial-gradient(circle at 50% 35%,#2f7a5d,#14392c 75%)}
+:is(#app,#modal,#social-root) .auth-perks>span:nth-child(3) .icon{background-image:var(--perk-mail),radial-gradient(circle at 50% 35%,#2f7a5d,#14392c 75%)}
+
+/* 2 德州：外框改胡桃木（同麻將木框：斜接木條＋內外金線、四角金色斜接；border-image 往外 5px，不改盒子尺寸、座位與公共牌位置不動，畫在所有子元素底下）。
+   橢圓桌緣也換成胡桃木漸層＋內外金線（只換邊框的顏色，寬度不變） */
+:is(#app,#modal,#social-root) .holdem-room .table-arena{border-image:var(--mj-walnut) 16 / 14px / 5px stretch;border-radius:10px}
+:is(#app,#modal,#social-root) .holdem-room .table-arena .poker-felt{border-color:transparent;background:linear-gradient(#164b3f,#164b3f) padding-box,linear-gradient(170deg,#9a6a3e 0%,#6b4226 30%,#42281a 60%,#7a4e2c 85%,#5b3920 100%) border-box;box-shadow:inset 0 0 0 2px #c9a55c,0 0 0 1.5px #c9a55c,0 8px 22px #00000066}
+@media(min-width:761px){
+  :is(#app,#modal,#social-root) .holdem-room .table-arena{border-image-width:18px;border-image-outset:6px}
+}
+
+/* 3 21 點：牌靴改立體（木盒斜面露出酒紅牌背、金色前緣與黑桃；同一張圖用在空桌面與牌靴說明行首）。
+   手機莊家絨布區加高＋一道金色弧線（SVG 背景圖，不影響文字底色）；加多少依首屏餘裕：空桌面（開局前）＋34px；發牌後＋8px，寬≥370 且高≥800 時＋20px；
+   局與局之間（有下注面板）320 不加（原本只剩約 3px），寬≥370 且高≥800 時＋6px */
+:is(#app,#modal,#social-root) .arcade-blackjack{--bj-shoe:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 50'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%239a6a3e'/%3E%3Cstop offset='1' stop-color='%234a2c17'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%238a6224'/%3E%3Cstop offset='.5' stop-color='%23fff1c4'/%3E%3Cstop offset='1' stop-color='%239a6f28'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cellipse cx='33' cy='46.5' rx='29' ry='3' fill='%23000' opacity='.35'/%3E%3Cpath d='M48 30 60 8v31l-12 7z' fill='%233e2414'/%3E%3Cpath d='M4 30h44L60 8H16z' fill='%235b3920'/%3E%3Cpath d='M12 28.5h28L49.5 11H21.5z' fill='%238a2f38' stroke='%23fff5df' stroke-width='1'/%3E%3Cpath d='M15 27h22l8-14H23z' fill='none' stroke='%23dfbd75' stroke-width='.6'/%3E%3Cpath d='M4 30h44v16H4z' fill='url(%23w)' stroke='%23dfbd75' stroke-width='1.2'/%3E%3Cpath d='M4 28.6h44v2.6H4z' fill='url(%23g)'/%3E%3Cpath d='M60 8 48 30' stroke='%23dfbd75' stroke-width='1'/%3E%3Cpath d='M26 33.5c-1.6 2.4-4.2 3.4-4.2 5.6a2.4 2.4 0 0 0 3.6 1.9l-.8 2.5h2.8l-.8-2.5a2.4 2.4 0 0 0 3.6-1.9c0-2.2-2.6-3.2-4.2-5.6z' fill='%23f0d59a'/%3E%3C/svg%3E");--bj-arc:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M7 0A43 86 0 0 0 93 0' fill='none' stroke='%23dfbd75' stroke-opacity='.6' stroke-width='1.5' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")}
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-table.arcade-blackjack :is(.blackjack-dealer,.arcade-empty-state){background:var(--bj-arc) center/100% 100% no-repeat,var(--felt-noise),var(--scene-veil),var(--scene,none) center/cover no-repeat,var(--felt)}
+  :is(#app,#modal,#social-root) .arcade-blackjack .arcade-empty-state{padding:96px 12px 20px}
+  :is(#app,#modal,#social-root) .arcade-blackjack .arcade-empty-state::before{top:12px;width:110px;height:70px;left:calc(50% - 28px)}
+  :is(#app,#modal,#social-root) .arcade-blackjack .arcade-empty-state::after{top:16px;width:76px;height:60px;left:calc(50% - 116px)}
+    :is(#app,#modal,#social-root) .arcade-table.arcade-blackjack:not(:has(.blackjack-bet-panel)) .arcade-surface .blackjack-dealer{padding-block:12px 14px}
+}
+@media(max-width:760px) and (min-width:370px) and (min-height:800px){
+  :is(#app,#modal,#social-root) .arcade-table.arcade-blackjack:not(:has(.blackjack-bet-panel)) .arcade-surface .blackjack-dealer{padding-block:18px 20px}
+  :is(#app,#modal,#social-root) .arcade-table.arcade-blackjack:has(.blackjack-bet-panel) .arcade-surface .blackjack-dealer{padding-block:9px}
+}
+
+/* 4 輪盤：手機輪盤本體放大，改成上下排（輪盤置中在上、標題與說明在下；不和數字盤並排）。外圈加一圈胡桃木＋金線（box-shadow 往外畫，不佔高度）。
+   數字盤、押注鈕大小不變（≥44px）；確認押注仍在首屏 */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-stage{flex-direction:column;align-items:center;gap:10px;text-align:center}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel{width:min(216px,calc(100vw - 132px));height:min(216px,calc(100vw - 132px));margin:6px 0 2px;box-shadow:inset 0 0 0 3px #283631,0 0 0 5px #5b3920,0 0 0 6.5px #c9a55c,0 6px 14px #00000080}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-wheel .wheel-hub{font-size:34px}
+  :is(#app,#modal,#social-root) .arcade-roulette .roulette-stage>div:last-child{width:100%}
+}
+
+/* 5 大廳與排行的折疊列（我的籌碼與補給、今日任務、收藏與獲利榜）：右側灰色「＋／−」改成和規則折疊列一樣的金色箭頭，展開時轉 90 度 */
+:is(#app,#modal,#social-root) details.night-supply>summary::-webkit-details-marker{display:none}
+:is(#app,#modal,#social-root) details.night-supply>summary::after{content:"";flex:none;width:9px;height:15px;margin-left:auto;background:var(--chev) center/contain no-repeat;color:inherit;transition:transform .2s}
+:is(#app,#modal,#social-root) details.night-supply[open]>summary::after{content:"";transform:rotate(90deg)}
+
 /*==== 奶油白主題 結束 ====*/
 
 /* Keep all five community cards clear of the foreground pair on narrow tables. */

@@ -294,7 +294,7 @@ def deploy(request, github):
         keeper.start()
         try:
             drain()
-            require(github.api('/commits/main')['sha'] == request['sha'], 'main moved while draining')
+            require(validate_request(request, github.api) == artifact_id, 'Deployment authorization changed while draining')
             baseline = json.loads(run(['docker', 'exec', '-i', CONTAINER, 'python'],
                 data="import sqlite3,json; d=sqlite3.connect('/data/poker.sqlite3'); print(json.dumps({t:d.execute('SELECT count(*) FROM '+t).fetchone()[0] for t in ['users','poker_hands','poker_operations']}))").stdout)
             saved, previous = backup(request['run_id'])

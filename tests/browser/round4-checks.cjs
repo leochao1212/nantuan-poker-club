@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 module.exports=async function round4Checks(page,engine,out){
- await page.waitForFunction(()=>document.documentElement.classList.contains('pieces-ready'));
+ await page.waitForFunction(()=>document.documentElement.dataset.ui==='current');
  const measurements=[];
  for(const width of [320,375,393,768,1093,1094,1095,1096,1097,1098,1099,1100,1366,1440,1600,1920]){
   await page.setViewportSize({width,height:900});

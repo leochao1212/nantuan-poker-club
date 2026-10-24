@@ -216,7 +216,7 @@ class ArcadeAPI(ServerTestCase):
         first,second=self.clients[:2]
         self.assertEqual(first.call('/arcade.js')[0],200)
         self.assertEqual(first.call('/arcade-motion.js')[0],200)
-        self.assertEqual(first.call('/arcade.css')[0],200)
+        self.assertEqual(first.call('/night.css')[0],200)
         first.call('/api/register',{'username':'arcade_a','nickname':'A','password':'password123'})
         invite=first.call('/api/state')[1]['invite_code']
         second.call('/api/register',{'username':'arcade_b','nickname':'B','password':'password123','invite_code':invite})

@@ -33,6 +33,36 @@ class StaticImages(unittest.TestCase):
         try:
             c.request('GET',path,headers=headers or {});r=c.getresponse();return r.status,dict(r.getheaders()),r.read()
         finally:c.close()
+    def test_current_ui_has_one_stylesheet_and_no_retired_routes(self):
+        import re
+        status,_,body=self.get('/')
+        self.assertEqual(status,200)
+        html=body.decode('utf-8')
+        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=current-ui-20261025'])
+        self.assertIn('/ui-art.js?v=current-ui-20261025',html)
+        for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):
+            self.assertEqual(self.get('/'+name+'.css')[0],404,name)
+        for name in ('concierge','host','steward'):
+            status,headers,body=self.get('/assets/staff/'+name+'.webp')
+            self.assertEqual(status,200);self.assertTrue(body.startswith(b'RIFF'))
+            self.assertEqual(self.get('/assets/staff/'+name+'.webp',{'If-None-Match':headers['ETag']})[0],304)
+        for path in ('/assets/staff/nope.webp','/assets/staff/../poker-night.webp','/assets/staff/CONCIERGE.webp'):
+            self.assertEqual(self.get(path)[0],404)
+
+    def test_fingerprinted_images_are_immutable_and_reject_stale_versions(self):
+        for path in ('/assets/covers/slot.webp','/assets/pieces/dice-1.webp','/assets/buttons/coin.webp','/assets/clubhouse/tier-1-small.webp','/assets/staff/host.webp'):
+            raw_status,raw_headers,raw=self.get(path)
+            self.assertEqual(raw_status,200);self.assertEqual(raw_headers['Cache-Control'],'no-cache')
+            version=hashlib.sha256(raw).hexdigest()[:12]
+            status,headers,body=self.get(path+'?v='+version)
+            self.assertEqual(status,200);self.assertEqual(body,raw)
+            self.assertEqual(headers['Cache-Control'],'public, max-age=31536000, immutable')
+            self.assertEqual(self.get(path+'?v='+version,{'If-None-Match':headers['ETag']})[0],304)
+            for query in ('?v=old','?v=','?v='+version+'&v=old'):
+                status,headers,_=self.get(path+query,{'If-None-Match':raw_headers['ETag']})
+                self.assertEqual(status,404);self.assertEqual(headers['Cache-Control'],'no-store')
+                self.assertNotIn('ETag',headers)
+
     def test_every_cover_is_served(self):
         for name in COVERS:
             status,headers,body=self.get(f'/assets/covers/{name}.webp')
@@ -45,7 +75,7 @@ class StaticImages(unittest.TestCase):
         for name in PIECES:
             status,headers,body=self.get(f'/assets/pieces/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
-            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name);self.assertIn('ETag',headers)
+            self.assertEqual(headers['Cache-Control'],'no-cache',name);self.assertIn('ETag',headers)
             self.assertEqual(self.get(f'/assets/pieces/{name}.webp',{'If-None-Match':headers['ETag']})[0],304,name)
     def test_unknown_or_tricky_piece_paths_are_404(self):
         for path in ('/assets/pieces/nope.webp','/assets/pieces/dice-0.webp','/assets/pieces/dice-7.webp','/assets/pieces/dice-1-256.webp','/assets/pieces/slot-seven.webp',
@@ -61,7 +91,7 @@ class StaticImages(unittest.TestCase):
         for name in TABLE_PIECES:
             status,headers,body=self.get(f'/assets/pieces/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
-            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name)
+            self.assertEqual(headers['Cache-Control'],'no-cache',name)
             self.assertEqual(headers['ETag'],'"'+hashlib.sha256(body).hexdigest()+'"',name)
             self.assertEqual(self.get(f'/assets/pieces/{name}.webp',{'If-None-Match':headers['ETag']})[0],304,name)
     def test_unknown_or_tricky_table_piece_paths_are_404(self):
@@ -77,7 +107,7 @@ class StaticImages(unittest.TestCase):
         for name in MJ_PIECES:
             status,headers,body=self.get(f'/assets/pieces/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
-            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name)
+            self.assertEqual(headers['Cache-Control'],'no-cache',name)
             self.assertEqual(headers['ETag'],'"'+hashlib.sha256(body).hexdigest()+'"',name)
             self.assertEqual(self.get(f'/assets/pieces/{name}.webp',{'If-None-Match':headers['ETag']})[0],304,name)
     def test_mahjong_tile_sprite_is_gzipped_and_revalidated(self):
@@ -107,10 +137,10 @@ class StaticImages(unittest.TestCase):
         self.assertEqual(used,{f'{n}.webp' for n in MJ_PIECES}|{'mj-tiles.svg'})
         for name in used:self.assertEqual(self.get('/assets/pieces/'+name)[0],200,name)
         # every tile key has its sprite cell, and the cell numbers follow the sprite order
-        cells=dict(re.findall(r'\.mj-tile\[data-k=([a-z0-9]+)\]\{--mj-i:(\d+)\}',css))
+        cells=dict(re.findall(r'\.mj-tile\[data-k=([a-z0-9]+)\]\{--mj-i:(\d+);?\}',css))
         self.assertEqual(cells,{c:str(i) for i,c in enumerate(MJ_CODES)})
         # mahjong.js preloads exactly the sprite and the bird (the only face that is all illustration)
-        js=(Path(server.ROOT)/'static/mahjong.js').read_text(encoding='utf-8')
+        js=(Path(server.ROOT)/'static/ui-art.js').read_text(encoding='utf-8')
         self.assertIn("['/assets/pieces/mj-tiles.svg','/assets/pieces/mj-bird.webp']",js)
     def test_unknown_or_tricky_mahjong_paths_are_404(self):
         for path in ('/assets/pieces/mj-tiles.svgz','/assets/pieces/MJ-TILES.svg','/assets/pieces/mj-tiles.svg/','/assets/pieces/mj-tiles.webp','/assets/pieces/mj-tile.svg',
@@ -125,7 +155,7 @@ class StaticImages(unittest.TestCase):
         for name in BUTTONS:
             status,headers,body=self.get(f'/assets/buttons/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
-            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name);self.assertIn('ETag',headers)
+            self.assertEqual(headers['Cache-Control'],'no-cache',name);self.assertIn('ETag',headers)
             # ETag is the content hash, the same way pieces and covers are tagged
             self.assertEqual(headers['ETag'],'"'+hashlib.sha256(body).hexdigest()+'"',name)
             status,_,again=self.get(f'/assets/buttons/{name}.webp',{'If-None-Match':headers['ETag']})
@@ -146,7 +176,7 @@ class StaticImages(unittest.TestCase):
         for name in BUTTONS2:
             status,headers,body=self.get(f'/assets/buttons/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)
-            self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate',name)
+            self.assertEqual(headers['Cache-Control'],'no-cache',name)
             self.assertEqual(headers['ETag'],'"'+hashlib.sha256(body).hexdigest()+'"',name)
             status,_,again=self.get(f'/assets/buttons/{name}.webp',{'If-None-Match':headers['ETag']})
             self.assertEqual(status,304,name);self.assertEqual(again,b'',name)
@@ -163,7 +193,7 @@ class StaticImages(unittest.TestCase):
             self.assertEqual(self.get(path)[0],404,path)
     def test_images_revalidate_with_etag(self):
         status,headers,body=self.get('/assets/covers/holdem.webp')
-        self.assertEqual(status,200);self.assertEqual(headers['Cache-Control'],'public, max-age=0, must-revalidate');etag=headers['ETag']
+        self.assertEqual(status,200);self.assertEqual(headers['Cache-Control'],'no-cache');etag=headers['ETag']
         status,headers,body=self.get('/assets/covers/holdem.webp',{'If-None-Match':etag})
         self.assertEqual(status,304);self.assertEqual(body,b'')
         self.assertEqual(self.get('/assets/covers/holdem.webp',{'If-None-Match':'"stale"'})[0],200)

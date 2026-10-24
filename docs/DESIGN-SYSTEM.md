@@ -8,7 +8,7 @@
 
 ## 現有 token
 
-下表取自 night.css 的 :root。casino.css 有舊預設，最終顏色以載入後的 computed style 為準。
+下表取自唯一樣式來源 night.css 的 :root；所有元件使用同一套現行 token，實際效果可由 computed style 核對。
 
 | token | 值 | 角色 |
 | --- | --- | --- |

@@ -100,7 +100,7 @@ window.ClubBonus=(()=>{
  function rulesFor(r){return r.game_type==='tower'&&r.hand?.tower_options===3?'本局沿用更新前規則：每層 3 選 1，2 安全 / 1 雷，總返還依 0.97 ÷ (2/3)^k 計算。下一局切換四選一。':rules[r.game_type];}
  return {catalog,rules,rulesFor,board,controls,bind,prepare,play,cancel,roundSettings,startOptions,diceControls,gateControls,validStake};
 })();
-// P20：拉霸、骰子、礦區／爬塔寶石與炸彈的插畫先在背景載好並解碼，15 張全部成功才加 html.pieces-ready，CSS 才換圖（慢或失敗時一律保留原本的 SVG／骰面）。
+// P20：拉霸、骰子、礦區／爬塔寶石與炸彈、撲克牌 J／Q／K 人像的插畫先在背景載好並解碼，18 張全部成功才加 html.pieces-ready，CSS 才換圖（慢或失敗時一律保留原本的 SVG／骰面）。
 (()=>{const load=name=>{const img=new Image();img.src='/assets/pieces/'+name+'.webp';return typeof img.decode==='function'?img.decode():new Promise((ok,fail)=>{img.onload=ok;img.onerror=fail;});};
- Promise.all(['slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb'].map(load)).then(()=>document.documentElement.classList.add('pieces-ready'),()=>{});
+ Promise.all(['slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb','card-j','card-q','card-k'].map(load)).then(()=>document.documentElement.classList.add('pieces-ready'),()=>{});
 })();

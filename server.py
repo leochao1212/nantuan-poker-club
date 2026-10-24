@@ -408,10 +408,11 @@ class Handler(BaseHTTPRequestHandler):
                 raw, raw_etag, packed, packed_etag = static_text(ROOT / "static" / name)
                 zipped = accepts_gzip(self.headers.get("Accept-Encoding"))
                 # HTML stays no-store (it names the current assets); CSS/JS/SVG revalidate by ETag.
+                # no-cache, not max-age=0: Cloudflare's Browser Cache TTL stretches max-age=0 to 4 hours.
                 # The gzip and identity bytes differ, so each keeps its own strong ETag.
                 cacheable = ext != "html"
                 self.reply(200, packed if zipped else raw, content_type=types[ext]+"; charset=utf-8",
-                           cache_control="public, max-age=0, must-revalidate" if cacheable else "no-store",
+                           cache_control="no-cache" if cacheable else "no-store",
                            etag=(packed_etag if zipped else raw_etag) if cacheable else None,
                            content_encoding="gzip" if zipped else None, vary="Accept-Encoding")
             else:

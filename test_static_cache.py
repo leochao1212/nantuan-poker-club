@@ -7,7 +7,7 @@ import server
 from realtime import Hub,WriteQueue
 
 STATIC=Path(server.ROOT)/'static'
-REVALIDATE='public, max-age=0, must-revalidate'
+REVALIDATE='no-cache'  # not max-age=0: Cloudflare's Browser Cache TTL would stretch that to 4 hours
 
 class StaticTextCaching(unittest.TestCase):
     def setUp(self):
@@ -61,7 +61,7 @@ class StaticTextCaching(unittest.TestCase):
                 plain=self.get(path)[1]['ETag'];packed=self.get(path,{'Accept-Encoding':'gzip'})[1]['ETag']
                 self.assertNotEqual(plain,packed)
                 status,headers,body=self.get(path,{'If-None-Match':plain})
-                self.assertEqual(status,304);self.assertEqual(body,b'');self.assertEqual(headers['ETag'],plain);self.assertEqual(headers['Vary'],'Accept-Encoding')
+                self.assertEqual(status,304);self.assertEqual(body,b'');self.assertEqual(headers['ETag'],plain);self.assertEqual(headers['Vary'],'Accept-Encoding');self.assertEqual(headers['Cache-Control'],REVALIDATE)
                 status,headers,body=self.get(path,{'Accept-Encoding':'gzip','If-None-Match':packed})
                 self.assertEqual(status,304);self.assertEqual(body,b'');self.assertEqual(headers['ETag'],packed);self.assertNotIn('Content-Encoding',headers)
                 # Validator of the other representation must not produce a 304.

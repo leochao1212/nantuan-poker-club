@@ -26,6 +26,7 @@ jobs:
       - run: python -m unittest discover -s tests/python -t . -v
       - run: node scripts/check-js.cjs
       - run: node scripts/check-docs.cjs
+      - run: python scripts/check-ui-assets.py
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -44,6 +45,7 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:ui
       - run: npm run test:layout
+      - run: npm run test:motion
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -51,6 +53,7 @@ jobs:
           path: |
             artifacts/browser
             artifacts/layout
+            artifacts/art-motion
           retention-days: 7
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

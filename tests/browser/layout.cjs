@@ -30,9 +30,9 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
     for(const mobile of [true,false]){
      const context=await browser.newContext({storageState,isMobile:mobile,hasTouch:mobile,viewport:{width:mobile?393:1366,height:900},reducedMotion:'reduce'});
      const page=await context.newPage();
-     page.on('pageerror',e=>errors.push(engine+' '+name+': '+e.message));
+     page.on('pageerror',e=>{errors.push(engine+' '+name+': '+e.message);console.error('page error: '+engine+' '+name+' '+e.message);});
      page.on('response',r=>{if(['script','stylesheet','image'].includes(r.request().resourceType())&&r.status()>=400)errors.push(engine+' '+r.status()+' '+r.url());});
-     await page.goto(base+'/#'+route);await page.waitForFunction(()=>lobby&&liveReady);
+     await page.goto(base+'/#'+route);await page.waitForFunction(()=>typeof lobby!=='undefined'&&lobby&&liveReady);
      if(selector)try{await page.waitForSelector(selector,{timeout:10000});}catch(e){await page.screenshot({path:path.join(out,'failure-'+engine+'-'+name+'.png')});throw e;}
      await page.evaluate(()=>document.fonts.ready);await pause(120);
      await require('./table-controls.cjs')(page,engine,mobile,name,out);
@@ -52,11 +52,13 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
      if(name==='gate')sizes.push([760,740],[761,740],[800,740],[1000,740],[1024,768]);
      for(const [width,height] of sizes){
       await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));await pause(40);
+      const snapshot=await page.evaluate(()=>[...document.querySelectorAll('button,.playing-card,.slot-reel,.die-face,.mj-tile,.game-art,.table-arena,.arcade-surface,.table-control-area')].map((e,i)=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {i,id:e.id,class:e.className,label:e.getAttribute('aria-label'),x:r.x,y:r.y,width:r.width,height:r.height,color:s.color,font:s.fontSize};}));
+      fs.writeFileSync(path.join(out,`${engine}-${name}-${width}-${height}-geometry.json`),JSON.stringify(snapshot));
       const m=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src),main:!!document.querySelector('#main')}));
       if(m.scroll>m.width+1){await page.screenshot({path:path.join(out,`${engine}-${name}-${width}-overflow.png`),fullPage:true});const overflowing=await page.evaluate(()=>[...document.querySelectorAll('#main *')].map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,right:r.right,width:r.width};}).filter(e=>e.width>0&&e.right>innerWidth+1).slice(-20));fs.writeFileSync(path.join(out,`${engine}-${name}-${width}-overflow.json`),JSON.stringify(overflowing,null,2));}
       assert.ok(m.main,name+' missing main');assert.ok(m.scroll<=m.width+1,engine+' '+name+' overflow '+JSON.stringify(m));assert.deepEqual(m.broken,[],engine+' '+name+' broken images');
       if(name==='slot'){
-       await page.waitForFunction(()=>document.documentElement.classList.contains('pieces-ready'));
+       await page.waitForFunction(()=>[...document.querySelectorAll('.slot-reel .current-art')].every(i=>i.complete&&i.naturalWidth));
        for(const scale of ['100%','130%']){
         await page.evaluate(s=>{document.documentElement.style.fontSize=s;scrollTo(0,0);},scale);
         const before=await page.locator('#deal-hand').evaluate(e=>e.getBoundingClientRect().top);
@@ -83,9 +85,9 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       const fallback=await context.newPage();
       fallback.on('pageerror',e=>errors.push(engine+' slot fallback: '+e.message));
       await fallback.route('**/assets/pieces/*',r=>r.abort());
-      await fallback.goto(base+'/#'+route);await fallback.waitForSelector('.slot-reel>span>.sym');await pause(150);
-      assert.equal(await fallback.evaluate(()=>document.documentElement.classList.contains('pieces-ready')),false,'Failed artwork must keep SVG fallback');
-      assert.equal(await fallback.locator('.slot-reel>span>.sym:visible').count(),3,'Slot fallback must show all three symbols');
+      await fallback.goto(base+'/#'+route);await fallback.waitForSelector('.slot-reel .current-art[data-art-failed]',{state:'attached'});await pause(150);
+      assert.equal(await fallback.locator('.slot-reel svg').count(),0,'Retired artwork must never return on failure');
+      assert.equal(await fallback.locator('.slot-reel .current-art[data-art-failed]').count(),3,'Failed current images retain a labelled placeholder');
       await fallback.close();
      }
      if(name==='lobby'&&!mobile)await require('./round4-checks.cjs')(page,engine,out);
@@ -114,5 +116,5 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
    }
   }
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({results,errors,scope:'Chromium/WebKit engines; responsive/touch emulation, not physical phones'},null,2));console.log('Release layout checks passed: '+results.length+' pages, '+results.reduce((n,x)=>n+x.viewports,0)+' views');
- }finally{for(const [,b] of browsers)await b.close();proc.kill();fs.writeFileSync(path.join(out,'server.log'),logs);}
+ }finally{for(const [,b] of browsers)await b.close();proc.kill();fs.writeFileSync(path.join(out,'server.log'),logs);fs.writeFileSync(path.join(out,'errors.json'),JSON.stringify(errors,null,2));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -25,26 +25,26 @@ flowchart TD
 
 | 頁面／區塊 | 主要函式／模組 | 主要樣式 |
 | --- | --- | --- |
-| 殼層、登入、大廳、排行、成員 | game.js：shell、renderAuth、lobbyView、statsView、membersView | casino.css、ui.css、night.css |
-| 德州牌桌與下注鍵盤 | game.js：tableView、actionControls、bindTable、openBetKeypad | casino.css、night.css |
-| 大老二／21 點／輪盤 | arcade.js：table、controls、blackjackBoard、blackjackBets | arcade.css、night.css |
-| 拉霸／骰寶／射龍門／風險小遊戲 | bonus.js：board、controls、roundSettings、bindSettings | arcade.css、night.css |
-| 台灣麻將 | mahjong.js | mahjong.css、night.css |
-| 會所、個人檔案、公開名片 | profile.js：ClubIncome、ClubProfile、ClubMember、ClubStaff | profile.css、night.css |
-| 會所圖與員工 | clubhouse-scene.js：ClubhouseScene | clubhouse-scene.css、night.css |
-| 任務、外觀收藏與動效 | club.js | effects.css、arcade.css、night.css |
-| 私人包廂、重播、診斷 | features.js | features.css、night.css |
-| 全域聊天與語音 | social.js、voice-worklet.js | ui.css、night.css |
-| 管理帳號、籌碼 | admin.js | casino.css、profile.css、night.css |
-| 遊戲設定與派彩說明 | game-settings.js | game-settings.css |
-| 點數轉帳 | transfers.js | transfers.css、night.css |
-| 發牌與輪盤動畫 | dealer.js、arcade-motion.js | arcade.css、casino.css、night.css |
+| 殼層、登入、大廳、排行、成員 | game.js：shell、renderAuth、lobbyView、statsView、membersView | night.css |
+| 德州牌桌與下注鍵盤 | game.js：tableView、actionControls、bindTable、openBetKeypad | night.css |
+| 大老二／21 點／輪盤 | arcade.js：table、controls、blackjackBoard、blackjackBets | night.css |
+| 拉霸／骰寶／射龍門／風險小遊戲 | bonus.js：board、controls、roundSettings、bindSettings | night.css |
+| 台灣麻將 | mahjong.js | night.css |
+| 會所、個人檔案、公開名片 | profile.js：ClubIncome、ClubProfile、ClubMember、ClubStaff | night.css |
+| 會所圖與員工 | clubhouse-scene.js：ClubhouseScene | night.css |
+| 任務、外觀收藏與動效 | club.js | night.css |
+| 私人包廂、重播、診斷 | features.js | night.css |
+| 全域聊天與語音 | social.js、voice-worklet.js | night.css |
+| 管理帳號、籌碼 | admin.js | night.css |
+| 遊戲設定與派彩說明 | game-settings.js | night.css |
+| 點數轉帳 | transfers.js | night.css |
+| 發牌與輪盤動畫 | dealer.js、arcade-motion.js | night.css |
 
-## CSS 載入順序
+## 單一樣式來源
 
-index.html 的順序是 casino → ui → mahjong → arcade → transfers → profile → effects → features → clubhouse-scene → night → game-settings。night.css 是目前全站整合覆寫層。修改前應用瀏覽器 computed styles 查實際規則來源，不能只讀第一個同名 selector。
+遊戲網站只載入 night.css。原先十份分散樣式已合併，清掉重複設定與已退役元件；不要再建立另一層主題覆蓋檔。請在現行元件規則與響應式區段修改，先查 computed styles，並執行手機／桌機回歸。
 
-主要設計 token 在 night.css 的 :root 覆寫；基礎按鈕、表單和牌桌樣式在 casino.css。新增樣式請限制在頁面根 class，避免無條件改 button、small、span 或 details。
+ui-art.js 統一產生現行圖片元件，只準備目前遊戲需要的圖；CSS 按鈕直接使用現行切片。圖片載入中或失敗使用同主題的文字占位，不會切回舊 SVG。撲克牌保留點數／花色的語意與收藏牌背，麻將由現行精靈圖繪製。ledger.css 專供仍在使用的歷史記帳頁，沒有載入遊戲網站。
 
 ## DOM 與互動契約
 
@@ -64,6 +64,6 @@ game.js 的 patchNode 比對 id、data-seat、data-player、data-room、data-act
 
 ## 現況與可整理處
 
-game.js 混有頁面、狀態、路由、恢復與遊戲控制；CSS 也累積多層覆寫。設計分支宜先挑一頁，保留行為契約，再逐段抽出元件／token；不要一次替換整個前端框架與連線層。
+game.js 仍包含頁面、狀態、路由、恢復與遊戲控制；樣式已統一為 night.css。後續協作宜一次處理一個現行元件，保留行為契約，直接修改既有規則並執行回歸，避免繼續追加覆蓋層。
 
 21 點同桌手牌現已常駐顯示，手機先放自己的手牌、莊家和操作，再接同桌手牌。會所手機以標題、建築、升級入口分區。一般牌桌仍留在同一頁，不另開獨立桌頁視窗。

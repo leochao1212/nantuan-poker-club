@@ -44,3 +44,9 @@ Draft PR 可以先放方案與待辦。變成 Ready for review 前應有可操�
 不要提交 .env、DB／WAL／SHM、備份、Cookie、登入 token、邀請碼、玩家名單、正式日誌及含真實帳號資料的截圖。測試資料用明確合成帳號。引用外部圖片、字型或套件時記錄來源與使用限制。
 
 新增樣式先以頁面根 class 限定，不跨頁改通用 selector。交付時同步文件與資源版本 query，讓使用者重整能取得新 CSS／JS。
+
+## UI 元件協作約定
+
+遊戲網站的唯一樣式來源是 static/night.css。已有元件請直接修改現行規則，不另加 theme/override 樣式檔，不保留被新圖蓋住的舊 SVG、舊圖片或舊樣式開關。圖片元件由 static/ui-art.js 建立，素材放 static/assets/ ，更新圖片後執行 `python scripts/check-ui-assets.py --write` 同步內容指紋與 docs/assets-manifest.json；載入與錯誤占位沿用同一套元件。不要把整批圖片預載當成切換新舊風格的條件。
+
+圖片／動畫 PR 除排版檢查外，需執行 test:motion 的一般動畫、慢載入與失敗情境，檢查動畫開始、中途、結束與連續換圖。可操作狀態仍以伺服器回執為準，不能等待圖片或動畫才允許下一局。

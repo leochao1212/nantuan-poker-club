@@ -403,5 +403,20 @@
     "path": "static/assets/poker-night.webp",
     "bytes": 80676,
     "sha256": "63dbb83cdfa5b0b099bebdb5df00e8e8ce3c50fb4346b4be1bfc9e5086d4cf75"
+  },
+  {
+    "path": "static/assets/staff/concierge.webp",
+    "bytes": 7488,
+    "sha256": "734e7436af5ccf749c0e637b5c70ab269f38eb9679c05d6ae58a2f045187dd2e"
+  },
+  {
+    "path": "static/assets/staff/host.webp",
+    "bytes": 9388,
+    "sha256": "0e7f08dd84c12639e8622367963f5de182b71c84a453497776c30b28e0d70b61"
+  },
+  {
+    "path": "static/assets/staff/steward.webp",
+    "bytes": 8130,
+    "sha256": "d728d393be7ea08da59934c0a4913ab20540b60e974011310f1649efcc304faf"
   }
 ]

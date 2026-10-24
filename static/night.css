@@ -2442,3 +2442,19 @@ html.buttons-ready :is(#app,#modal,#social-root) :is(.button.primary,.button.gol
 /* The smallest controls have a 42px inner height. Limit both dimensions:
    a height percentage alone enlarges circular artwork in portrait boxes. */
 html.buttons-ready :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){background-size:min(92%,40px) auto}
+
+/* PR #9 integration: leave the dealer art its own space before the mobile
+   nickname. Keep the badge in place so edge seats do not push off screen. */
+@media(max-width:760px){
+  :is(#app,#modal,#social-root) .holdem-room .seat-box:has(>.dealer-disc) .seat-details>strong{padding-inline-start:16px}
+  html.buttons2-ready :is(#app,#modal,#social-root) .mj-footer{gap:10px;flex-wrap:wrap}
+  html.buttons2-ready :is(#app,#modal,#social-root) .mj-footer>:is(#leave-table,#close-table){min-height:48px;padding-inline:18px}
+  html.buttons2-ready :is(#app,#modal,#social-root) .arcade-tower .between-hands .tower-difficulty .button{height:auto;min-height:64px;padding:10px 12px;line-height:1.3;gap:3px}
+  html.buttons2-ready :is(#app,#modal,#social-root) .arcade-tower .between-hands .tower-difficulty .button small{flex-shrink:0;max-width:100%}
+  html.buttons-ready :is(#app,#modal,#social-root) .collection-card .cosmetic-card-actions .button{flex:1 0 auto;min-width:max-content;min-height:48px;padding:10px 14px}
+}
+@media(max-width:374px){
+  :is(#app,#modal,#social-root) .baccarat-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  :is(#app,#modal,#social-root) .baccarat-actions>[data-arcade-action=skip]{grid-column:auto;min-height:48px;align-self:center}
+  html.buttons-ready :is(#app,#modal,#social-root) .baccarat-actions>.button.primary small{font-size:12px;letter-spacing:normal}
+}

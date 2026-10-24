@@ -190,3 +190,10 @@
 - 第 6 批審查記下、沒修的：發牌即 21 點時下注面板會冒出；6 人桌 393 寬局與局之間「確認下注」在首屏外（原本就有，多 6px）；朋友結果框「收起轉盤」對比偏低；德州 320 寬空位會疊到木框。
 - P20：網路慢時，第一次會先看到舊圖，載完再換新圖。
 - Cloudflare 邊緣對 `public, max-age=0, must-revalidate`＋`ETag` 的處理沒有實測。部署後可以對同一張封面打兩次 `curl -sI https://<你的網域>/assets/covers/holdem.webp`，看 `cf-cache-status`、`cache-control`、`etag`，再帶 `If-None-Match` 打一次，確認回 304。
+
+
+## PR #4 整合補充（2026-10-24）
+
+拉霸待確認按鈕覆蓋頂欄的已知限制已修正：錯誤提示改為操作區內、開始按鈕之後的正常排版，不再固定在視窗頂端。長文字完整換行，確認鈕至少 44px；開始按鈕不位移。此修正在 night.css 主題產生標記之外，之後套用主題請保留。
+
+整合版 test:layout 改用 documentElement.clientWidth 檢查溢出，21 點擴為六人桌，並檢查拉霸在 100%／130% 字級的確認鈕可點、按鈕不位移，及插畫下載失敗的三軸 SVG 退回。JS／CSS 的更新檔版本標記為 cream-round3-20261024，仍保持 no-store。完整整合記錄見 ../../releases/2026-10-24-cream-round3.md。

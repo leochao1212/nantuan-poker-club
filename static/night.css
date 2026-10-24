@@ -1930,6 +1930,20 @@ html.pieces-ready :is(#app,#modal,#social-root) .die-face:is([aria-label="等待
 
 /*==== 奶油白主題 結束 ====*/
 
+/* PR #4 integration: keep recovery next to the slot controls, after the spin
+   button. In-flow feedback never covers voice/profile or moves the spin target.
+   Keep outside the generated theme so the designer's build preserves it. */
+:is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error{
+ position:static;inset:auto;z-index:auto;order:2;flex-wrap:wrap;
+ margin:8px 0 0;box-shadow:none;pointer-events:auto;
+}
+:is(#app,#modal,#social-root) .arcade-slot .table-control-area>#action-feedback.error>span{
+ display:block;overflow:visible;white-space:normal;overflow-wrap:anywhere;
+ -webkit-line-clamp:unset;line-clamp:unset;
+}
+body:has(.arcade-slot #action-feedback.error) #toast{top:auto}
+:is(#app,#modal,#social-root) .arcade-slot:has(#action-feedback.error) #deal-hand{scroll-margin-top:120px}
+
 /* Keep all five community cards clear of the foreground pair on narrow tables. */
 .holdem-room .seat-details>strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:760px),(max-width:1000px) and (max-height:500px){

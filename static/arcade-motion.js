@@ -69,7 +69,7 @@ window.ClubArcadeMotion=(()=>{
   function settle(){
     for(const rotor of document.querySelectorAll('.roulette-wheel>.roulette-rotor')){
       const value=rotor.parentElement.dataset.winningNumber,index=value===''?0:order.indexOf(Number(value)),angle=index>0?-index*360/37:0,last=rest.get(rotor);
-      if(!last||last.angle!==angle)rest.set(rotor,{angle,from:last?last.angle:0});
+      rest.set(rotor,{angle,from:last?last.angle:0});
       rotor.style.transform=`rotate(${angle}deg)`;
     }
   }

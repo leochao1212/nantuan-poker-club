@@ -2082,3 +2082,43 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:auto}
  .holdem-room .spot-2,.holdem-room .spot-4{top:36px}
  .holdem-room .spot-1,.holdem-room .spot-5{bottom:48px}
 }
+
+/* PR #6 integration fixes. Keep outside the generated cream theme. */
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{
+ grid-template-columns:4px auto minmax(0,1fr) 4px;column-gap:6px;row-gap:4px;padding-bottom:8px;
+}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details,
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details[open]{grid-column:2/4;grid-row:2}
+:is(#app,#modal,#social-root) .night-lobby .game-choice>details>summary{
+ width:fit-content;max-width:100%;min-width:0;gap:8px;white-space:nowrap;
+}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span{grid-column:3;grid-row:2}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>.game-configure{grid-column:2;grid-row:3}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>[data-create]{grid-column:3;grid-row:3;min-width:0}
+:is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span+[data-create]{grid-column:2/4}
+/* Six independent columns: gutter, rules, people, settings, play, gutter.
+   Three/four-card catalogs need different thresholds to fit all controls. */
+@media(min-width:761px) and (max-width:1439px){
+ @container gamecat (min-width:920px){
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{grid-template-columns:4px minmax(56px,1fr) auto auto auto 4px;column-gap:6px;row-gap:6px;padding-bottom:10px}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details{grid-column:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details[open]{grid-column:2/6}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span{grid-column:3;grid-row:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>.game-configure{grid-column:4;grid-row:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>[data-create]{grid-column:5;grid-row:2;min-width:96px}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span+[data-create]{grid-column:4/6}
+ }
+}
+@media(min-width:1440px){
+ @container gamecat (min-width:1240px){
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{grid-template-columns:4px minmax(56px,1fr) auto auto auto 4px;column-gap:6px;row-gap:6px;padding-bottom:10px}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details{grid-column:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>details[open]{grid-column:2/6}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span{grid-column:3;grid-row:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>.game-configure{grid-column:4;grid-row:2}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>[data-create]{grid-column:5;grid-row:2;min-width:96px}
+  :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice>footer>span+[data-create]{grid-column:4/6}
+ }
+}
+/* Narrow rank glyphs (especially J) must not crop the square suit artwork. */
+:is(#app,#modal,#social-root) .playing-card[data-suit]>b>i{background-size:contain;background-position:center}

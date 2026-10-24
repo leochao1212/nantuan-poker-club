@@ -64,13 +64,20 @@ def static_text(file: Path):
     cached = STATIC_TEXT_CACHE.get(file)
     if cached and cached[0] == stamp:
         return cached[1]
-    raw = file.read_bytes()
-    digest = hashlib.sha256(raw).hexdigest()
-    # mtime=0 keeps the gzip bytes identical across restarts for the same content.
-    entry = (raw, f'"{digest}"', gzip.compress(raw, compresslevel=9, mtime=0), f'"{digest}-gz"')
+    # Several clients can refresh immediately after deployment. Recheck inside
+    # the lock so only one request compresses each cold file version.
     with STATIC_TEXT_LOCK:
+        stat = file.stat()
+        stamp = (stat.st_mtime_ns, stat.st_size)
+        cached = STATIC_TEXT_CACHE.get(file)
+        if cached and cached[0] == stamp:
+            return cached[1]
+        raw = file.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        # mtime=0 keeps gzip bytes deterministic for this runtime and content.
+        entry = (raw, f'"{digest}"', gzip.compress(raw, compresslevel=9, mtime=0), f'"{digest}-gz"')
         STATIC_TEXT_CACHE[file] = (stamp, entry)
-    return entry
+        return entry
 
 
 def accepts_gzip(header: str | None) -> bool:

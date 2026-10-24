@@ -107,6 +107,20 @@ class StaticTextCaching(unittest.TestCase):
             status,headers,_=self.get(path,{'Accept-Encoding':'gzip'})
             self.assertEqual(status,404,path);self.assertNotIn('Content-Encoding',headers);self.assertNotIn('ETag',headers)
 
+    def test_concurrent_cold_requests_compress_each_file_only_once(self):
+        from concurrent.futures import ThreadPoolExecutor
+        import time
+        file=Path(self.tmp.name)/'cold.css';file.write_bytes(b'.card{color:red}'*1000)
+        original=server.gzip.compress
+        def slow(*args,**kwargs):
+            time.sleep(.02)
+            return original(*args,**kwargs)
+        with patch.object(server.gzip,'compress',side_effect=slow) as compress:
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                results=list(pool.map(lambda _:server.static_text(file),range(8)))
+        self.assertEqual(compress.call_count,1)
+        self.assertTrue(all(value is results[0] for value in results))
+
     def test_cache_reused_until_file_changes(self):
         tmp=Path(self.tmp.name)/'x.css';tmp.write_bytes(b'a{color:red}'*50)
         first=server.static_text(tmp);self.assertIs(server.static_text(tmp),first)

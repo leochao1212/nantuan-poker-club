@@ -14,7 +14,7 @@
 | 理解資料、籌碼與 API | [資料模型](docs/DATA-MODEL.md)、[API 導覽](docs/API.md) |
 | 開分支、提交 PR | [協作流程](CONTRIBUTING.md) |
 | 執行回歸、操作測試 | [測試方法](docs/TESTING.md) |
-| Docker、備份與更新 | [部署與營運](docs/OPERATIONS.md) |
+| Docker、備份與更新 | [部署與營運](docs/OPERATIONS.md)、[CI/CD](docs/CI-CD.md) |
 | 圖片、SVG、動畫來源檔 | [素材清單](docs/ASSETS.md) |
 
 ## 本機啟動
@@ -66,4 +66,4 @@ npx playwright install chromium
 npm run test:ui
 ~~~
 
-瀏覽器測試只用臨時 SQLite 與合成帳號。正式部署由擁有者另行執行；推送 GitHub 不會自動更新正式網站。
+瀏覽器測試只用臨時 SQLite 與合成帳號。PR 自動檢查，main 通過後建置版本化 Docker 封裝；正式更新由 Actions 的 Deploy production 手動觸發，主機設定完成後啟用。詳見 [CI/CD](docs/CI-CD.md)。

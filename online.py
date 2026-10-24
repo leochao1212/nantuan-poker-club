@@ -20,6 +20,20 @@ import result_stats
 
 OFFLINE_GRACE_SECONDS = 120
 
+
+def deployment_paused(db, clock):
+    """A renewable lease blocks new deals while existing hands finish."""
+    row = db.execute("SELECT value FROM settings WHERE key='deploy_pause_until'").fetchone()
+    try:
+        return bool(row and float(row[0]) > clock)
+    except (ValueError, TypeError):
+        return False
+
+
+def require_new_deal_allowed(db, clock):
+    if deployment_paused(db, clock):
+        raise engine.RuleError('系統準備更新，請完成目前牌局；稍後即可開新局。')
+
 def rules(room):
     return mahjong_engine if room.get('game_type')=='mahjong' else engine if room.get('game_type','holdem')=='holdem' else bonus_engine if room['game_type'] in bonus_engine.CATALOG else arcade_engine
 
@@ -297,6 +311,7 @@ def _mutate(db, path, data, user, clock, received_at):
     member_accounts.require_active(db,uid)
     if path.startswith("/api/club/"):return rewards.mutate(db,path,data,user,clock)
     if path == "/api/online/rooms":
+        require_new_deal_allowed(db, clock)
         if current_room(db, uid):
             raise engine.RuleError("你已在另一張桌上，請先離桌再開新桌。")
         if db.execute("SELECT count(*) FROM poker_rooms WHERE status!='closed'").fetchone()[0] >= 12:
@@ -357,6 +372,9 @@ def _mutate(db, path, data, user, clock, received_at):
         if not seat:
             raise engine.RuleError("請先入座，才能操作這張牌桌。")
         if action == "start":
+            # Dice/roulette accept bets on an already running hand via /start.
+            if room['status'] == 'waiting':
+                require_new_deal_allowed(db, clock)
             expected_settings=data.get('expected_settings_revision')
             if room['status']=='waiting' and expected_settings is not None:
                 current_settings=game_settings.current(db,room.get('game_type','holdem'))

@@ -1642,17 +1642,6 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
 :is(#app,#modal,#social-root) .blackjack-wagers li>span>.bj-nick{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :is(#app,#modal,#social-root) .blackjack-wagers li>span>.bj-you{flex:none;white-space:pre}
 
-/* 骰寶開獎前：骰子區畫成金色骰盅（金色圓頂盅身＋開口裡的墨綠內膛＋底下金盤），三顆「?」骰照舊在盅裡，不畫假點數。
-   只看還沒開獎的骰子（aria-label＝等待收注開獎）；開獎後恢復原樣。純背景、不吃點擊，區塊高度不變。 */
-:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"]){position:relative;isolation:isolate}
-:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"])>.die-face{position:relative;z-index:2;box-shadow:0 3px 6px #0b241b99}
-:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"])::before{content:"";position:absolute;z-index:0;left:50%;bottom:5px;width:min(calc(100% - 24px),204px);height:calc(100% - 4px);transform:translateX(-50%);pointer-events:none;
-  border-radius:50% 50% 12px 12px/80% 80% 12px 12px;
-  background:radial-gradient(circle 5px at 50% 7px,#fff6d8 0 2px,#e9c873 3px,#9c7226 5px,#9c722600 5.5px),radial-gradient(ellipse 44% 40% at 50% 66%,#0d2a22 0 90%,#0d2a2200 100%),linear-gradient(90deg,#8a622400 0 18%,#fff3c866 30%,#8a622400 42%),linear-gradient(180deg,#f3d991 0%,#d8b25c 40%,#b08435 75%,#8a6224 100%);
-  box-shadow:inset 0 0 0 1px #fff2c466,inset 0 -6px 10px #5c3f1199,0 4px 10px #00000059}
-:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"])::after{content:"";position:absolute;z-index:1;left:50%;bottom:1px;width:min(calc(100% - 8px),236px);height:12px;transform:translateX(-50%);pointer-events:none;border-radius:50%;
-  background:linear-gradient(180deg,#f6e2a6,#c9a050 55%,#8a6224);box-shadow:0 2px 4px #00000066,inset 0 1px 0 #fff6d8}
-
 /* L7 21 點結算後（下注面板出現時）：上一局的手牌卡變矮（牌在左、點數與下注在右），下注設定的加減列 44px，「確認下注」盡量進首屏（只在局與局之間，遊戲中不動） */
 @media(max-width:760px){
   :is(#app,#modal,#social-root) .arcade-blackjack:has(.blackjack-bet-panel) .blackjack-hands{padding:8px 10px}
@@ -1682,19 +1671,16 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
   /* 窄螢幕：下注面板標題「各自確認，一起發牌」只給報讀器（名單與「確認下注」已說明在做什麼），省下一行 */
   :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-bet-panel>div:first-child:has(>h2){position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 }
-@media(min-width:761px){
-  :is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"]){padding:20px 0 12px}
-  :is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"])::before{width:268px}
-  :is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label="等待收注開獎"])::after{width:300px}
-}
 
 /*==== P18 第 5 批：會所設施一列一項、骰寶黃銅托盤、拉霸機台外框、小遊戲場景、麻將木框、細修 ====*/
 :root{
   --fac-gear:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f0d59a' fill-rule='evenodd' d='M10.6 1h2.8l.5 2.6 1.9.8 2.2-1.5 2 2-1.5 2.2.8 1.9 2.6.5v2.8l-2.6.5-.8 1.9 1.5 2.2-2 2-2.2-1.5-1.9.8-.5 2.6h-2.8l-.5-2.6-1.9-.8-2.2 1.5-2-2 1.5-2.2-.8-1.9L1 13.4v-2.8l2.6-.5.8-1.9-1.5-2.2 2-2 2.2 1.5 1.9-.8zM12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6z'/%3E%3C/svg%3E");
   --fac-coins:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%23f0d59a' stroke='%236b1f2a' stroke-width='.9'%3E%3Cpath d='M5 15.5v3c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-3'/%3E%3Cellipse cx='12' cy='15.5' rx='7' ry='2.6'/%3E%3Cpath d='M5 10.5v3c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-3'/%3E%3Cellipse cx='12' cy='10.5' rx='7' ry='2.6'/%3E%3Cpath d='M5 5.5v3c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-3'/%3E%3Cellipse cx='12' cy='5.5' rx='7' ry='2.6'/%3E%3C/g%3E%3C/svg%3E");
   --fac-sofa:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%23f0d59a' stroke='%23123a2c' stroke-width='.9'%3E%3Cpath d='M5.5 11V7.5A3.5 3.5 0 0 1 9 4h6a3.5 3.5 0 0 1 3.5 3.5V11z'/%3E%3Crect x='6' y='11' width='12' height='6' rx='1.5'/%3E%3Crect x='2' y='9' width='4.5' height='9.5' rx='2'/%3E%3Crect x='17.5' y='9' width='4.5' height='9.5' rx='2'/%3E%3C/g%3E%3Cpath d='M4.5 18.5v2M19.5 18.5v2' stroke='%23f0d59a' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
-  --mj-walnut:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E %3ClinearGradient id='v' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%238a5a33'/%3E%3Cstop offset='.45' stop-color='%236b4226'/%3E%3Cstop offset='1' stop-color='%2342281a'/%3E%3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%237d5030'/%3E%3Cstop offset='.5' stop-color='%235e3a21'/%3E%3Cstop offset='1' stop-color='%233b2416'/%3E%3C/linearGradient%3E%3C/defs%3E %3Crect width='48' height='48' rx='3' fill='%23c99a45'/%3E %3Cpath d='M1 1H47L35 13H13Z' fill='url%28%23v%29'/%3E%3Cpath d='M1 47H47L35 35H13Z' fill='url%28%23v%29' opacity='.8'/%3E %3Cpath d='M1 1V47L13 35V13Z' fill='url%28%23h%29'/%3E%3Cpath d='M47 1V47L35 35V13Z' fill='url%28%23h%29' opacity='.8'/%3E %3Cpath d='M8 4.5H40M5 8.5H43M9 41.5H39M6 44H42M4.5 8V40M8.5 6V42M41.5 9V39M44 6V42' stroke='%232a170c' stroke-width='.5' opacity='.45'/%3E %3Cpath d='M1 1L13 13M47 1L35 13M1 47L13 35M47 47L35 35' stroke='%232a170c' stroke-width='.6' opacity='.6'/%3E %3Cpath fill='%23f3d991' fill-rule='evenodd' d='M12.5 12.5H35.5V35.5H12.5ZM14 14H34V34H14Z'/%3E %3Cpath fill='%231a1206' opacity='.55' fill-rule='evenodd' d='M14 14H34V34H14ZM15.2 15.2H32.8V32.8H15.2Z'/%3E%3C/svg%3E");
+  --mj-walnut:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E %3ClinearGradient id='v' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%238a5a33'/%3E%3Cstop offset='.45' stop-color='%236b4226'/%3E%3Cstop offset='1' stop-color='%2342281a'/%3E%3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%237d5030'/%3E%3Cstop offset='.5' stop-color='%235e3a21'/%3E%3Cstop offset='1' stop-color='%233b2416'/%3E%3C/linearGradient%3E%3C/defs%3E %3Crect width='48' height='48' rx='3' fill='%23c99a45'/%3E %3Cpath d='M1 1H47L35 13H13Z' fill='url%28%23v%29'/%3E%3Cpath d='M1 47H47L35 35H13Z' fill='url%28%23v%29' opacity='.8'/%3E %3Cpath d='M1 1V47L13 35V13Z' fill='url%28%23h%29'/%3E%3Cpath d='M47 1V47L35 35V13Z' fill='url%28%23h%29' opacity='.8'/%3E %3Cpath d='M8 4.5H40M5 8.5H43M9 41.5H39M6 44H42M4.5 8V40M8.5 6V42M41.5 9V39M44 6V42' stroke='%232a170c' stroke-width='.5' opacity='.45'/%3E %3Cg%3E%3Cpath d='M1.4 1.4L12.6 12.6' stroke='%23f3d991' stroke-width='.8'/%3E%3Cpath d='M3.2 10V3.2H10' fill='none' stroke='%23e9c873' stroke-width='1.1'/%3E%3Cpath d='M7.2 4.4L10 7.2L7.2 10L4.4 7.2Z' fill='%23f6e2a6' stroke='%236b4a17' stroke-width='.4'/%3E%3C/g%3E%3Cg transform='matrix%28-1 0 0 1 48 0%29'%3E%3Cg%3E%3Cpath d='M1.4 1.4L12.6 12.6' stroke='%23f3d991' stroke-width='.8'/%3E%3Cpath d='M3.2 10V3.2H10' fill='none' stroke='%23e9c873' stroke-width='1.1'/%3E%3Cpath d='M7.2 4.4L10 7.2L7.2 10L4.4 7.2Z' fill='%23f6e2a6' stroke='%236b4a17' stroke-width='.4'/%3E%3C/g%3E%3C/g%3E%3Cg transform='matrix%281 0 0 -1 0 48%29'%3E%3Cg%3E%3Cpath d='M1.4 1.4L12.6 12.6' stroke='%23f3d991' stroke-width='.8'/%3E%3Cpath d='M3.2 10V3.2H10' fill='none' stroke='%23e9c873' stroke-width='1.1'/%3E%3Cpath d='M7.2 4.4L10 7.2L7.2 10L4.4 7.2Z' fill='%23f6e2a6' stroke='%236b4a17' stroke-width='.4'/%3E%3C/g%3E%3C/g%3E%3Cg transform='matrix%28-1 0 0 -1 48 48%29'%3E%3Cg%3E%3Cpath d='M1.4 1.4L12.6 12.6' stroke='%23f3d991' stroke-width='.8'/%3E%3Cpath d='M3.2 10V3.2H10' fill='none' stroke='%23e9c873' stroke-width='1.1'/%3E%3Cpath d='M7.2 4.4L10 7.2L7.2 10L4.4 7.2Z' fill='%23f6e2a6' stroke='%236b4a17' stroke-width='.4'/%3E%3C/g%3E%3C/g%3E %3Cpath fill='%23f3d991' fill-rule='evenodd' d='M12.5 12.5H35.5V35.5H12.5ZM14 14H34V34H14Z'/%3E %3Cpath fill='%231a1206' opacity='.55' fill-rule='evenodd' d='M14 14H34V34H14ZM15.2 15.2H32.8V32.8H15.2Z'/%3E%3C/svg%3E");
   --card-back-red:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 56' preserveAspectRatio='none'%3E%3Crect width='40' height='56' fill='%238a2f38'/%3E%3Crect x='3' y='3' width='34' height='50' rx='2' fill='none' stroke='%23dfbd75' stroke-width='1'/%3E%3Cpath d='M3 3L37 53M37 3L3 53M20 3L37 28L20 53L3 28Z' stroke='%23dfbd75' stroke-width='.6' fill='none' opacity='.7'/%3E%3Cpath d='M20 20L26 28L20 36L14 28Z' fill='%23dfbd75'/%3E%3C/svg%3E");
+  --card-back-crimson:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 56' preserveAspectRatio='none'%3E%3Crect width='40' height='56' fill='%23652a3a'/%3E%3Crect x='3' y='3' width='34' height='50' rx='2' fill='none' stroke='%23e5c186' stroke-width='1'/%3E%3Crect x='5.5' y='5.5' width='29' height='45' rx='1.5' fill='none' stroke='%23e5c186' stroke-width='.5' opacity='.75'/%3E%3Cpath d='M3 3L37 53M37 3L3 53M20 3L37 28L20 53L3 28Z' stroke='%23e5c186' stroke-width='.6' fill='none' opacity='.7'/%3E%3Ccircle cx='20' cy='28' r='9' fill='%234a1d2a' stroke='%23e5c186' stroke-width='.8'/%3E%3Cpath d='M20 20L26 28L20 36L14 28Z' fill='%23e5c186'/%3E%3C/svg%3E");
+  --card-back-jade:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 56' preserveAspectRatio='none'%3E%3Crect width='40' height='56' fill='%23164b3f'/%3E%3Crect x='3' y='3' width='34' height='50' rx='2' fill='none' stroke='%23e5c186' stroke-width='1'/%3E%3Crect x='5.5' y='5.5' width='29' height='45' rx='1.5' fill='none' stroke='%23e5c186' stroke-width='.5' opacity='.75'/%3E%3Cpath d='M3 3L37 53M37 3L3 53M20 3L37 28L20 53L3 28Z' stroke='%23e5c186' stroke-width='.6' fill='none' opacity='.7'/%3E%3Ccircle cx='20' cy='28' r='9' fill='%230f3a30' stroke='%23e5c186' stroke-width='.8'/%3E%3Cpath d='M20 20L26 28L20 36L14 28Z' fill='%23e5c186'/%3E%3C/svg%3E");
   --slot-spade:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f3d991' d='M12 2C9 6.5 3.5 9.5 3.5 14a4.5 4.5 0 0 0 7.2 3.6L9.5 22h5l-1.2-4.4A4.5 4.5 0 0 0 20.5 14C20.5 9.5 15 6.5 12 2z'/%3E%3C/svg%3E");
 }
 
@@ -1740,8 +1726,9 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
 :is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label])>.die-face{position:relative;z-index:2;width:58px;height:58px;font-size:46px;border-radius:12px;border:1px solid #c9a55c;
   background:radial-gradient(circle at 32% 26%,#ffffff 0%,#fffaf0 38%,#f1e3c4 100%);
   box-shadow:inset -3px -4px 0 #e2cfa6,inset 2px 2px 0 #ffffff,0 2px 0 #b8975a,0 6px 10px #000000a6}
-:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label])>.die-face:nth-child(2){transform:translateY(-3px) rotate(-4deg)}
-:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label])>.die-face:nth-child(3){transform:rotate(5deg)}
+/* 傾斜用獨立的 translate／rotate 屬性（不用 transform）：開獎動畫（bonus.js）直接動 transform，兩者疊加，動畫結束時不會跳回 */
+:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label])>.die-face:nth-child(2){translate:0 -3px;rotate:-4deg}
+:is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label])>.die-face:nth-child(3){rotate:5deg}
 @media(min-width:761px){
   :is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label]){padding:24px 0}
   :is(#app,#modal,#social-root) .dice-results:has(>.die-face[aria-label])::before{width:300px}
@@ -1760,10 +1747,11 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
     radial-gradient(circle closest-side,#fffbe6 0 30%,#ffd76a 52%,#c98a1a 78%,#c98a1a00 100%) 0 50%/12px 10px space no-repeat,
     linear-gradient(180deg,#8a6224,#3b2a0c) center/100% 14px no-repeat;
   filter:drop-shadow(0 0 3px #ffd76a80) drop-shadow(0 2px 2px #00000066)}
-:is(#app,#modal,#social-root) .slot-machine::after{content:"";position:absolute;z-index:2;top:34%;right:-5px;width:12px;height:66px;pointer-events:none;
-  background:radial-gradient(circle at 40% 35%,#ff9a9a 0 1.5px,#d02c40 3.5px,#7a1420 5.4px,#7a142000 5.8px) top center/12px 12px no-repeat,
-    linear-gradient(90deg,#8a6224,#fff1c4 50%,#8a6224) center 10px/3px 42px no-repeat,
-    linear-gradient(180deg,#f3d991,#8a6224) bottom center/10px 16px no-repeat;
+:is(#app,#modal,#social-root) .slot-machine::after{content:"";position:absolute;z-index:2;top:34%;right:-7px;width:16px;height:74px;pointer-events:none;
+  background:radial-gradient(circle at 40% 35%,#ffb0b0 0 2px,#d02c40 4.6px,#7a1420 7.3px,#7a142000 7.8px) top center/16px 16px no-repeat,
+    linear-gradient(90deg,#6b4a17,#fff1c4 45%,#c99a45 70%,#6b4a17) center 13px/5px 46px no-repeat,
+    radial-gradient(ellipse 50% 22% at 50% 22%,#fff1c4cc,#fff1c400) bottom center/12px 18px no-repeat,
+    linear-gradient(90deg,#8a6224,#f3d991 40%,#b08435 70%,#6b4a17) bottom center/12px 18px no-repeat;
   filter:drop-shadow(1px 2px 1px #00000059)}
 
 /* 4 小遊戲場景：各遊戲的封面圖當絨布底，疊在墨綠上（上層一片半透明墨綠罩住，只透出 10～25%），不佔高度。
@@ -1788,15 +1776,18 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
   :is(#app,#modal,#social-root) .arcade-table .arcade-surface{background:var(--felt-noise) padding-box,var(--scene-veil) padding-box,var(--scene,none) center/cover no-repeat padding-box,var(--felt) padding-box,var(--gold-bevel) border-box}
 }
 
-/* 5 麻將：牌桌外框改胡桃木（斜接木條＋木紋）＋內外金線。用 border-image 畫（往外畫 6px，不改盒子尺寸、座位與牌位置不動，不算進捲動範圍） */
-:is(#app,#modal,#social-root) .mj-table{border-image:var(--mj-walnut) 16 / 12px / 4px stretch;border-radius:10px;box-shadow:0 8px 20px #3a2a0d4d,inset 0 12px 32px #00170d55}
+/* 5 麻將：牌桌外框改胡桃木（斜接木條＋木紋）＋內外金線，四角金色斜接＋階梯角花＋菱形。用 border-image 畫（不改盒子尺寸、座位與牌位置不動，不算進捲動範圍）。
+   手機木框 14px（往外 5px、往內 9px；座位牌與牌河離外緣約 11px，不會被壓到）；桌機 18px、往外 6px */
+:is(#app,#modal,#social-root) .mj-table{border-image:var(--mj-walnut) 16 / 14px / 5px stretch;border-radius:10px;box-shadow:0 8px 20px #3a2a0d4d,inset 0 12px 32px #00170d55}
 @media(min-width:761px){
   :is(#app,#modal,#social-root) .mj-table{border-image-width:18px;border-image-outset:6px}
 }
 
-/* 6 百家樂／射龍門：「等待開獎」字改小；閒、莊標籤做成紅色小牌；手機桌面頂端貼標題牌（::before，不吃點擊、不進報讀） */
+/* 6 百家樂／射龍門：「等待開獎」字改小；閒、莊標籤做成小牌（閒墨綠、莊酒紅）；手機桌面頂端貼標題牌（::before，不吃點擊、不進報讀） */
 :is(#app,#modal,#social-root) .arcade-table.arcade-baccarat .arcade-surface .arcade-board .baccarat-side>strong{font-size:14px;line-height:1.4;letter-spacing:.06em}
 :is(#app,#modal,#social-root) .arcade-table.arcade-baccarat .arcade-surface .arcade-board .baccarat-side>.small-label{display:inline-block;min-width:34px;padding:1px 10px;border:1px solid #f0d59a;border-radius:4px;background:linear-gradient(180deg,#b0434f,#7a2731);color:var(--ivory);font-size:14px;font-weight:900;line-height:1.5;letter-spacing:.08em;box-shadow:inset 0 1px 0 #ffffff40,0 2px 3px #00000059}
+/* 閒＝墨綠小牌、莊＝酒紅小牌（設計稿 baccarat-inbetween-mobile-v3；模板第一個 .baccarat-side 是閒） */
+:is(#app,#modal,#social-root) .arcade-table.arcade-baccarat .arcade-surface .arcade-board .baccarat-side:first-child>.small-label{background:linear-gradient(180deg,#245c47,#123a2c)}
 @media(max-width:760px){
   :is(#app,#modal,#social-root) .arcade-table:is(.arcade-baccarat,.arcade-inbetween) .arcade-surface>.arcade-board{position:relative;padding-top:20px}
   :is(#app,#modal,#social-root) .arcade-table.arcade-inbetween .arcade-surface>.arcade-board{padding-top:16px}
@@ -1811,16 +1802,24 @@ body:has(.arcade-slot #action-feedback.error) #toast{top:calc(env(safe-area-inse
 /* 7 21 點與德州：預設牌背改酒紅（只限這兩桌；百家樂、射龍門維持墨綠）。使用者裝備了收藏牌背（html[data-card-back] 有值）時不套用，照朋友的「牌背跟隨收藏」。
    21 點牌靴放大（開局前空桌面的牌盒、牌靴說明行首的小牌盒） */
 html:where(:not([data-card-back]),[data-card-back=""]) :is(#app,#modal,#social-root) :is(.arcade-blackjack,.holdem-room) .playing-card.covered{background:var(--card-back-red) center/100% 100% no-repeat,#8a2f38}
+/* 收藏牌背（緋紅、墨玉）：同款金色花紋＋內框線＋中央圓章，各用自己的底色（比預設多一圈，付費的不比預設素、彼此分得出來）。
+   範圍照朋友原本 arcade.css 的收藏規則（html[data-card-back=…] .playing-card.covered，全站每一桌）；內層「♠」照預設去掉紅底與細框，只留金色字 */
+html:where([data-card-back=crimson]) :is(#app,#modal,#social-root) .playing-card.covered{background:var(--card-back-crimson) center/100% 100% no-repeat,#652a3a;border:2px solid #fff5df;color:#e5c186}
+html:where([data-card-back=jade]) :is(#app,#modal,#social-root) .playing-card.covered{background:var(--card-back-jade) center/100% 100% no-repeat,#164b3f;border:2px solid #fff5df;color:#e5c186}
+html:where([data-card-back=crimson],[data-card-back=jade]) :is(#app,#modal,#social-root) .playing-card.covered>span{background:transparent;border:0}
 @media(max-width:760px){
   :is(#app,#modal,#social-root) .arcade-blackjack .arcade-empty-state::after{top:6px;width:66px;height:52px;left:calc(50% - 106px)}
   :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-shoe::before{width:30px;height:23px;margin:-5px 6px -4px 0;vertical-align:-5px}
 }
 
-/* 8 大老二：有「XX 最後出牌」時，它移到牌的上方，做成墨綠膠囊；重複的「目前需壓過的牌」標籤只給報讀器（模板順序不變，只改視覺順序） */
+/* 8 大老二：有「XX 最後出牌」時，它移到牌的上方，做成墨綠膠囊；桌上有牌時，重複的「目前需壓過的牌」標籤只給報讀器（模板順序不變，只改視覺順序）。
+   所有人 Pass 後桌面清空但「XX 最後出牌」還在，這時標籤是「新一輪，可自由選牌型」，照常顯示 */
 :is(#app,#modal,#social-root) .big2-trick:has(>p){display:flex;flex-direction:column;align-items:center}
 :is(#app,#modal,#social-root) .big2-trick:has(>p)>.big2-opponents{order:-2;align-self:stretch}
 :is(#app,#modal,#social-root) .big2-trick:has(>p)>.big2-current{align-self:stretch}
-:is(#app,#modal,#social-root) .big2-trick:has(>p)>.small-label{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:is(#app,#modal,#social-root) .big2-trick:has(>p):has(>.big2-current .playing-card)>.small-label{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* 新一輪（桌面已清空）：標籤看得見，桌面區（只剩「等待領出」）矮 25px 抵掉標籤的高度，整塊高度和有牌時一樣，下面的手牌與出牌鈕不會上下跳 */
+:is(#app,#modal,#social-root) .big2-trick:has(>p):not(:has(>.big2-current .playing-card))>.big2-current{min-height:47px}
 :is(#app,#modal,#social-root) .arcade-table .arcade-surface .big2-trick>p,:is(#app,#modal,#social-root) .big2-trick>p{order:-1;display:inline-block;margin:0 auto;padding:2px 14px;border:1px solid #dfbd75;border-radius:999px;background:linear-gradient(180deg,#2c6b53,#173f31);color:var(--ivory);font-size:12px;font-weight:700;line-height:1.5;letter-spacing:.04em;box-shadow:0 2px 4px #00000040}
 
 /* 9 收藏卡稱號小牌：徽章在上、字在下，五個字一行不折（320～414；400 以下的 64px 圖放得下；360 以下的 50px 圖字 9.5px，最多比圖寬 2px，不碰右側文字） */

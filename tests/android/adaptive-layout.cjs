@@ -1,10 +1,10 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPage}){
+module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks}){
  const serial=adb('get-serialno').toString().trim();assert.match(serial,/^emulator-\d+$/,'Adaptive settings are emulator-only');
  const sim=(...args)=>adb('-s',serial,...args),pause=ms=>new Promise(r=>setTimeout(r,ms)),results=[],failures=[];
  const profiles=[['small',640,1280],['standard',786,1704],['large',864,1920],['landscape',1560,720],['tablet',1280,800,160]];
- async function configured(){await pause(1800);sim('shell','am','start','-n','org.nantuan.nantuan_club/.MainActivity');p=await getPage();await p.waitForFunction(()=>typeof lobby!=='undefined'&&lobby&&liveReady&&document.visibilityState==='visible',{},{timeout:30000});await p.emulateMedia({reducedMotion:'reduce'});}
+ async function configured(){await pause(1800);sim('shell','am','start','-n','org.nantuan.nantuan_club/.MainActivity');await p.waitForFunction(()=>typeof lobby!=='undefined'&&lobby&&liveReady&&document.visibilityState==='visible',{},{timeout:30000});await p.emulateMedia({reducedMotion:'reduce'});}
  await p.emulateMedia({reducedMotion:'reduce'});
  async function open(view){await p.evaluate(v=>go(v),view);await p.waitForFunction(v=>typeof lobby!=='undefined'&&lobby&&(typeof v==='number'?view==='table'&&room?.id===v:view===v),view);await pause(220);}
  async function capture(name,{keyboard=false}={}){
@@ -22,8 +22,8 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPag
  }
  try{
   sim('shell','settings','put','secure','show_ime_with_hard_keyboard','1');
-  for(const mode of ['gestural','threebutton']){
-   sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.'+mode);await configured();
+  for(const mode of [process.env.ANDROID_NAV_MODE||'gestural']){
+   assert.ok(['gestural','threebutton'].includes(mode));await configured();
    for(const [label,width,height,density=320] of profiles){
     sim('shell','wm','size',width+'x'+height);sim('shell','wm','density',String(density));await configured();
     await open('lobby');await capture(mode+'-'+label+'-lobby');
@@ -39,8 +39,8 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPag
   }
   sim('shell','settings','put','system','font_scale','1.5');await configured();await open('rewards');await capture('large-font-rewards');
  }finally{
-  try{if(sim('get-state').toString().trim()==='device'){sim('shell','settings','put','system','font_scale','1');sim('shell','wm','size','reset');sim('shell','wm','density','reset');sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.gestural');await configured();}}catch{console.warn('Emulator unavailable during cleanup; preserving original failure');}
+  try{if(sim('get-state').toString().trim()==='device'){sim('shell','settings','put','system','font_scale','1');sim('shell','wm','size','reset');sim('shell','wm','density','reset');await configured();}}catch{console.warn('Emulator unavailable during cleanup; preserving original failure');}
   fs.writeFileSync(path.join(out,'adaptive-layout.json'),JSON.stringify({results,failures,scope:'Android emulator; gesture/three-button, small/standard/large/landscape/tablet, keyboard, font scale'},null,2));
  }
- assert.deepEqual(failures,[]);checks.push('Adaptive native layouts: gesture/three-button, 5 sizes, keyboard return and large text');
+ assert.deepEqual(failures,[]);checks.push('Adaptive native layouts: '+(process.env.ANDROID_NAV_MODE||'gestural')+', 5 sizes, keyboard return and large text');
 };

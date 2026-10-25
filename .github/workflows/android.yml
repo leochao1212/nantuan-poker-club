@@ -113,7 +113,14 @@ jobs:
           adb shell input keyevent 82
           sleep 5
           adb install mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
-          node tests/android/webview-smoke.cjs
+          # A navigation overlay is a system-wide resource change that relaunches
+          # Activities. Select it before launching each fresh, isolated test run.
+          for mode in gestural threebutton; do
+            adb shell am force-stop org.nantuan.nantuan_club
+            adb shell cmd overlay enable-exclusive --category "com.android.internal.systemui.navbar.$mode"
+            sleep 3
+            ANDROID_NAV_MODE="$mode" node tests/android/webview-smoke.cjs
+          done
       - name: Prepare private release signing
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         env:

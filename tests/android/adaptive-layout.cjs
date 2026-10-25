@@ -30,7 +30,11 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks}){
     await open(roomId);await p.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await pause(150);await capture(mode+'-'+label+'-game-bottom');
    }
    sim('shell','wm','size','786x1704');sim('shell','wm','density','320');await configured();await open('members');
-   const height=await p.evaluate(()=>innerHeight);await p.locator('#member-search').tap();await p.locator('#member-search').fill('Android');
+   const height=await p.evaluate(()=>innerHeight),input=p.locator('#member-search');await input.scrollIntoViewIfNeeded();
+   // Attached WebViews have no Playwright hasTouch context. Use a real Android
+   // touch, translating observed DOM coordinates through native WebView bounds.
+   sim('shell','uiautomator','dump','/sdcard/nantuan-layout.xml');const xml=sim('shell','cat','/sdcard/nantuan-layout.xml').toString(),node=xml.match(/<node\b[^>]*class="android\.webkit\.WebView"[^>]*>/)?.[0],bounds=node?.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);assert.ok(bounds,'Native WebView bounds available');
+   const box=await input.boundingBox(),width=await p.evaluate(()=>innerWidth);assert.ok(box);const scale=(Number(bounds[3])-Number(bounds[1]))/width;sim('shell','input','tap',String(Math.round(Number(bounds[1])+(box.x+box.width/2)*scale)),String(Math.round(Number(bounds[2])+(box.y+box.height/2)*scale)));await input.fill('Android');
    let keyboardShown=false;try{await p.waitForFunction(h=>(visualViewport?.height||innerHeight)<h-100,height,{timeout:10000});keyboardShown=true;}catch{failures.push(mode+': software keyboard did not open');fs.writeFileSync(path.join(out,'ime-'+mode+'.txt'),sim('shell','dumpsys','input_method'));}
    await capture(mode+'-keyboard-open',{keyboard:true});
    if(keyboardShown){sim('shell','input','keyevent','4');try{await p.waitForFunction(h=>Math.abs(innerHeight-h)<4&&Math.abs((visualViewport?.height||innerHeight)-h)<4,height,{timeout:10000});}catch{failures.push(mode+': viewport did not recover after keyboard');}}

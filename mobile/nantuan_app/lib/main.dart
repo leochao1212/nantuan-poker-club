@@ -265,7 +265,13 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
             children: [
               _webView,
               if (_progress < 100 && !_failed)
-                LinearProgressIndicator(value: _progress / 100, minHeight: 3),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  child: LinearProgressIndicator(value: _progress / 100),
+                ),
               if (_failed)
                 Positioned.fill(
                   child: ColoredBox(

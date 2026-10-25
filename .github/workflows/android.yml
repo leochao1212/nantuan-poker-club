@@ -105,7 +105,18 @@ jobs:
           test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
           adb logcat -c
           adb logcat >artifacts/android/logcat-live.txt 2>&1 &
+          [[ "$(adb get-serialno)" == emulator-* ]]
+          # Only the disposable emulator: prevent first-boot search/AI downloads
+          # from freezing Pixel Launcher and intercepting the App's Back/Home tests.
+          for package in com.google.android.googlequicksearchbox com.google.android.as com.google.android.as.oss; do
+            adb shell pm disable-user --user 0 "$package" || true
+          done
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+          adb shell am force-stop com.google.android.apps.nexuslauncher
           adb shell input keyevent 82
+          sleep 5
           adb install mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
           node tests/android/webview-smoke.cjs
       - name: Prepare private release signing

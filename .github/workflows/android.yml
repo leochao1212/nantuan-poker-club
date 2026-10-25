@@ -77,7 +77,7 @@ jobs:
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           if [ -x mobile/nantuan_app/android/gradlew ]; then mobile/nantuan_app/android/gradlew --stop; fi
           sudo apt-get update -qq
-          sudo apt-get install -y libpulse0 gdb
+          sudo apt-get install -y libpulse0
           sudo chmod 666 /dev/kvm
           sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
           # Pinned official emulator archive: avoid host SIGSEGV seen with 37.2.12.
@@ -96,7 +96,7 @@ jobs:
           printf '\nhw.lcd.width=720\nhw.lcd.height=1560\nhw.lcd.density=320\n' >> "$ANDROID_AVD_HOME/nantuan-test.avd/config.ini"
           mkdir -p artifacts/android
           trap 'tail -60 artifacts/android/emulator.log || true' EXIT
-          nohup gdb --batch -ex "set disable-randomization off" -ex "handle SIGPIPE SIGUSR1 SIGUSR2 nostop noprint pass" -ex run -ex "thread apply all bt" --args "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swangle -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
+          nohup "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swangle -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
           timeout 90s adb wait-for-device
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi

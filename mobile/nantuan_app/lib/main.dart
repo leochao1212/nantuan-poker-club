@@ -6,16 +6,16 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'navigation_policy.dart';
 
+const _systemUi = SystemUiOverlayStyle(
+  statusBarColor: Color(0xff142b23),
+  statusBarIconBrightness: Brightness.light,
+  systemNavigationBarColor: Color(0xff142b23),
+  systemNavigationBarIconBrightness: Brightness.light,
+);
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Color(0xff142b23),
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xff142b23),
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  SystemChrome.setSystemUIOverlayStyle(_systemUi);
   runApp(const NantuanApp());
 }
 
@@ -244,62 +244,65 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
     onPopInvokedWithResult: (didPop, result) {
       if (!didPop) unawaited(_back());
     },
-    child: Scaffold(
-      backgroundColor: const Color(0xff142b23),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            WebViewWidget(controller: _web),
-            if (_progress < 100 && !_failed)
-              LinearProgressIndicator(value: _progress / 100, minHeight: 3),
-            if (_failed)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: const Color(0xfff6ecd9),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(28),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.wifi_off_rounded,
-                            size: 56,
-                            color: Color(0xff205441),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            '暫時連不上牌室',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
+    child: AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _systemUi,
+      child: Scaffold(
+        backgroundColor: const Color(0xff142b23),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              WebViewWidget(controller: _web),
+              if (_progress < 100 && !_failed)
+                LinearProgressIndicator(value: _progress / 100, minHeight: 3),
+              if (_failed)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: const Color(0xfff6ecd9),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.wifi_off_rounded,
+                              size: 56,
+                              color: Color(0xff205441),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            '檢查網路後再試，原本的操作不會自動重送。',
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          FilledButton.icon(
-                            onPressed: _retry,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('重新連線'),
-                          ),
-                          TextButton(
-                            onPressed: () => _native.invokeMethod<void>(
-                              'openBrowser',
-                              {'url': serviceOrigin},
+                            const SizedBox(height: 20),
+                            const Text(
+                              '暫時連不上牌室',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                            child: const Text('改用網頁版'),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            const Text(
+                              '檢查網路後再試，原本的操作不會自動重送。',
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            FilledButton.icon(
+                              onPressed: _retry,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('重新連線'),
+                            ),
+                            TextButton(
+                              onPressed: () => _native.invokeMethod<void>(
+                                'openBrowser',
+                                {'url': serviceOrigin},
+                              ),
+                              child: const Text('改用網頁版'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     ),

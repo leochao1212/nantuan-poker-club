@@ -79,7 +79,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y libpulse0
           sudo chmod 666 /dev/kvm
-          sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
+          sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;default;x86_64' >/dev/null
           # Pinned official emulator archive: avoid host SIGSEGV seen with 37.2.12.
           # https://developer.android.com/studio/emulator_archive (36.4.10 Stable)
           curl --fail --location --retry 2 https://dl.google.com/android/repository/emulator-linux_x64-15004761.zip -o "$RUNNER_TEMP/emulator.zip"
@@ -89,7 +89,7 @@ jobs:
           "$EMULATOR_BIN" -version
           export ANDROID_AVD_HOME="$RUNNER_TEMP/nantuan-avd"
           mkdir -p "$ANDROID_AVD_HOME"
-          echo no | avdmanager create avd --force --name nantuan-test --path "$ANDROID_AVD_HOME/nantuan-test.avd" --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
+          echo no | avdmanager create avd --force --name nantuan-test --path "$ANDROID_AVD_HOME/nantuan-test.avd" --package 'system-images;android-35;default;x86_64' --device pixel_5
           printf 'avd.ini.encoding=UTF-8\npath=%s/nantuan-test.avd\ntarget=android-35\n' "$ANDROID_AVD_HOME" > "$ANDROID_AVD_HOME/nantuan-test.ini"
           "$EMULATOR_BIN" -list-avds | grep -x nantuan-test
           # Keep the disposable CI phone within the hosted runner memory/GPU budget.
@@ -103,18 +103,13 @@ jobs:
             sleep 2
           done
           test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          adb shell dumpsys webviewupdate
           adb logcat -c
           adb logcat >artifacts/android/logcat-live.txt 2>&1 &
           [[ "$(adb get-serialno)" == emulator-* ]]
-          # Only the disposable emulator: prevent first-boot search/AI downloads
-          # from freezing Pixel Launcher and intercepting the App's Back/Home tests.
-          for package in com.google.android.googlequicksearchbox com.google.android.as com.google.android.as.oss; do
-            adb shell pm disable-user --user 0 "$package" || true
-          done
           adb shell settings put global window_animation_scale 0
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
-          adb shell am force-stop com.google.android.apps.nexuslauncher
           adb shell input keyevent 82
           sleep 5
           adb install mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk

@@ -85,9 +85,10 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
    },mobile);
    const artwork=await p.evaluate(()=>[...document.querySelectorAll('#friend-card-fixture .playing-card[data-rank]')].map(e=>getComputedStyle(e,'::before').backgroundImage));assert.ok(artwork.every((s,i)=>s.includes(['card-k.webp','card-q.webp','card-j.webp'][i])));
    const back=await p.evaluate(()=>getComputedStyle(document.querySelector('#friend-card-fixture .covered')).backgroundImage);assert.ok(back.includes('card-back-friends.webp'));
+   const flight=await p.evaluate(()=>{const t=document.createElement('template');t.innerHTML=card(null);const g=t.content.firstElementChild;document.querySelector('#deal-layer').append(g);const b=getComputedStyle(g).backgroundImage;g.remove();return b;});assert.ok(flight.includes('card-back-friends.webp'),'Flight must use the same current back');
    await p.locator('#friend-card-fixture').screenshot({path:path.join(out,'friends-cards-'+(mobile?'phone':'desktop')+'.png')});
   }
-  await p.evaluate(()=>document.documentElement.dataset.cardBack='jade');assert.ok(!(await p.locator('#friend-card-fixture .covered').evaluate(e=>getComputedStyle(e).backgroundImage)).includes('card-back-friends.webp'));checks.push({friends_deck:true,desktop:true,phone:true,collectible_back:true});
+  await p.evaluate(()=>document.documentElement.dataset.cardBack='jade');assert.ok(!(await p.locator('#friend-card-fixture .covered').evaluate(e=>getComputedStyle(e).backgroundImage)).includes('card-back-friends.webp'));const sameBack=await p.evaluate(()=>{const t=document.createElement('template');t.innerHTML=card(null);const g=t.content.firstElementChild;document.querySelector('#deal-layer').append(g);const same=getComputedStyle(g).backgroundImage===getComputedStyle(document.querySelector('#friend-card-fixture .covered')).backgroundImage;g.remove();return same;});assert.ok(sameBack,'Equipped back must also match during dealing');checks.push({friends_deck:true,desktop:true,phone:true,collectible_back:true});
   for(const c of shared)await c.close();
   // An unconfirmed operation pauses visual work, then retries the same receipt.
   const uncertain=await browsers[0].newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});serial++;

@@ -4446,9 +4446,9 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line);
 :is(#app,#modal,#social-root) .arcade-table.arcade-inbetween .arcade-surface>.arcade-board::before{content:"射龍門";content:"射龍門" / "";}
 }
 html:where(:not([data-card-back]),[data-card-back=""]) :is(#app,#modal,#social-root) :is(.arcade-blackjack,.holdem-room) .playing-card.covered{background:var(--card-back-red) center/100% 100% no-repeat,#8a2f38;}
-html:where([data-card-back=crimson]) :is(#app,#modal,#social-root) .playing-card.covered{background:var(--card-back-crimson) center/100% 100% no-repeat,#652a3a;border:2px solid #fff5df;color:#e5c186;}
-html:where([data-card-back=jade]) :is(#app,#modal,#social-root) .playing-card.covered{background:var(--card-back-jade) center/100% 100% no-repeat,#164b3f;border:2px solid #fff5df;color:#e5c186;}
-html:where([data-card-back=crimson],[data-card-back=jade]) :is(#app,#modal,#social-root) .playing-card.covered>span{background:transparent;border:0;}
+html:where([data-card-back=crimson]) :is(#app,#modal,#social-root,#arcade-motion-layer,#deal-layer) .playing-card.covered{background:var(--card-back-crimson) center/100% 100% no-repeat,#652a3a;border:2px solid #fff5df;color:#e5c186;}
+html:where([data-card-back=jade]) :is(#app,#modal,#social-root,#arcade-motion-layer,#deal-layer) .playing-card.covered{background:var(--card-back-jade) center/100% 100% no-repeat,#164b3f;border:2px solid #fff5df;color:#e5c186;}
+html:where([data-card-back=crimson],[data-card-back=jade]) :is(#app,#modal,#social-root,#arcade-motion-layer,#deal-layer) .playing-card.covered>span{background:transparent;border:0;}
 @media (max-width:760px){
 :is(#app,#modal,#social-root) .arcade-blackjack .arcade-empty-state::after{top:6px;width:66px;height:52px;left:calc(50% - 106px);}
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-shoe::before{width:30px;height:23px;margin:-5px 6px -4px 0;vertical-align:-5px;}

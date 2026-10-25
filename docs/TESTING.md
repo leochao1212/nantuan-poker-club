@@ -60,3 +60,8 @@ GitHub Actions 執行程式庫內的檢查。正式部署前還需在部署目�
 ### 輪盤／拉霸回執與揭曉
 
 `npm run test:reveal` 在隔離資料庫執行真實操作，涵蓋 Chromium／WebKit 手機與桌機：點擊即轉、停止後才揭曉、1800ms 慢回應與推播中斷後確認快照先到、重複快照不重播、相同收據重送不扣第二次、略過及快速模式、連點防重送、背景返回不補播、兩人共用輪盤、8 秒未知結果暫停後用同一收據確認。截圖存 artifacts/round-presentation。`test:motion` 的拉霸 fixture 使用同一 presenter 檢查滾動中的現行素材，不保留舊滑入動畫。
+
+
+### 人物牌比例
+
+`test:layout` 透過 `tests/browser/court-checks.cjs` 檢查真實 `card()` 元件：德州自己／對手／公共牌、大老二、21 點、射龍門、紀錄與獨立卡牌共 8 種上下文，28／52／72／140px 牌寬、J／Q／K 四花色，393／1366px 視窗。Chromium 與 WebKit 各 768 組檢查滿版等比人物圖、按牌寬縮放的角標、J 較小花色及無大片白底；其餘點數仍由既有全點數裁切測試覆蓋。

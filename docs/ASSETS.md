@@ -58,4 +58,6 @@
 - 預設牌背：[card-back-friends.webp](../static/assets/pieces/card-back-friends.webp)，256×384。
 - 生成提示與輸入角色見 [朋友牌組提示詞](design-proposals/asset-prompts/friends-deck.txt)。WebP 僅做等比縮小與編碼；以內容指紋發送，取代先前人物圖。
 
-實際卡牌元件驗收：[手機](screenshots/friends-cards-phone.png)、[桌機](screenshots/friends-cards-desktop.png)。
+人物牌使用滿版等比 cover，移除內縮圖框與大片角標底板。角標跟隨牌寬縮放，J 使用較小花色；花色沿用現行 SVG 的輪廓作單色遮罩，接近確認稿的平面印刷樣式。手機對手牌亦使用滿版圖，不再固定為 16px。本次僅調整元件比例，未再次生成或替換人物素材。
+
+實際卡牌元件驗收（使用正式渲染函式的隔離測試；桌機為放大檢視）：[手機](screenshots/friends-cards-phone.png)、[桌機](screenshots/friends-cards-desktop.png)。

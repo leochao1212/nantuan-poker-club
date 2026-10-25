@@ -1,0 +1,37 @@
+{
+  "generator": "Built-in ImageGen",
+  "design": "Nantuan night harbor",
+  "assets": [
+    {
+      "file": "static/assets/fishing/fish-atlas.webp",
+      "transparent_background": true,
+      "prompt": "Create ONE production game sprite atlas on a genuinely transparent background, wide 2:1 aspect ratio, exactly 4 equal columns by 2 equal rows, NO grid lines, labels, lettering or borders. Original luxury fishing arcade for Nantuan club: sophisticated hand-painted semi-realistic 3D marine creatures, detailed fins, luminous scales, gold rim lighting, NOT generic icons or toys. Every sprite centered inside its own equal cell, facing RIGHT, full body, 12% transparent margin, no overlap. Row 1 left to right: slender silver blue sardine; orange white-banded clownfish; teal mackerel with striped back; deep-bodied red snapper. Row 2: muscular navy blue tuna with gold finlets; wide lavender blue manta ray with tail left/head right in slightly overhead side pose; turquoise sailfish with tall sail and pointed snout; fantasy golden Asian arowana with armored scales and red-gold fins. Unmistakably different silhouettes. Clean alpha cutouts, no water, scenery or shadows. Used directly as texture atlas in mobile canvas game."
+    },
+    {
+      "file": "static/assets/fishing/reef.webp",
+      "transparent_background": false,
+      "prompt": "Original premium fishing arcade game background, landscape 16:9, detailed underwater coral reef viewed almost directly from above. Huge open clear dark teal swimming area occupies center 75%, coral jade rocks and shells ONLY at extreme bottom and side edges, subtle small antique gold nautical ornaments in corners, warm sunlight caustics in deep emerald/petrol blue sea water, painterly realistic 3D game art, rich organic textures, calm and readable. Nantuan private club palette ink jade #082b31, ocean teal #145965, champagne gold #d9b675. NO fish, characters, weapons, text, logos, interface or frame. Gameplay sprites added later, full bleed landscape."
+    },
+    {
+      "file": "static/assets/fishing/harbor.webp",
+      "transparent_background": false,
+      "prompt": "Original premium cozy fishing game background, landscape 16:9 view from a small Taiwanese coastal fishing pier at blue hour. Clear turquoise/teal water occupies center and lower right 75%; beautiful timber jetty ONLY lower left corner with brass lantern and coiled rope; distant dusky mountains and warm harbor buildings across top 22%, gilded evening reflections, relaxed atmospheric depth. Sophisticated painterly 3D game art, not vector or photograph. Luxury Nantuan fishing club jade water, champagne gold brass and warm wood. NO fish, fishing rods, characters, weapons, numbers, text, logos or interface. Center-right open for bobber and fishing line added at runtime. Full bleed landscape."
+    },
+    {
+      "file": "static/assets/fishing/gear-atlas.webp",
+      "transparent_background": true,
+      "prompt": "ONE equipment sprite atlas, genuinely transparent background, exactly 3 equal columns and 2 equal rows, wide 3:2. No grid lines, labels, text or borders. Original premium polished 3D Nantuan fishing equipment, jade enamel, antique gold brass, ivory inlays, subtle SPADE-shaped crest. Clean alpha cutouts each centered completely in own cell with 15% transparent margin. TOP ROW three different full fishing rods + reels, same diagonal lower left to upper right: classic teak/brass rod; emerald jade/gold rod; ornate ivory/gold rod with navy reel. BOTTOM ROW three arcade fishing NET cannons, straight top-down, barrel facing UP, circular base at bottom, no perspective skew: polished single brass barrel with jade base; sleek jade cannon with twin brass tubing; ornate gold cannon with ivory inlays and spade crest. Not realistic weapons. Articulated mechanical details and readable metallic highlights, one coherent family. No fish, projectiles, water, floor or shadows outside silhouette, no extra objects."
+    }
+  ],
+  "refinements": [
+    {
+      "asset": "gear-atlas",
+      "prompt": "Remove all background pixels to true alpha; preserve the three rod and three cannon designs and layout."
+    },
+    {
+      "asset": "fish-atlas",
+      "prompt": "Keep eight designs and 4×2 layout; fit full silhouettes in their cells with transparent margins."
+    }
+  ],
+  "delivery": "PNG generation followed by WebP encoding only; original alpha preserved. Sprite display regions are defined in fishing-scene.js."
+}

@@ -495,6 +495,26 @@
     "sha256": "24b505f7a9c7595be0351b7a039c448d7222f16c668219bd797b7cd1821b660d"
   },
   {
+    "path": "static/assets/fishing/fish-atlas.webp",
+    "bytes": 299726,
+    "sha256": "d971312cd35ca787863137f1e4a7ce8df06f3e874d4b97187a329ac4ae5ad1d5"
+  },
+  {
+    "path": "static/assets/fishing/gear-atlas.webp",
+    "bytes": 335550,
+    "sha256": "cbee444cf5f4dfca633bc00ffb5978d4df8e078b96c7ddab873151065ab885f7"
+  },
+  {
+    "path": "static/assets/fishing/harbor.webp",
+    "bytes": 317842,
+    "sha256": "cc36b0fa584d05d9ed9e50604f1a9bd677d6d44d8276282b8114257d18f9a260"
+  },
+  {
+    "path": "static/assets/fishing/reef.webp",
+    "bytes": 316768,
+    "sha256": "940b4704f6952ae2100d1658e18e76b718c8bf414997e4be3ce275e309a94177"
+  },
+  {
     "path": "static/assets/pieces/bet-chips.webp",
     "bytes": 1312,
     "sha256": "5b994124ec29ba377a5a1c600af52c854b1152ed4ce85a62a4cd22dbcf0411bc"

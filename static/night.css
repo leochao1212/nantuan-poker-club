@@ -4566,8 +4566,8 @@ html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-car
 :is(#app,#modal,#social-root) .gate-cards{container-type:inline-size;}
 :is(#app,#modal,#social-root) .gate-cards .playing-card{--card-w:clamp(60px,23cqw,96px);}
 /* Hold'em reserves enough felt for readable community cards and the two-card fan. */
-:is(#app,#modal,#social-root) .holdem-layout>.table-arena{container-type:inline-size;height:clamp(500px,calc(100svh - 240px),620px);min-height:500px;}
-:is(#app,#modal,#social-root) .holdem-room .board-area{top:144px;width:min(90%,320px);transform:translateX(-50%);}
+:is(#app,#modal,#social-root) .holdem-layout>.table-arena{container-type:inline-size;height:clamp(520px,calc(100svh - 240px),620px);min-height:520px;}
+:is(#app,#modal,#social-root) .holdem-room .board-area{top:160px;width:min(90%,320px);transform:translateX(-50%);}
 :is(#app,#modal,#social-root) .holdem-room .community-cards{gap:4px;}
 :is(#app,#modal,#social-root) .holdem-room .community-cards .playing-card{--card-w:clamp(36px,8cqw,56px);}
 :is(#app,#modal,#social-root) .holdem-room .board-placeholder{width:clamp(36px,8cqw,56px);height:calc(clamp(36px,8cqw,56px)*1.5);}
@@ -4589,8 +4589,8 @@ html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-car
 :is(#app,#modal,#social-root) .history-holes .playing-card{--card-w:36px;}
 }
 @media (max-width:760px),(max-width:1000px) and (max-height:500px){
-:is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:450px;min-height:450px;}
-:is(#app,#modal,#social-root) .holdem-room .board-area{top:126px;width:min(90%,292px);}
+:is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:470px;min-height:470px;}
+:is(#app,#modal,#social-root) .holdem-room .board-area{top:140px;width:min(90%,292px);}
 :is(#app,#modal,#social-root) .holdem-room .community-cards .playing-card{--card-w:clamp(40px,13vw,52px);}
 :is(#app,#modal,#social-root) .holdem-room .board-placeholder{width:clamp(40px,13vw,52px);height:calc(clamp(40px,13vw,52px)*1.5);}
 :is(#app,#modal,#social-root) .holdem-room .seat-cards{height:50px;min-height:50px;}
@@ -4599,8 +4599,8 @@ html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-car
 :is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards .playing-card{--card-w:76px;flex-basis:76px;}
 }
 @media (max-width:760px) and (max-height:740px){
-:is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:420px;min-height:420px;}
-:is(#app,#modal,#social-root) .holdem-room .board-area{top:114px;}
+:is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:440px;min-height:440px;}
+:is(#app,#modal,#social-root) .holdem-room .board-area{top:128px;}
 }
 :is(#app,#modal,#social-root) .night-lobby .game-catalog{container:gamecat/inline-size;}
 :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{display:grid;grid-template-rows:auto auto auto;align-content:start;padding:0 0 8px;}

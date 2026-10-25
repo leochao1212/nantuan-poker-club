@@ -57,6 +57,7 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ steps.gradle.outputs.cache-primary-key }}
       - name: Android emulator and real WebView gameplay
+        timeout-minutes: 8
         if: github.event_name == 'pull_request'
         env:
           PYTHON: python3
@@ -65,10 +66,15 @@ jobs:
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           sudo chmod 666 /dev/kvm
           sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
-          echo no | avdmanager create avd --force --name nantuan-test --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/nantuan-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd --force --name nantuan-test --path "$ANDROID_AVD_HOME/nantuan-test.avd" --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
+          printf 'avd.ini.encoding=UTF-8\npath=%s/nantuan-test.avd\ntarget=android-35\n' "$ANDROID_AVD_HOME" > "$ANDROID_AVD_HOME/nantuan-test.ini"
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -x nantuan-test
           mkdir -p artifacts/android
+          trap 'tail -60 artifacts/android/emulator.log || true' EXIT
           nohup "$ANDROID_HOME/emulator/emulator" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >artifacts/android/emulator.log 2>&1 &
-          adb wait-for-device
+          timeout 90s adb wait-for-device
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
             sleep 2

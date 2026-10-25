@@ -76,7 +76,7 @@ class StoredDice(unittest.TestCase):
     setUp=fixtures.Storage.setUp
     def test_legacy_table_upgrade_and_combined_starts_keep_one_hand_and_receipts(self):
         rid=online.mutate(self.db,'/api/online/rooms',{'game_type':'dice'},self.user,100)['id'];path=f'/api/online/rooms/{rid}'
-        room=online.get_room(self.db,rid);room['capacity']=1
+        room=online.get_room(self.db,rid);conserved=sum(wallet.view(self.db,u,100)['total'] for u in (1,2))+room['bank'];room['capacity']=1
         self.db.execute('UPDATE poker_rooms SET state=? WHERE id=?',(json.dumps(room),rid))
         balance=wallet.view(self.db,1,100)['total'];online.upgrade_dice_capacity(self.db)
         r=online.get_room(self.db,rid);self.assertEqual(r['capacity'],6);self.assertEqual(wallet.view(self.db,1,100)['total'],balance)
@@ -100,7 +100,7 @@ class StoredDice(unittest.TestCase):
         self.assertEqual(online.get_room(self.db,rid),before)
         for user in (self.user,other):
             r=online.get_room(self.db,rid);online.mutate(self.db,path+'/leave',{'revision':r['revision']},user,104)
-        self.assertEqual(sum(wallet.view(self.db,u,104)['total'] for u in (1,2))+online.get_room(self.db,rid)['bank'],1006000)
+        self.assertEqual(sum(wallet.view(self.db,u,104)['total'] for u in (1,2))+online.get_room(self.db,rid)['bank'],conserved)
 
 class DiceAPI(ServerTestCase):
     def test_six_simultaneous_combined_bets_share_one_pushed_result_and_replay(self):

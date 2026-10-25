@@ -240,7 +240,7 @@ def lobby(db, user, clock, *, touch_presence=True):
     people=people[:100]
     if own and own not in people:people.append(own)
     return {"club":rewards.view(db,user['id'],clock,profiles=profiles,appearances=cosmetics),"total_members":member_count,"online_count":online_count,"wallet":wallet.view(db,user['id'],clock,totals),"me": {**{k: user[k] for k in ("id", "username", "nickname")},**profiles.get(user['id'],{}),"cosmetics":cosmetics.get(user["id"],{}),**club_admin.identity(db,user['id'])}, "users": people,
-        "rooms": rooms, "current_room_id": current_room(db, user["id"]), "server_time": clock,
+        "betting_limits":game_settings.current(db,'limits'),"rooms": rooms, "current_room_id": current_room(db, user["id"]), "server_time": clock,
         "invite_code": db.execute("SELECT value FROM settings WHERE key='invite_code'").fetchone()[0],
         "total_hands": db.execute("SELECT count(*) FROM poker_hands").fetchone()[0]}
 
@@ -324,7 +324,8 @@ def _mutate(db, path, data, user, clock, received_at):
         amount = funding_amount(db,uid,data,'buy_in',1000,clock)
         kind=data.get('game_type','holdem')
         if not isinstance(kind,str) or kind not in ('holdem','mahjong','big2','blackjack','roulette',*bonus_engine.CATALOG):raise engine.RuleError('遊戲類型無效。')
-        room = mahjong_engine.new_room(name.strip(),uid,buy_in=amount,mahjong_rules=data.get('mahjong_rules')) if kind=='mahjong' else (engine.new_room(name.strip(), uid, data.get("small_blind", 5), data.get("big_blind", 10), amount) if kind=='holdem' else (bonus_engine if kind in bonus_engine.CATALOG else arcade_engine).new_room(name.strip(),uid,kind,amount,data.get('stake',20 if kind=='baccarat' else 10)))
+        room = mahjong_engine.new_room(name.strip(),uid,buy_in=amount,mahjong_rules=data.get('mahjong_rules')) if kind=='mahjong' else (engine.new_room(name.strip(), uid, data.get("small_blind", 5), data.get("big_blind", 10), amount) if kind=='holdem' else (bonus_engine if kind in bonus_engine.CATALOG else arcade_engine).new_room(name.strip(),uid,kind,amount,data.get('stake',20 if kind=='baccarat' else 10),settings=game_settings.current(db,kind)))
+        game_settings.fund_bet_limit(room,game_settings.current(db,kind))
         if kind=='tower':room['tower_mode']=bonus_engine.tower_mode(data.get('tower_mode','fixed'))
         if kind=='big2':room['big2_rules']=arcade_engine.big2_options(data.get('big2_rules'))
         club_features.create_party(room,data,uid)
@@ -376,6 +377,9 @@ def _mutate(db, path, data, user, clock, received_at):
             # Dice/roulette accept bets on an already running hand via /start.
             if room['status'] == 'waiting':
                 require_new_deal_allowed(db, clock)
+            expected_limit=data.get('expected_bet_limit_revision')
+            if room['status']=='waiting' and expected_limit is not None and (type(expected_limit) is not int or expected_limit!=game_settings.current(db,'limits')['revision']):
+                return {'conflict':True,'reason':'stale_settings'}
             expected_settings=data.get('expected_settings_revision')
             if room['status']=='waiting' and expected_settings is not None:
                 current_settings=game_settings.current(db,room.get('game_type','holdem'))
@@ -385,6 +389,7 @@ def _mutate(db, path, data, user, clock, received_at):
             if not wallet.active(db):raise engine.RuleError('本手結束後會啟用總籌碼制度，請稍候重新開桌。')
             if seat["away"] or seat["leaving"] or seat["stack"] == 0:
                 raise engine.RuleError("請先回到牌桌並補充籌碼，再發牌。")
+            if room['status']=='waiting':game_settings.fund_bet_limit(room,game_settings.current(db,room.get('game_type','holdem')))
             if room.get('game_type')=='blackjack':
                 if type(data.get('expected_hand_number')) is not int:
                     raise engine.RuleError('21 點已改為各自確認下注，請重新整理後再操作。')
@@ -427,7 +432,7 @@ def _mutate(db, path, data, user, clock, received_at):
         elif action == 'wager':
             if room['status']!='waiting' or type(data.get('expected_hand_number')) is not int or data['expected_hand_number']!=room['hand_no']+1:
                 return {'conflict':True,'reason':'stale_hand'}
-            arcade_engine.set_blackjack_bet(room,uid,data.get('stake'))
+            arcade_engine.set_blackjack_bet(room,uid,data.get('stake'),settings=game_settings.current(db,'blackjack'))
         elif action == "close":
             if room["owner_id"] != uid or room["status"] != "waiting":
                 raise engine.RuleError("只有桌主能在一手結束後結束牌桌。")

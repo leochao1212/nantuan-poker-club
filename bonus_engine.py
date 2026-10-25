@@ -58,25 +58,27 @@ def dice_multiplier(dice, key,settings=None):
     if kind=='total':return cfg['totals'][number-4]+1 if total==number else 0
     return cfg['triple']+1 if triple and dice[0]==number else 0
 
-def dice_bets(raw):
+def dice_bets(raw,limit=None):
+    limit=game_settings.bet_limit() if limit is None else limit
     if not isinstance(raw,list) or not 1<=len(raw)<=31:raise RuleError('請至少選擇一個骰寶押注。')
     allowed={'small','big','odd','even','any_triple',*[f'number:{i}' for i in range(1,7)],*[f'total:{i}' for i in range(4,18)],*[f'triple:{i}' for i in range(1,7)]}
     bets={}
     for item in raw:
         if not isinstance(item,dict) or not isinstance(item.get('key'),str) or item['key'] not in allowed:raise RuleError('骰寶押注類型無效。')
-        amount=poker.integer(item.get('amount'),'下注點數',1,1000)
+        amount=poker.integer(item.get('amount'),'下注點數',1,limit)
         bets[item['key']]=bets.get(item['key'],0)+amount
-    if sum(bets.values())>1000:raise RuleError('骰寶每局總下注上限為 1,000 點。')
+    if sum(bets.values())>limit:raise RuleError(f'骰寶每局總下注上限為 {limit:,} 點。')
     return [{'key':key,'amount':amount} for key,amount in bets.items()]
 
 def dice_gross(dice,bets,settings=None):return sum(bet['amount']*dice_multiplier(dice,bet['key'],settings) for bet in bets)
 
-def new_room(name, owner_id, game_type, buy_in=1000, stake=10):
+def new_room(name, owner_id, game_type, buy_in=1000, stake=10, settings=None):
     if game_type not in CATALOG: raise RuleError('遊戲類型無效。')
-    poker.integer(stake, '每局點數', 20 if game_type == 'baccarat' else 1, 1000)
+    poker.integer(stake, '每局點數', 20 if game_type == 'baccarat' else 1, game_settings.bet_limit(settings))
     if game_type == 'baccarat' and stake % 20: raise RuleError('百家樂下注須為 20 的倍數，以完整計算莊家勝局 5% 佣金。')
     room = poker.new_room(name, owner_id, buy_in=buy_in)
     room.update(game_type=game_type, stake=stake, capacity=CATALOG[game_type]['capacity'], bank=1_000_000)
+    game_settings.fund_bet_limit(room,settings or game_settings.default(game_type))
     return room
 
 def sit(room, user_id, nickname, clock, seat=None, buy_in=None):
@@ -112,9 +114,10 @@ def start_hand(room, clock, deck=None, options=None, user_id=None,settings=None)
     kind=room['game_type'];options=options or {};snapshot=deepcopy(settings or game_settings.default(kind));cfg=snapshot['params']
     if kind=='baccarat' and clock<room['next_hand_at']:raise RuleError('請等結算顯示完畢。')
     # Round settings and any initiating player's bets are validated before payment.
-    stake=poker.integer(options.get('stake',room['stake']),'每局點數',1,1000) if kind in ('slot','mines','tower','dice') else room['stake']
+    stake=poker.integer(options.get('stake',room['stake']),'每局點數',1,game_settings.bet_limit(snapshot)) if kind in ('slot','mines','tower','dice') else room['stake']
     mode=tower_mode(options.get('tower_mode',room.get('tower_mode','fixed'))) if kind=='tower' else 'fixed'
-    bets=dice_bets(options['bets']) if kind=='dice' and 'bets' in options else None
+    if kind=='baccarat':poker.integer(room['stake'],'每局點數',20,game_settings.bet_limit(snapshot))
+    bets=dice_bets(options['bets'],game_settings.bet_limit(snapshot)) if kind=='dice' and 'bets' in options else None
     needed=sum(b['amount'] for b in bets) if bets else stake
     seats = sorted([s for s in room['seats'] if not s['away'] and not s['leaving'] and s['stack'] >= (1 if kind in ('dice','inbetween') else needed)], key=lambda s:s['seat'])
     if not seats: raise RuleError('至少需要一位有足夠籌碼且未暫離的玩家。')
@@ -224,7 +227,7 @@ def legal_actions(room,uid):
     if room['game_type']=='inbetween':
         if h['actor']!=uid:return None
         quotes=gate_quotes(h);loss=max((q['loss_multiplier'] for q in quotes.values()),default=1)
-        maximum=min(1000,p['stack']//loss)
+        maximum=min(game_settings.room_bet_limit(room),p['stack']//loss)
         return {'actions':(['shoot'] if quotes and maximum else [])+['skip'],'max_stake':maximum,'directions':list(quotes),'quotes':quotes,'loss_multiplier':loss}
     return {'actions':['pick']+(['cashout'] if h['steps'] else [])} if h['actor']==uid else None
 
@@ -266,7 +269,7 @@ def finish_gate(room,clock,stake=None,direction=None):
     h=room['hand'];p=h['players'][0];gross=0
     if stake is None:label='略過門柱';h['board']=h['pillars'][:]
     else:
-        poker.integer(stake,'下注點數',1,1000)
+        poker.integer(stake,'下注點數',1,game_settings.room_bet_limit(room))
         quotes=gate_quotes(h)
         if direction is None and 'between' in quotes:direction='between'
         if not isinstance(direction,str) or direction not in quotes:raise RuleError('請先選擇有效的往上或往下方向；相鄰門柱請免費略過。')
@@ -299,10 +302,10 @@ def act(room,uid,action,clock,data=None,timed_out=False):
     legal=legal_actions(room,uid)
     if not legal or action not in legal['actions']:raise RuleError('此動作目前不允許。')
     h=room['hand'];kind=room['game_type'];data=data or {};p=arcade._player(room,uid)
-    if kind=='inbetween':finish_gate(room,clock,poker.integer(data.get('stake'),'下注點數',1,1000) if action=='shoot' else None,data.get('direction'))
+    if kind=='inbetween':finish_gate(room,clock,poker.integer(data.get('stake'),'下注點數',1,game_settings.room_bet_limit(room)) if action=='shoot' else None,data.get('direction'))
     elif kind=='dice':
         if action=='bet':
-            bets=dice_bets(data.get('bets'));amount=sum(bet['amount'] for bet in bets)
+            bets=dice_bets(data.get('bets'),game_settings.room_bet_limit(room));amount=sum(bet['amount'] for bet in bets)
             if amount>p['stack']:raise RuleError('本人的籌碼不足以支付押注。')
             # Reserve all accepted bets against the same one of 216 outcomes.
             maximum=max(sum(dice_gross(list(d),bets if q['user_id']==uid else q['bets'],game_settings.params(h,'dice')) for q in h['players']) for d in product(range(1,7),repeat=3))

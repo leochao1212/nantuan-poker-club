@@ -8,7 +8,8 @@
     "test:ui": "node tests/browser/smoke.cjs",
     "test:layout": "node tests/browser/layout.cjs",
     "test:motion": "node tests/browser/art-motion.cjs",
-    "test:reveal": "node tests/browser/round-presentation.cjs"
+    "test:reveal": "node tests/browser/round-presentation.cjs",
+    "test:limits": "node tests/browser/bet-limits.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

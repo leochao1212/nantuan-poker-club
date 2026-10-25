@@ -131,7 +131,7 @@ class SettingsAPI(ServerTestCase):
   self.assertEqual(player.call('/api/admin/game-settings')[0],403)
   with closing(sqlite3.connect(self.db_path)) as db:
    db.execute('INSERT INTO club_admins VALUES(1,0,?)',(time.time(),));db.commit()
-  status,view=admin.call('/api/admin/game-settings');self.assertEqual(status,200);self.assertEqual(len(view['games']),11)
+  status,view=admin.call('/api/admin/game-settings');self.assertEqual(status,200);self.assertEqual(len(view['games']),12)
   slot=next(x for x in view['games'] if x['game_type']=='slot');payload={'game_type':'slot','params':{**slot['params'],'pair':6},'revision':slot['revision'],'note':'HTTP test','operation_id':'settings_http_replay_001'}
   self.assertEqual(player.call('/api/admin/game-settings',payload)[0],403)
   self.assertEqual(admin.call('/api/admin/game-settings',payload,origin='https://evil.invalid')[0],403)

@@ -43,7 +43,7 @@ class SicBo(unittest.TestCase):
         self.assertEqual(accumulated,dict(small=210,big=210,odd=210,even=210,**{'number:1':199,'any_triple':150,'triple:1':151}))
 
     def test_validation_reserve_and_immediate_replay(self):
-        for raw in (None,[],{},[{'key':'bad','amount':10}],[{'key':'total:3','amount':1}],[{'key':'small','amount':True}],[{'key':'big','amount':1001}],[{'key':'big','amount':600},{'key':'small','amount':401}]):
+        for raw in (None,[],{},[{'key':'bad','amount':10}],[{'key':'total:3','amount':1}],[{'key':'small','amount':True}],[{'key':'big','amount':10001}],[{'key':'big','amount':6000},{'key':'small','amount':4001}]):
             r=fixtures.room('dice');before=copy.deepcopy(r)
             with self.assertRaises(p.RuleError):b.start_hand(r,101,options={'bets':raw})
             self.assertEqual(r,before)

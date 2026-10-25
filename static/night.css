@@ -2650,6 +2650,13 @@ dialog:has(.feature-dialog){width:min(800px,calc(100% - 24px));}
 .game-short-rules summary:after{content:"＋";margin-left:7px;}
 .game-short-rules[open] summary:after{content:"−";}
 .night-lobby .game-short-rules p{min-height:0;font-size:12px;line-height:1.7;margin:0 0 8px;}
+/* Rankings still use disclosures; rewards no longer depend on them. */
+.night-supply{padding:0 14px;margin:15px 0 24px;}
+.night-supply>summary{min-height:48px;display:flex;align-items:center;gap:8px;font-size:17px;cursor:pointer;list-style:none;}
+.night-supply>summary::-webkit-details-marker{display:none;}
+.night-supply>summary::after{content:"";flex:none;width:9px;height:15px;margin-left:auto;background:var(--chev) center/contain no-repeat;transition:transform .2s;}
+.night-supply[open]>summary::after{transform:rotate(90deg);}
+.night-supply .wallet-panel,.night-supply .income-panel{margin:12px 0;}
 .rewards-hub{max-width:1100px;margin:auto;}
 .rewards-links{display:flex;flex-wrap:wrap;gap:8px;}
 .rewards-links>*{flex:1;min-height:44px;white-space:nowrap;}
@@ -3408,7 +3415,7 @@ html,body{background:var(--cream-bg);color:var(--ink-deep);}
 :is(#app,#modal,#social-root) .auth-tabs{background:var(--cream-sunk);border:1px solid var(--cream-line);}
 :is(#app,#modal,#social-root) .auth-tabs button{color:var(--ink-2);}
 :is(#app,#modal,#social-root) .auth-tabs button[aria-selected=true]{background:var(--btn-gold);color:var(--ink-deep);border-color:#a47a2c;}
-:is(#app,#modal,#social-root) :is(.panel,section.panel,article.panel,article.facility,article.admin-account,article.staff-card,article.mission-card,article.collection-card,article.stat,.wallet-panel,.club-missions,.income-panel,.clubhouse-rules,article.room-card,.own-rank,details.arcade-rules,details.member-invite,.daily-box,.gate-preview,.public-game-settings,.wealth-summary){background:var(--cream-panel);color:var(--ink-deep);border:1px solid var(--cream-line);border-radius:16px;box-shadow:var(--shadow-soft);}
+:is(#app,#modal,#social-root) :is(.panel,section.panel,article.panel,article.facility,article.admin-account,article.staff-card,article.mission-card,article.collection-card,article.stat,.wallet-panel,.club-missions,.income-panel,.clubhouse-rules,article.room-card,.own-rank,details.night-supply,details.arcade-rules,details.member-invite,.daily-box,.gate-preview,.public-game-settings,.wealth-summary){background:var(--cream-panel);color:var(--ink-deep);border:1px solid var(--cream-line);border-radius:16px;box-shadow:var(--shadow-soft);}
 :is(#app,#modal,#social-root) .income-panel{background:var(--cream-panel);}
 :is(#app,#modal,#social-root) .daily-box{background:var(--cream-panel2);box-shadow:none;}
 :is(#app,#modal,#social-root) .rank-row,:is(#app,#modal,#social-root) details.dice-extra{border-color:var(--cream-line);}

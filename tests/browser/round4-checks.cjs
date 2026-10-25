@@ -45,5 +45,6 @@ module.exports=async function round4Checks(page,engine,out){
  await page.locator('#round4-card-fixture').screenshot({path:path.join(out,engine+'-face-cards.png')});
  await page.evaluate(()=>document.querySelector('#round4-card-fixture').remove());
  await require('./court-checks.cjs')(page,engine,out);
+ await require('./deck-checks.cjs')(page,engine,out);
  console.log('round4 OK: '+engine+' 32 lobby states and all card ranks/suits');
 };

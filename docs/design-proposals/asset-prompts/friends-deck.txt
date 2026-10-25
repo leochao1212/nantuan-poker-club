@@ -11,3 +11,14 @@ Card-back prompt:
 Production playing-card BACK artwork based on the RIGHTMOST approved reference card. One perfectly flat front-on portrait 2:3 rectangular panel filling the entire image, no surrounding tabletop, perspective, external shadow or other cards. Deep emerald green, finely engraved antique gold botanical linework, balanced 180-degree rotationally symmetric ornament, generous clean outer trim margin and thin double gold border. Central gold spade emblem with the exact Chinese text 楠團 arranged vertically inside. Opaque and finished edge-to-edge, a website card-back texture, not a product photo. No extra text or watermarks.
 
 Web packaging: equal-aspect thumbnail encoding only; court panels 384×576, back 256×384, WebP quality 80. Rank/suit rendering remains code-native.
+
+
+Full-deck expansion (user approved the actual full-bleed component, 2026-10-25):
+52 distinct source photographs selected from the local gallery. Keep the existing K-spades, Q-hearts and J-clubs art; one built-in imagegen request for each of the other 49 cards. Per-card source filenames are recorded in ../friends-deck.json. The original photographs stay outside the runtime repository.
+
+Shared prompt for the new panels:
+Production identity-preserving playing-card art, ONE flat 2:3 portrait rectangle. Image 1 is the target person; image 2 is the EXACT approved style. Preserve image 1 person's recognizable facial identity, hair, expression, glasses and original clothes/gesture. Remove original background and any other people. Large photographic face and bust in upper half; identical portrait rotated 180 degrees in lower half; joined by fine antique GOLD engraved botanical center flourish. Warm ivory textured paper and delicate engraved GOLD leaves, matching reference ornament density and portrait scale. No royal costume. Edge-to-edge full-bleed artwork, straight-on flat print, no surrounding surface or shadows. Keep upper-left and lower-right corners quiet for code-rendered indices. NO letters, text, numbers, rank, suit symbols or watermarks.
+
+For remaining panels: The only identity target is the main prominent foreground individual in image 1. Keep their original clothing, recognizable facial expression and visible meaningful hand gesture; exclude any background people. Render a natural shoulders-to-waist bust at reference scale, not a tiny full-body figure. All flowers use the same gold/ivory deck family.
+
+Image 1: the per-card source photograph; Image 2: the approved card-k panel. Initial spades and hearts include a short note identifying the foreground subject, clothing and prop (thumbs up, glasses, blue book, microphone, rice bowl, robe or vest). Rank and suit are never baked into the panel; HTML supplies the correct game values. Final runtime files are equal-aspect thumbnails encoded as WebP quality 80. No generated image is referenced only from CODEX_HOME.

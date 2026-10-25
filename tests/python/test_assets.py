@@ -11,7 +11,7 @@ BUTTONS=('btn-primary-l','btn-primary-m','btn-primary-r','btn-primary-sm-l','btn
 BUTTONS2=('btn-secondary-l','btn-secondary-m','btn-secondary-r','btn-secondary-sm-l','btn-secondary-sm-m','btn-secondary-sm-r',
           'btn-danger-sm-l','btn-danger-sm-m','btn-danger-sm-r',
           'tab-on-l','tab-on-m','tab-on-r','tab-off-l','tab-off-m','tab-off-r','frame-table','frame-card')
-PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb','card-j','card-q','card-k')
+PIECES=('slot-777','slot-crown','slot-diamond','slot-bell','slot-cherry','slot-bar','dice-q','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6','mine-gem','mine-bomb')
 # P20 group 4: loaded per page by CSS (only the roulette, hold'em and blackjack tables reference them), not preloaded
 TABLE_PIECES=('roul-frame','roul-hub','dealer-btn','bet-chips','bj-shoe')
 # P20 group 5: mahjong tiles. One SVG sprite (faces as <view> fragments, served as text so it gets gzip + ETag)
@@ -51,7 +51,7 @@ class StaticImages(unittest.TestCase):
             self.assertEqual(self.get(path)[0],404)
 
     def test_fingerprinted_images_are_immutable_and_reject_stale_versions(self):
-        for path in ('/assets/covers/slot.webp','/assets/pieces/dice-1.webp','/assets/buttons/coin.webp','/assets/clubhouse/tier-1-small.webp','/assets/staff/host.webp','/assets/pieces/card-back-friends.webp'):
+        for path in ('/assets/covers/slot.webp','/assets/pieces/dice-1.webp','/assets/buttons/coin.webp','/assets/clubhouse/tier-1-small.webp','/assets/staff/host.webp','/assets/pieces/card-back-friends.webp','/assets/cards/as.webp','/assets/cards/kh.webp'):
             raw_status,raw_headers,raw=self.get(path)
             self.assertEqual(raw_status,200);self.assertEqual(raw_headers['Cache-Control'],'no-cache')
             version=hashlib.sha256(raw).hexdigest()[:12]
@@ -64,6 +64,18 @@ class StaticImages(unittest.TestCase):
                 self.assertEqual(status,404);self.assertEqual(headers['Cache-Control'],'no-store')
                 self.assertNotIn('ETag',headers)
 
+    def test_full_friend_deck_is_served_and_retired_faces_are_not(self):
+        contents=set()
+        for rank in 'a23456789tjqk':
+            for suit in 'shdc':
+                status,headers,body=self.get('/assets/cards/'+rank+suit+'.webp')
+                self.assertEqual(status,200);self.assertEqual(headers['Content-Type'],'image/webp')
+                self.assertTrue(body.startswith(b'RIFF'));contents.add(hashlib.sha256(body).hexdigest())
+        self.assertEqual(len(contents),52)
+        for path in ('/assets/cards/As.webp','/assets/cards/10s.webp','/assets/cards/1s.webp','/assets/cards/ax.webp','/assets/cards/as.webp/','/assets/cards/../pieces/dice-1.webp','/assets/cards/%61s.webp','/assets/pieces/card-j.webp','/assets/pieces/card-q.webp','/assets/pieces/card-k.webp'):
+            status,headers,_=self.get(path)
+            self.assertEqual(status,404,path);self.assertEqual(headers['Cache-Control'],'no-store')
+
     def test_every_cover_is_served(self):
         for name in COVERS:
             status,headers,body=self.get(f'/assets/covers/{name}.webp')
@@ -72,7 +84,7 @@ class StaticImages(unittest.TestCase):
         for path in ('/assets/covers/nope.webp','/assets/covers/HOLDEM.webp','/assets/covers/holdem.webp/','/assets/covers/../poker-night.webp','/assets/covers/holdem.png','/assets/covers/%68oldem.webp'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_every_piece_is_served(self):
-        self.assertEqual(len(PIECES),18)
+        self.assertEqual(len(PIECES),15)
         for name in PIECES:
             status,headers,body=self.get(f'/assets/pieces/{name}.webp')
             self.assertEqual(status,200,name);self.assertEqual(headers['Content-Type'],'image/webp');self.assertTrue(body.startswith(b'RIFF'),name)

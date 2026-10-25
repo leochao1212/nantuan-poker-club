@@ -140,6 +140,266 @@
     "sha256": "82c8c0ca672b2adb252109cc444b1679c3a59ffc5b719a9a4512e69d34ea2d76"
   },
   {
+    "path": "static/assets/cards/2c.webp",
+    "bytes": 65672,
+    "sha256": "d323b98eeefe6804bf7833993fe7cc0705bd84e66c3184ba96ac7f506c9156af"
+  },
+  {
+    "path": "static/assets/cards/2d.webp",
+    "bytes": 68440,
+    "sha256": "eba1d59f03313a0e3031e6bec27d0a703fb74d2cbbd7ce45f2cc4b98ae3a8544"
+  },
+  {
+    "path": "static/assets/cards/2h.webp",
+    "bytes": 67606,
+    "sha256": "80eb1250a8da975685818632e1b83ae3c5a05b31aa4a1022166dd320f9a2a0d3"
+  },
+  {
+    "path": "static/assets/cards/2s.webp",
+    "bytes": 66566,
+    "sha256": "d12497fa2d0cae653d8228358ab16f115b112eb3ec5d0cb904cbc6bc811c66d9"
+  },
+  {
+    "path": "static/assets/cards/3c.webp",
+    "bytes": 66890,
+    "sha256": "15b6957bb36e4d4f89a0a0c0666487d0e6838788c5fffeb7801a5f960c345ce5"
+  },
+  {
+    "path": "static/assets/cards/3d.webp",
+    "bytes": 66278,
+    "sha256": "8d9e8d55f9f3a62701857179e6dc85621893d9e651208bed22fd0aa6bc9f2844"
+  },
+  {
+    "path": "static/assets/cards/3h.webp",
+    "bytes": 66506,
+    "sha256": "2a904a3094584885e20ce24f28300656f19774a36888100b90b099f1e4c28e68"
+  },
+  {
+    "path": "static/assets/cards/3s.webp",
+    "bytes": 70060,
+    "sha256": "f43380055897802784f149b7af337c23fe7ff0955bad84168979c707cb8a10e5"
+  },
+  {
+    "path": "static/assets/cards/4c.webp",
+    "bytes": 70350,
+    "sha256": "a3d5d80673fe127a91fa4aa597eeeb7fe63af656d22b81046e3d0224ebc60f50"
+  },
+  {
+    "path": "static/assets/cards/4d.webp",
+    "bytes": 68540,
+    "sha256": "418c76238a16a2a3ae2488d217436c1eb3eb8fb2a3355d6546c39061ea080471"
+  },
+  {
+    "path": "static/assets/cards/4h.webp",
+    "bytes": 68748,
+    "sha256": "988d41f682d4c9f4766c15ac819471ecdb283dcab98b8427e537081f82ba5cdf"
+  },
+  {
+    "path": "static/assets/cards/4s.webp",
+    "bytes": 66680,
+    "sha256": "cc5ed94d0f9de611e11811f3212ca1dd70e3a22b92917edea1ab8f4d10c3315c"
+  },
+  {
+    "path": "static/assets/cards/5c.webp",
+    "bytes": 68068,
+    "sha256": "65e51b9bc15f6d06a35bb2fac63cef7ef16143ce258d8882502f0f9652a3d395"
+  },
+  {
+    "path": "static/assets/cards/5d.webp",
+    "bytes": 65128,
+    "sha256": "ab3e0efa093bbe23ae204e9e4e932f4a4f4ac7370ed6f67bf47b897bd10f2945"
+  },
+  {
+    "path": "static/assets/cards/5h.webp",
+    "bytes": 71830,
+    "sha256": "0ead123fb2caaa18222c1ed3fd94af05e82ca3296ffdd2e2d122fadc1e1ba14b"
+  },
+  {
+    "path": "static/assets/cards/5s.webp",
+    "bytes": 68774,
+    "sha256": "7075b0070b281ddbb90edc8595427d6868126645043bab976e55e4c409257f59"
+  },
+  {
+    "path": "static/assets/cards/6c.webp",
+    "bytes": 74088,
+    "sha256": "36bc26a2392e2f712b2e03410e0a72d32b8f7a85574fc94f90c9deefa28022ab"
+  },
+  {
+    "path": "static/assets/cards/6d.webp",
+    "bytes": 65402,
+    "sha256": "2244abd909deb3a9db2bca5b9b27ede2872fcdf88a339e80222b2d79ab386a70"
+  },
+  {
+    "path": "static/assets/cards/6h.webp",
+    "bytes": 65986,
+    "sha256": "2a6cc68a1e22e0a0428d7ad365cea0ed8bcc1f000d52237a95e2199a4905c35b"
+  },
+  {
+    "path": "static/assets/cards/6s.webp",
+    "bytes": 70946,
+    "sha256": "2145a506ba97d2cf820d7c04622d21465ac193f4acbed628b6ce54cc2278d018"
+  },
+  {
+    "path": "static/assets/cards/7c.webp",
+    "bytes": 68210,
+    "sha256": "510de115a059da70a4601bb17c3406d4cd853e24b9890d6c88aca27f83966adc"
+  },
+  {
+    "path": "static/assets/cards/7d.webp",
+    "bytes": 65632,
+    "sha256": "5086f0fd3c3230da86cacbd889f8e67829071925ec768cd1a608642bb4218b56"
+  },
+  {
+    "path": "static/assets/cards/7h.webp",
+    "bytes": 68052,
+    "sha256": "38a097b83834aff65f83f61412369bc484bba42bc30da02250c3a65563508c4e"
+  },
+  {
+    "path": "static/assets/cards/7s.webp",
+    "bytes": 67042,
+    "sha256": "dc8e05eae7b56dac65778c1a05c3d25c785a1a41b134c77a2197092fe9eaa06d"
+  },
+  {
+    "path": "static/assets/cards/8c.webp",
+    "bytes": 69172,
+    "sha256": "a24bd2ff822f75ad8c590d34be56bf3a20c4e344c81a6e28b8db3a87d006e4ad"
+  },
+  {
+    "path": "static/assets/cards/8d.webp",
+    "bytes": 67728,
+    "sha256": "0f1c9a1f76f92004e946351b9703a36c7940f9faf13912d5d84c6acd3ed1fdb2"
+  },
+  {
+    "path": "static/assets/cards/8h.webp",
+    "bytes": 71886,
+    "sha256": "1d05509de38c9a4828d00191b51ce6b8b618b25a21fd20658eba7a2412335652"
+  },
+  {
+    "path": "static/assets/cards/8s.webp",
+    "bytes": 63638,
+    "sha256": "15e58b947f8667296f029a4eb4ce2fd3935855498faf522baa290e1d7a6ce350"
+  },
+  {
+    "path": "static/assets/cards/9c.webp",
+    "bytes": 68366,
+    "sha256": "cb490ae07c51d2351560d8e20560004d6ff1b3b352051d5c6026563a939bc442"
+  },
+  {
+    "path": "static/assets/cards/9d.webp",
+    "bytes": 63270,
+    "sha256": "f5a72ed28b106a537dced50785a54484833120050c4984f649cfbd2afdebc6f0"
+  },
+  {
+    "path": "static/assets/cards/9h.webp",
+    "bytes": 70882,
+    "sha256": "48aaf22553787f820b20275b7cb642d7685844f80681d7fbfb54e93437293847"
+  },
+  {
+    "path": "static/assets/cards/9s.webp",
+    "bytes": 64972,
+    "sha256": "856fb98391af5613d6390dff73b50437b4512959605f711339479d0ac70de0b2"
+  },
+  {
+    "path": "static/assets/cards/ac.webp",
+    "bytes": 68310,
+    "sha256": "710d6ff03727d17ba17598b6318324aa051f1033225a02de833df384d8b9af61"
+  },
+  {
+    "path": "static/assets/cards/ad.webp",
+    "bytes": 64234,
+    "sha256": "d691c16d360b143a434d274becfb787d12725eda9613032d00315b1c6209a8e2"
+  },
+  {
+    "path": "static/assets/cards/ah.webp",
+    "bytes": 68428,
+    "sha256": "356f6b09c6beedf8a2a23fd246f38c57bed058210cc320ea4682a77d81e16626"
+  },
+  {
+    "path": "static/assets/cards/as.webp",
+    "bytes": 64134,
+    "sha256": "6e65d54fb9ec3802de018b9b529c6d7e56143b00c9dd5eae141f94db4c845865"
+  },
+  {
+    "path": "static/assets/cards/jc.webp",
+    "bytes": 54618,
+    "sha256": "851ed0d96ba360ded5b544c2aa8b5b2d977daa5b094a648b50b1b31c973c9958"
+  },
+  {
+    "path": "static/assets/cards/jd.webp",
+    "bytes": 68528,
+    "sha256": "60c43d7fdb67e4136a25f478570e954e473ad9d5b0a29293b77c49a1bb8b6dc0"
+  },
+  {
+    "path": "static/assets/cards/jh.webp",
+    "bytes": 69170,
+    "sha256": "216b49d0b9795ca20e43be413147d9d4a571f6bd2d7df0bb50aa07c5bc0d2708"
+  },
+  {
+    "path": "static/assets/cards/js.webp",
+    "bytes": 68906,
+    "sha256": "5f03acc7a729acbc98a872fc6c0a6cb7d7341003d4f2d2b35351258afe81c375"
+  },
+  {
+    "path": "static/assets/cards/kc.webp",
+    "bytes": 64308,
+    "sha256": "1551ef3ec4201ad3fb0e5cf7da3e990ef2ad54c34b2542e50337ab4dcc36dd21"
+  },
+  {
+    "path": "static/assets/cards/kd.webp",
+    "bytes": 65506,
+    "sha256": "8c97aefdca9b47ce8a1a84256aa98781db48ac2ec2a46e415bf8e6dcaeb20f48"
+  },
+  {
+    "path": "static/assets/cards/kh.webp",
+    "bytes": 69324,
+    "sha256": "f85b52a3dd1418e37517431e9836e34bda7dac42f1f117f82e1a9ff985a756f9"
+  },
+  {
+    "path": "static/assets/cards/ks.webp",
+    "bytes": 67680,
+    "sha256": "cb97bedc58704ee34a8782387c43d113b51ab842d67ed9fb78166969aa479410"
+  },
+  {
+    "path": "static/assets/cards/qc.webp",
+    "bytes": 63264,
+    "sha256": "e3b500d34c26c51e4a000943a56baa8d29a59f8a27826b4a79c155939900e786"
+  },
+  {
+    "path": "static/assets/cards/qd.webp",
+    "bytes": 68114,
+    "sha256": "980c672056dc4e96f1949b2564f34098786646293c1db127462e69cf75603f5f"
+  },
+  {
+    "path": "static/assets/cards/qh.webp",
+    "bytes": 59638,
+    "sha256": "de358bfa0232d140060ebe59a82b4fa0ef001ff498946f62a9fe9b2d7b327480"
+  },
+  {
+    "path": "static/assets/cards/qs.webp",
+    "bytes": 71068,
+    "sha256": "708ec840c1503672e81fda1352a4c3454e858681a6e7ba2841737fc6120eea7b"
+  },
+  {
+    "path": "static/assets/cards/tc.webp",
+    "bytes": 62328,
+    "sha256": "73fae8067cfa990b2d22b0f5e9c93971eeb0ecc320b8464332212a4e14d4b4a0"
+  },
+  {
+    "path": "static/assets/cards/td.webp",
+    "bytes": 70194,
+    "sha256": "90f67ce56e0fd0b5b7e7e22f5dd1e0f5eb4fb3075f239d29aec1882c4abbed5b"
+  },
+  {
+    "path": "static/assets/cards/th.webp",
+    "bytes": 64866,
+    "sha256": "a6952c0f65d408dae651b97912b75fa3bfa3a13335a643b75a39baccf9a7ea6b"
+  },
+  {
+    "path": "static/assets/cards/ts.webp",
+    "bytes": 66940,
+    "sha256": "938d5375c1bc0bddd98f1f3a760171f292ade4cee237d671ed60c3cb2e243699"
+  },
+  {
     "path": "static/assets/clubhouse/tier-1-small.webp",
     "bytes": 35976,
     "sha256": "b2a7ab737ab54100a99182460ee98a038e1d3bd1027273499c3438f559c999cc"
@@ -248,21 +508,6 @@
     "path": "static/assets/pieces/card-back-friends.webp",
     "bytes": 26746,
     "sha256": "17933355170e4e6c71afc96f2c18905d820bb134e1fb391b3ed7eb1d90702fc1"
-  },
-  {
-    "path": "static/assets/pieces/card-j.webp",
-    "bytes": 54618,
-    "sha256": "851ed0d96ba360ded5b544c2aa8b5b2d977daa5b094a648b50b1b31c973c9958"
-  },
-  {
-    "path": "static/assets/pieces/card-k.webp",
-    "bytes": 67680,
-    "sha256": "cb97bedc58704ee34a8782387c43d113b51ab842d67ed9fb78166969aa479410"
-  },
-  {
-    "path": "static/assets/pieces/card-q.webp",
-    "bytes": 59638,
-    "sha256": "de358bfa0232d140060ebe59a82b4fa0ef001ff498946f62a9fe9b2d7b327480"
   },
   {
     "path": "static/assets/pieces/dealer-btn.webp",

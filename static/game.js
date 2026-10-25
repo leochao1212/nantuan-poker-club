@@ -158,7 +158,7 @@ function confirmDialog(title,text,label='確認',cancelLabel='取消'){return ne
 
 function tableHeading(r,user,subtitle){
   const own=r.seats.find(s=>s.user_id===user.id),waiting=!!(busy||pendingOperation);
-  return `<div class="room-heading"><div class="room-heading-left"><a class="button ghost table-back" id="back-lobby" href="#lobby" title="回到大廳，保留目前座位">${icon('back')}回大廳</a><div><h1>${esc(r.name)}</h1><p>${subtitle}</p></div></div><div class="table-tools"><button class="button ghost" type="button" data-social-toggle aria-label="聊天與語音">${icon('chat')}<span class="table-secondary-label">聊天／語音</span></button><button class="button ghost" type="button" id="show-history" aria-label="牌局紀錄與重播">${icon('history')}<span class="table-secondary-label">紀錄</span></button>${own?`<button class="button ghost table-leave" type="button" id="leave-table" data-leave-table ${own.leaving||waiting?'disabled':''}>${icon('logout')}<span>${own.leaving?'結算後離桌':'離開牌桌'}</span></button>`:''}${r.owner_id===user.id&&r.status==='waiting'?`<details class="table-manage" data-preserve-open><summary aria-label="房主管理">${icon('settings')}</summary><div><button class="text-button danger" type="button" id="close-table" ${waiting?'disabled':''}>結束牌桌</button></div></details>`:''}</div></div>`;
+  return `<div class="room-heading"><div class="room-heading-left"><a class="button ghost table-back" id="back-lobby" href="#lobby" title="${own?(own.leaving?'回到大廳，等待本局結算':'回到大廳，保留目前座位'):'回到遊戲大廳'}">${icon('back')}回大廳</a><div><h1>${esc(r.name)}</h1><p>${subtitle}</p></div></div><div class="table-tools"><button class="button ghost" type="button" data-social-toggle aria-label="聊天與語音">${icon('chat')}<span class="table-secondary-label">聊天／語音</span></button><button class="button ghost" type="button" id="show-history" aria-label="牌局紀錄與重播">${icon('history')}<span class="table-secondary-label">紀錄</span></button>${own?`<button class="button ghost table-leave" type="button" id="leave-table" data-leave-table ${own.leaving||waiting?'disabled':''}>${icon('logout')}<span>${own.leaving?'結算後離桌':'離開牌桌'}</span></button>`:''}${r.owner_id===user.id&&r.status==='waiting'?`<details class="table-manage" data-preserve-open><summary aria-label="房主管理">${icon('settings')}</summary><div><button class="text-button danger" type="button" id="close-table" ${waiting?'disabled':''}>結束牌桌</button></div></details>`:''}</div></div>`;
 }
 function currentTableNotice(){
   if(view==='table'||!lobby.current_room_id)return '';
@@ -369,7 +369,7 @@ async function command(action,extra={},message,retry=null){
   }catch(error){
     if(!error.retryable&&pendingOperation===op){pendingOperation=null;window.ClubRoundPresentation?.fail(op.payload.operation_id);}
     if(token!==generation)return;
-    feedback(error.retryable?'結果尚未確認。請按「確認原操作」，不會新增下注。':error.message,true);
+    feedback(error.retryable?'結果尚未確認。請按「確認原操作」，不會重複執行。':error.message,true);
     notice(error.message);
     if(error.status===401){lobby=null;pendingOperation=null;renderAuth();}else await Promise.race([sync(true),acknowledgement]);
   }finally{

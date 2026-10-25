@@ -39,3 +39,7 @@
 Impeccable 機械掃描提出的米色背景、跑馬燈、光暈與紋理屬既有美術建議，保留已核准風格與使用者要求的可暫停警語，不為通過偏好掃描而改主題。此掃描不代表操作旅程或所有無障礙規範自動合格。
 
 後續頁面設計沿用 DESIGN-SYSTEM 的同一組狀態與用語，不增加另一層主題 CSS 或通用準備步驟。派彩、點數、回合規則、後端與連線傳輸不在本次修改範圍。
+
+## 實際畫面
+
+隔離帳號於目前實作產生的 [手機德州](screenshots/table-navigation-mobile.png) 與 [桌機 21 點](screenshots/table-navigation-desktop.png)。

@@ -13,7 +13,7 @@ Flutter 3.44.0／Dart 3.12，Android 7.0（API 24）以上。這是共用正式�
 
 ## 建置
 
-標準 Android 專案已提交。若需重新建立基礎檔，可執行 `python tool/bootstrap_android.py`；它使用目前指定的 Flutter SDK 建立缺少的 scaffold，套用 overlays，並保留正式簽章要求。
+標準 Android 專案已提交，直接使用指定的 Flutter SDK 建置。
 
 ```sh
 flutter pub get
@@ -22,10 +22,10 @@ flutter test
 flutter build apk --debug
 ```
 
-正式版需私有環境變數 `ANDROID_KEYSTORE_PATH` 與 `ANDROID_KEYSTORE_PASSWORD`，alias 為 `nantuan`。缺少簽章時拒絕 release 建置，不用臨時 debug key 冒充正式版。正式簽章只在 main 的手動 Android workflow 取得 GitHub Secrets；不要提交 keystore、密碼或 key.properties。此版本供直接安裝試用，尚未發佈 Google Play。
+正式版需私有環境變數 `ANDROID_KEYSTORE_PATH` 與 `ANDROID_KEYSTORE_PASSWORD`，alias 為 `nantuan`。缺少簽章時拒絕 release 建置，不用臨時 debug key 冒充正式版。通過 PR 模擬器驗證後，正式簽章只在 main 的手動 Android workflow 取得 GitHub Secrets；不要提交 keystore、密碼或 key.properties。此版本供直接安裝試用，尚未發佈 Google Play。
 
 ## 驗證
 
-Android workflow 先 analyze／unit test，再用 Android 35 模擬器及實際 WebView 操作登入、補給、拉霸開局與收據、原生返回鍵、背景返回、麥克風權限與版面。使用隔離 SQLite，`APP_ORIGIN=http://localhost:8765` 只在 debug 編譯支援，正式版禁止明文連線。
+PR 的 Android workflow 先 analyze／unit test，再用 Android 35 模擬器及實際 WebView 操作登入、補給、拉霸開局與收據、原生返回鍵、背景返回、麥克風權限與版面。使用隔離 SQLite，`APP_ORIGIN=http://localhost:8765` 只在 debug 編譯支援，正式版禁止明文連線。
 
 輸出 APK、SHA256、模擬器截圖及紀錄於 workflow artifact。模擬器不能代表所有真實裝置的雙向語音、藍牙耳機或長時間背景限制，交付時需標明實際驗證範圍。

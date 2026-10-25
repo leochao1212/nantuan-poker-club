@@ -37,8 +37,6 @@ jobs:
             ~/.gradle/wrapper
           key: android-gradle-344-${{ hashFiles('mobile/nantuan_app/android/**/*.kts', 'mobile/nantuan_app/pubspec.lock') }}
           restore-keys: android-gradle-344-
-      - name: Prepare Android project
-        run: python3 mobile/nantuan_app/tool/bootstrap_android.py
       - name: Analyze and test Flutter
         working-directory: mobile/nantuan_app
         run: |
@@ -47,12 +45,16 @@ jobs:
           flutter analyze
           flutter test
       - name: Build emulator APK
+        if: github.event_name == 'pull_request'
         working-directory: mobile/nantuan_app
         run: flutter build apk --debug --target-platform android-x64 --dart-define=APP_ORIGIN=http://localhost:8765
       - name: Android emulator and real WebView gameplay
+        if: github.event_name == 'pull_request'
         env:
           PYTHON: python3
         run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           sudo chmod 666 /dev/kvm
           sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
           echo no | avdmanager create avd --force --name nantuan-test --package 'system-images;android-35;google_apis;x86_64' --device pixel_5

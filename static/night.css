@@ -2670,11 +2670,6 @@ dialog:has(.feature-dialog){width:min(800px,calc(100% - 24px));}
 .sidebar .nav-item[href="#rewards"] .reward-count{position:absolute;right:0;top:0;font-size:10px;padding:2px 4px;}
 .rewards-shortcut{min-height:44px;padding:8px 12px;white-space:nowrap;}
 }
-.night-supply{border-top:1px solid #2c3947;padding-top:6px;margin:15px 0 24px;}
-.night-supply>summary{min-height:48px;display:flex;align-items:center;font-size:17px;cursor:pointer;list-style:none;}
-.night-supply>summary:after{content:"＋";margin-left:auto;color:#aab6c5;}
-.night-supply[open]>summary:after{content:"−";}
-.night-supply .wallet-panel,.night-supply .income-panel{background:#19232f;border-color:#2c3947;margin:12px 0;}
 .night-edition .staff-card{background:#19232f;border-color:#2c3947;padding:20px;}
 .night-edition .staff-copy{min-height:0;margin:10px 0 16px;font-size:12px;}
 .night-edition .staff-note{font-size:12px;}
@@ -3413,7 +3408,7 @@ html,body{background:var(--cream-bg);color:var(--ink-deep);}
 :is(#app,#modal,#social-root) .auth-tabs{background:var(--cream-sunk);border:1px solid var(--cream-line);}
 :is(#app,#modal,#social-root) .auth-tabs button{color:var(--ink-2);}
 :is(#app,#modal,#social-root) .auth-tabs button[aria-selected=true]{background:var(--btn-gold);color:var(--ink-deep);border-color:#a47a2c;}
-:is(#app,#modal,#social-root) :is(.panel,section.panel,article.panel,article.facility,article.admin-account,article.staff-card,article.mission-card,article.collection-card,article.stat,.wallet-panel,.club-missions,.income-panel,.clubhouse-rules,article.room-card,.own-rank,details.night-supply,details.arcade-rules,details.member-invite,.daily-box,.gate-preview,.public-game-settings,.wealth-summary){background:var(--cream-panel);color:var(--ink-deep);border:1px solid var(--cream-line);border-radius:16px;box-shadow:var(--shadow-soft);}
+:is(#app,#modal,#social-root) :is(.panel,section.panel,article.panel,article.facility,article.admin-account,article.staff-card,article.mission-card,article.collection-card,article.stat,.wallet-panel,.club-missions,.income-panel,.clubhouse-rules,article.room-card,.own-rank,details.arcade-rules,details.member-invite,.daily-box,.gate-preview,.public-game-settings,.wealth-summary){background:var(--cream-panel);color:var(--ink-deep);border:1px solid var(--cream-line);border-radius:16px;box-shadow:var(--shadow-soft);}
 :is(#app,#modal,#social-root) .income-panel{background:var(--cream-panel);}
 :is(#app,#modal,#social-root) .daily-box{background:var(--cream-panel2);box-shadow:none;}
 :is(#app,#modal,#social-root) .rank-row,:is(#app,#modal,#social-root) details.dice-extra{border-color:var(--cream-line);}
@@ -4198,7 +4193,6 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line);
 :is(#app,#modal,#social-root) .big2-opponents{gap:4px;}
 }
 :is(#app,#modal,#social-root) details.arcade-rules{padding:0 14px;margin-top:10px;}
-:is(#app,#modal,#social-root) details.night-supply>summary{padding-inline:14px;}
 :is(#app,#modal,#social-root) details.arcade-rules>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:0;font-size:15px;font-weight:800;list-style:none;cursor:pointer;}
 :is(#app,#modal,#social-root) :is(details.arcade-rules,details.playing-funding,details.mj-funding)>summary::-webkit-details-marker{display:none;}
 :is(#app,#modal,#social-root) details.arcade-rules>summary::after,:is(#app,#modal,#social-root) details.playing-funding>summary::after,:is(#app,#modal,#social-root) details.mj-funding>summary::after{content:"";flex:none;width:9px;height:15px;margin-left:auto;background:var(--chev) center/contain no-repeat;transition:transform .2s;}
@@ -4478,9 +4472,6 @@ html body #game-settings-modal :is(th,td){border-bottom-color:var(--cream-line);
 :is(#app,#modal,#social-root) .arcade-roulette .roulette-stage{flex-direction:column;align-items:center;gap:10px;text-align:center;}
 :is(#app,#modal,#social-root) .arcade-roulette .roulette-stage>div:last-child{width:100%;}
 }
-:is(#app,#modal,#social-root) details.night-supply>summary::-webkit-details-marker{display:none;}
-:is(#app,#modal,#social-root) details.night-supply>summary::after{content:"";flex:none;width:9px;height:15px;margin-left:auto;background:var(--chev) center/contain no-repeat;color:inherit;transition:transform .2s;}
-:is(#app,#modal,#social-root) details.night-supply[open]>summary::after{content:"";transform:rotate(90deg);}
 :is(#app,#modal,#social-root) .risk-cell:is(.safe,.hazard){position:relative;}
 :is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard){position:relative;--tile-lattice:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect width='100' height='100' fill='none' stroke='%23dfbd75' stroke-width='2.4' vector-effect='non-scaling-stroke'/%3E%3Cpath d='M0 0L100 100M100 0L0 100M50 0L100 50L50 100L0 50Z' fill='none' stroke='%23dfbd75' stroke-width='.9' opacity='.7' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");--tile-spade:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23dfbd75' stroke='%238a2f38' stroke-width='1.6' paint-order='stroke' stroke-linejoin='round' d='M12 2C9 6.5 3.5 9.5 3.5 14a4.5 4.5 0 0 0 7.2 3.6L9.5 22h5l-1.2-4.4A4.5 4.5 0 0 0 20.5 14C20.5 9.5 15 6.5 12 2z'/%3E%3C/svg%3E");background:var(--tile-spade) center/auto 46% no-repeat,var(--tile-lattice) center/calc(100% - 8px) calc(100% - 8px) no-repeat,#8a2f38;border-color:#fff5df;color:#dfbd75;box-shadow:inset 0 0 0 1px #fff5df,0 2px 0 #00000040;transition:background .15s,transform .15s,filter .15s,box-shadow .15s;}
 :is(#app,#modal,#social-root) .risk-cell:not(.safe,.hazard)>span{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}

@@ -243,6 +243,7 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
       if (!didPop) unawaited(_back());
     },
     child: Scaffold(
+      backgroundColor: const Color(0xff142b23),
       body: SafeArea(
         child: Stack(
           children: [

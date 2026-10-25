@@ -1,7 +1,7 @@
 name: nantuan_club
 description: Nantuan Club Android client for the existing shared game service.
 publish_to: none
-version: 0.1.0+1
+version: 0.1.1+2
 environment:
   sdk: '>=3.12.0 <4.0.0'
 dependencies:

@@ -38,7 +38,7 @@ class StaticImages(unittest.TestCase):
         status,_,body=self.get('/')
         self.assertEqual(status,200)
         html=body.decode('utf-8')
-        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=rewards-app-20261025'])
+        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=adaptive-app-20261025'])
         self.assertIn('/ui-art.js?v=current-ui-20261025',html)
         self.assertIn('/round-presentation.js',html)
         for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):

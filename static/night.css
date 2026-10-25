@@ -4670,17 +4670,17 @@ html[data-ui=current] :is(#app,#modal,#social-root) :is(.point-stepper>.button[d
 html[data-ui=current] :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):hover:not(:disabled){filter:brightness(1.06);}
 html[data-ui=current] :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):active:not(:disabled){filter:brightness(.9);}
 html[data-ui=current] :is(#app,#modal,#social-root) :is(.point-presets>.button[data-point-preset],.point-stepper>.button[data-point-step],.raise-stepper>.raise-step):disabled{filter:grayscale(1) brightness(1.08);opacity:.55;}
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]){--p22b-l:url("/assets/buttons/btn-secondary-sm-l.webp?v=5271a9015802");--p22b-r:url("/assets/buttons/btn-secondary-sm-r.webp?v=78394f6a4b7f");--p22b-m:url("/assets/buttons/btn-secondary-sm-m.webp?v=d879d4549acd");background:var(--p22b-l) left center/auto 100% no-repeat,var(--p22b-r) right center/auto 100% no-repeat,var(--p22b-m) center/100% 100% no-repeat;background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 4px #3a2a0d29;color:var(--ink-deep);text-shadow:0 1px 0 #fffaf099;}
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):is(#rebuy-table,.staff-card .button,.full,.wallet-transfer-link){--p22b-l:url("/assets/buttons/btn-secondary-l.webp?v=ad254aaf164c");--p22b-r:url("/assets/buttons/btn-secondary-r.webp?v=cde304c9febf");--p22b-m:url("/assets/buttons/btn-secondary-m.webp?v=ac721d5db00d");}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.table-back,.account-delete,[aria-pressed]){--p22b-l:url("/assets/buttons/btn-secondary-sm-l.webp?v=5271a9015802");--p22b-r:url("/assets/buttons/btn-secondary-sm-r.webp?v=78394f6a4b7f");--p22b-m:url("/assets/buttons/btn-secondary-sm-m.webp?v=d879d4549acd");background:var(--p22b-l) left center/auto 100% no-repeat,var(--p22b-r) right center/auto 100% no-repeat,var(--p22b-m) center/100% 100% no-repeat;background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 4px #3a2a0d29;color:var(--ink-deep);text-shadow:0 1px 0 #fffaf099;}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.table-back,.account-delete,[aria-pressed]):is(#rebuy-table,.staff-card .button,.full,.wallet-transfer-link){--p22b-l:url("/assets/buttons/btn-secondary-l.webp?v=ad254aaf164c");--p22b-r:url("/assets/buttons/btn-secondary-r.webp?v=cde304c9febf");--p22b-m:url("/assets/buttons/btn-secondary-m.webp?v=ac721d5db00d");}
 @media (max-width:760px){
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):is(#copy-invite,.page-heading>a,.baccarat-actions>[data-arcade-action=skip]){--p22b-l:url("/assets/buttons/btn-secondary-l.webp?v=ad254aaf164c");--p22b-r:url("/assets/buttons/btn-secondary-r.webp?v=cde304c9febf");--p22b-m:url("/assets/buttons/btn-secondary-m.webp?v=ac721d5db00d");}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.table-back,.account-delete,[aria-pressed]):is(#copy-invite,.page-heading>a,.baccarat-actions>[data-arcade-action=skip]){--p22b-l:url("/assets/buttons/btn-secondary-l.webp?v=ad254aaf164c");--p22b-r:url("/assets/buttons/btn-secondary-r.webp?v=cde304c9febf");--p22b-m:url("/assets/buttons/btn-secondary-m.webp?v=ac721d5db00d");}
 }
 @media (min-width:761px){
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.button:not([aria-pressed]){background:url("/assets/buttons/btn-secondary-sm-l.webp?v=5271a9015802") left center/auto 100% no-repeat,url("/assets/buttons/btn-secondary-sm-r.webp?v=78394f6a4b7f") right center/auto 100% no-repeat,url("/assets/buttons/btn-secondary-sm-m.webp?v=d879d4549acd") center/100% 100% no-repeat;background-color:transparent;border-color:transparent;border-radius:999px;box-shadow:0 2px 4px #3a2a0d29;color:var(--ink-deep);text-shadow:0 1px 0 #fffaf099;}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.button:not([aria-pressed]){background:var(--cream-panel);border:1px solid var(--cream-line);border-radius:10px;box-shadow:none;color:var(--ink-2);text-shadow:none;}
 }
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):hover:not(:disabled){filter:brightness(1.03);}
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):active:not(:disabled){filter:brightness(.94);box-shadow:inset 0 3px 6px #3a220059,inset 0 -1px 2px #fff3cc66;}
-html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.account-delete,[aria-pressed]):is(:disabled,[aria-disabled=true]){filter:grayscale(.8) contrast(.88);opacity:.65;box-shadow:none;text-shadow:none;}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.table-back,.account-delete,[aria-pressed]):hover:not(:disabled){filter:brightness(1.03);}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.table-back,.account-delete,[aria-pressed]):active:not(:disabled){filter:brightness(.94);box-shadow:inset 0 3px 6px #3a220059,inset 0 -1px 2px #fff3cc66;}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.button.ghost,.button.secondary,.button.fold-button,.button.wallet-fund-button,.raise-presets>button,#leave-table):not(.point-presets>*,.point-stepper>*,.raise-stepper>*,.transfer-stepper>*,.table-tools>*,.mj-heading>*,.table-back,.account-delete,[aria-pressed]):is(:disabled,[aria-disabled=true]){filter:grayscale(.8) contrast(.88);opacity:.65;box-shadow:none;text-shadow:none;}
 @media (max-width:760px){
 html[data-ui=current] :is(#app,#modal,#social-root) .facility .button.ghost{font-size:11.5px;}
 }
@@ -4888,6 +4888,20 @@ html[data-ui=current] :is(#app,#modal,#social-root) .baccarat-actions>.button.pr
 :is(#app,#modal,#social-root) .club-main:has(.live-room)>.recovery-notice:has([data-resync]:not([hidden])){height:auto;min-height:52px;margin:0;padding:4px 12px;gap:8px;white-space:normal;overflow:visible;pointer-events:auto;}
 }
 .live-room .table-tools .table-leave,.mj-room .mj-heading>.table-leave{flex-shrink:0;}
+/* Quiet navigation leaves the gold artwork to game actions. */
+html[data-ui=current] :is(#app,#modal,#social-root) .table-back{background:transparent;border:1px solid transparent;border-radius:10px;box-shadow:none;text-shadow:none;color:var(--ink-2);min-height:48px;padding:8px 12px;}
+html[data-ui=current] :is(#app,#modal,#social-root) .table-back:hover{background:var(--cream-sunk);}
+html[data-ui=current] :is(#app,#modal,#social-root) .table-back:active{background:var(--cream-panel2);box-shadow:none;}
+html[data-ui=current] :is(#app,#modal,#social-root) :is(.table-tools,.mj-heading)>.table-leave{background:var(--cream-panel);color:var(--burgundy);border:1px solid var(--burgundy);box-shadow:none;text-shadow:none;border-radius:10px;}
+
+
+/* Short landscape phones retain the immersive table layout. */
+@media (min-width:761px) and (max-width:1000px) and (max-height:500px){
+.club-app:has(.live-room) .sidebar{display:none;}
+.club-app:has(.live-room) .club-main{margin-left:0;padding-bottom:0;}
+.club-app:has(.live-room) .page-foot{display:none;}
+.live-room .room-heading h1{font-size:20px;}
+}
 
 /* Shared feedback lives after actions; a bet dock reserves its status row. */
 .bet-submit-bar>#action-feedback[data-dock-status]{display:flex;box-sizing:border-box;height:56px;min-height:56px;max-height:56px;margin:6px 0 0;padding:4px 8px;gap:8px;overflow:auto;font-size:12px;line-height:1.4;flex-wrap:nowrap;}
@@ -4928,7 +4942,7 @@ body:has(.bet-submit-dock) #voice-dock{bottom:calc(198px + env(safe-area-inset-b
 .live-room .room-heading-left>div{flex:1;min-width:0;}
 .live-room .room-heading h1{overflow-wrap:anywhere;}
 :is(#app,#modal,#social-root) .live-room .table-tools{gap:4px;flex-shrink:0;}
-:is(#app,#modal,#social-root) .live-room .table-tools .button{width:auto;min-width:44px;padding:8px;justify-content:center;}
+:is(#app,#modal,#social-root) .live-room .table-tools .button{width:auto;min-width:48px;min-height:48px;padding:8px;justify-content:center;}
 :is(#app,#modal,#social-root) .arcade-slot .slot-machine>p[role=status]{margin-bottom:0;}
 }
 @media (max-width:374px){

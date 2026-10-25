@@ -29,3 +29,7 @@ flutter build apk --debug
 PR 的 Android workflow 先 analyze／unit test，再用 Android 35 模擬器及實際 WebView 操作登入、補給、拉霸開局與收據、原生返回鍵、背景返回、麥克風權限與版面。使用隔離 SQLite，`APP_ORIGIN=http://localhost:8765` 只在 debug 編譯支援，正式版禁止明文連線。
 
 輸出 APK、SHA256、模擬器截圖及紀錄於 workflow artifact。模擬器不能代表所有真實裝置的雙向語音、藍牙耳機或長時間背景限制，交付時需標明實際驗證範圍。
+
+## 0.1.1 顯示調整
+
+單一 WebView 使用 Android Hybrid Composition，避免尺寸變更時紋理畫面殘留；原生底色固定為深綠，頁面安全區由 Flutter SafeArea 處理，WebView 填滿其餘可用區域。關閉額外系統列對比遮罩，錯誤畫面在橫向可捲動。原 WebView／Cookie 與語音不因視窗變化重建。原生測試加入五種尺寸、手勢與三鍵導覽、鍵盤開關與大字體；模擬器不代表每一款實體手機。

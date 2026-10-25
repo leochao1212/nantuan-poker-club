@@ -11,6 +11,9 @@ const _systemUi = SystemUiOverlayStyle(
   statusBarIconBrightness: Brightness.light,
   systemNavigationBarColor: Color(0xff142b23),
   systemNavigationBarIconBrightness: Brightness.light,
+  systemNavigationBarDividerColor: Colors.transparent,
+  systemNavigationBarContrastEnforced: false,
+  systemStatusBarContrastEnforced: false,
 );
 
 void main() {
@@ -46,6 +49,7 @@ class ClubScreen extends StatefulWidget {
 class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
   static const _native = MethodChannel('org.nantuan.club/device');
   late final WebViewController _web;
+  late final WebViewWidget _webView;
   int _progress = 0;
   bool _loaded = false, _failed = false, _backPending = false;
 
@@ -94,6 +98,13 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
       unawaited(android.setMediaPlaybackRequiresUserGesture(false));
       unawaited(AndroidWebViewController.enableDebugging(kDebugMode));
     }
+    // One native WebView avoids stale texture frames after viewport/IME resizing.
+    _webView = WebViewWidget.fromPlatformCreationParams(
+      params: AndroidWebViewWidgetCreationParams(
+        controller: _web.platform,
+        displayWithHybridComposition: true,
+      ),
+    );
     unawaited(_web.loadRequest(Uri.parse(serviceOrigin)));
   }
 
@@ -250,16 +261,23 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
         backgroundColor: const Color(0xff142b23),
         body: SafeArea(
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              WebViewWidget(controller: _web),
+              _webView,
               if (_progress < 100 && !_failed)
-                LinearProgressIndicator(value: _progress / 100, minHeight: 3),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  child: LinearProgressIndicator(value: _progress / 100),
+                ),
               if (_failed)
                 Positioned.fill(
                   child: ColoredBox(
                     color: const Color(0xfff6ecd9),
                     child: Center(
-                      child: Padding(
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.all(28),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,

@@ -186,7 +186,9 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
           return;
         }
         if (state?['table'] == true) {
-          await _web.runJavaScript("if(typeof route==='function'){history.replaceState(null,'','#lobby');route();}");
+          await _web.runJavaScript(
+            "if(typeof route==='function'){history.replaceState(null,'','#lobby');route();}",
+          );
           return;
         }
       }

@@ -42,7 +42,7 @@ jobs:
         working-directory: mobile/nantuan_app
         run: |
           flutter pub get
-          dart format lib test
+          dart format --output=none --set-exit-if-changed lib test
           flutter analyze
           flutter test
       - name: Build emulator APK
@@ -67,16 +67,23 @@ jobs:
           mobile/nantuan_app/android/gradlew --stop
           sudo chmod 666 /dev/kvm
           sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
+          # Pinned official emulator archive: avoid host SIGSEGV seen with 37.2.12.
+          # https://developer.android.com/studio/emulator_archive (36.4.10 Stable)
+          curl --fail --location --retry 2 https://dl.google.com/android/repository/emulator-linux_x64-15004761.zip -o "$RUNNER_TEMP/emulator.zip"
+          echo "58bfdf0572f06ec007a7287154cdc6b2ebfea947d07a1e26a0f6b5e1a39e9191  $RUNNER_TEMP/emulator.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/emulator.zip" -d "$RUNNER_TEMP/nantuan-emulator"
+          EMULATOR_BIN="$RUNNER_TEMP/nantuan-emulator/emulator/emulator"
+          "$EMULATOR_BIN" -version
           export ANDROID_AVD_HOME="$RUNNER_TEMP/nantuan-avd"
           mkdir -p "$ANDROID_AVD_HOME"
           echo no | avdmanager create avd --force --name nantuan-test --path "$ANDROID_AVD_HOME/nantuan-test.avd" --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
           printf 'avd.ini.encoding=UTF-8\npath=%s/nantuan-test.avd\ntarget=android-35\n' "$ANDROID_AVD_HOME" > "$ANDROID_AVD_HOME/nantuan-test.ini"
-          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -x nantuan-test
+          "$EMULATOR_BIN" -list-avds | grep -x nantuan-test
           # Keep the disposable CI phone within the hosted runner memory/GPU budget.
           printf '\nhw.lcd.width=720\nhw.lcd.height=1560\nhw.lcd.density=320\n' >> "$ANDROID_AVD_HOME/nantuan-test.avd/config.ini"
           mkdir -p artifacts/android
           trap 'tail -60 artifacts/android/emulator.log || true' EXIT
-          nohup "$ANDROID_HOME/emulator/emulator" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swiftshader -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
+          nohup "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swiftshader -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
           timeout 90s adb wait-for-device
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi

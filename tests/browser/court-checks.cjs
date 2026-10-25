@@ -18,19 +18,20 @@ module.exports=async function courtChecks(page,engine,out){
      gate:['arcade-inbetween','gate-cards'],
      history:['history-holes']
     },rows=[];
-    for(const [context,classes] of Object.entries(contexts))for(const width of [28,52,72,140])for(const rank of 'JQK')for(const suit of 'shdc'){
+    for(const [context,classes] of Object.entries(contexts))for(const width of [28,52,72,140])for(const rank of 'A23456789TJQK')for(const suit of 'shdc'){
      let parent=host;for(const cls of classes){const d=document.createElement('div');d.className=cls;d.style.cssText='position:static;display:block;width:auto;height:auto;transform:none';parent.append(d);parent=d;}
      if(context==='blackjack'){const marker=document.createElement('div');marker.className='blackjack-bet-panel';marker.hidden=true;parent.parentElement.append(marker);}
-     const t=document.createElement('template');t.innerHTML=card(rank+suit,context.startsWith('holdem')||context==='history');const e=t.content.firstElementChild;e.style.cssText='width:'+width+'px;height:'+Math.round(width*1.5)+'px;transform:none';parent.append(e);
+     const t=document.createElement('template');t.innerHTML=card(rank+suit,context.startsWith('holdem')||context==='history');const e=t.content.firstElementChild;e.style.width=width+'px';e.style.height=Math.round(width*1.5)+'px';e.style.transform='none';parent.append(e);
      const art=getComputedStyle(e,'::before'),b=e.querySelector('b'),bs=getComputedStyle(b),i=b.querySelector('i'),s=getComputedStyle(i),w=e.clientWidth;
-     rows.push({context,rank,suit,width,inner:w,art:[art.top,art.right,art.bottom,art.left],size:art.backgroundSize,rankFont:parseFloat(bs.fontSize),suitWidth:i.clientWidth,suitHeight:i.clientHeight,mask:s.maskImage||s.webkitMaskImage,panel:bs.backgroundImage,cornerHeight:b.clientHeight,cardHeight:e.clientHeight});
+     rows.push({context,rank,suit,width,inline:e.style.cssText,faceVar:getComputedStyle(e).getPropertyValue("--pc-face"),face:art.backgroundImage,inner:w,art:[art.top,art.right,art.bottom,art.left],size:art.backgroundSize,rankFont:parseFloat(bs.fontSize),suitWidth:i.clientWidth,suitHeight:i.clientHeight,mask:s.maskImage||s.webkitMaskImage,panel:bs.backgroundImage,cornerHeight:b.clientHeight,cardHeight:e.clientHeight});host.replaceChildren();
     }
     host.remove();return rows;
    });
    for(const row of cases){
     assert.deepEqual(row.art,['0px','0px','0px','0px'],engine+' '+JSON.stringify(row)+' artwork must fill the card');
+    assert.ok(row.face.includes('/cards/'+row.rank.toLowerCase()+row.suit+'.webp?v='),engine+' each rank and suit must use its own picture '+JSON.stringify(row));
     assert.ok(row.size.includes('cover'),engine+' '+JSON.stringify(row)+' must preserve image aspect ratio');
-    assert.ok(Math.abs(row.rankFont-Math.max(8,row.inner*(row.rank==='J'?.20:.17)))<.6,engine+' '+JSON.stringify(row)+' rank must scale with its card');
+    assert.ok(Math.abs(row.rankFont-Math.max(8,row.inner*(row.rank==='J'?.20:row.rank==='T'?.15:.17)))<.6,engine+' '+JSON.stringify(row)+' rank must scale with its card');
     assert.ok(row.suitWidth>=5&&row.suitHeight>=5&&row.suitWidth<=Math.max(5,row.inner*(row.rank==='J'?.11:.13))+1&&row.suitHeight<=Math.max(5,row.inner*(row.rank==='J'?.11:.13))+1,engine+' '+JSON.stringify(row)+' suit must not dominate the portrait');
     assert.ok(row.mask.includes('data:image/svg'),engine+' '+JSON.stringify(row)+' suit must remain visible');
     assert.equal(row.panel,'none',engine+' '+JSON.stringify(row)+' do not reintroduce the large white panel');

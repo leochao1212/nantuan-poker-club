@@ -4529,25 +4529,75 @@ html:where([data-card-back=crimson],[data-card-back=jade]) :is(#app,#modal,#soci
 :is(#app,#modal,#social-root) .playing-card[data-suit]>b>i{height:1em;overflow:hidden;background:var(--pc-suit) 0 50%/auto 76% no-repeat;}
 :is(#app,#modal,#social-root) :is(.holdem-room .is-me .seat-cards,.gate-cards,.hand-card) .playing-card[data-suit]{--pc-frame:var(--pc-frame-lg);--pc-pos:52% 58%;--pc-cs:44%;}
 :is(#app,#modal,#social-root) :is(.holdem-room .is-me .seat-cards,.gate-cards,.hand-card) .playing-card[data-rank=A]{--pc-cs:36%;--pc-ms:64%;}
-:is(#app,#modal,#social-root) .playing-card[data-rank=J]{--pc-face:url(/assets/pieces/card-j.webp?v=851ed0d96ba3);}
-:is(#app,#modal,#social-root) .playing-card[data-rank=Q]{--pc-face:url(/assets/pieces/card-q.webp?v=de358bfa0232);}
-:is(#app,#modal,#social-root) .playing-card[data-rank=K]{--pc-face:url(/assets/pieces/card-k.webp?v=cb97bedc5870);}
 :is(#app,#modal,#social-root) .playing-card:is([data-suit=s],[data-suit=c]){--pc-win:linear-gradient(#f4f2e4,#d9e0cc);}
 :is(#app,#modal,#social-root) .playing-card:is([data-suit=h],[data-suit=d]){--pc-win:linear-gradient(#fbefe6,#efd3c6);}
-html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K]){--pc-c1:none;--court-rank-font:max(8px,17cqw);--court-suit-font:max(5px,13cqw);container-type:inline-size;}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="As"]{--pc-face:url(/assets/cards/as.webp?v=6e65d54fb9ec);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="2s"]{--pc-face:url(/assets/cards/2s.webp?v=d12497fa2d0c);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="3s"]{--pc-face:url(/assets/cards/3s.webp?v=f43380055897);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="4s"]{--pc-face:url(/assets/cards/4s.webp?v=cc5ed94d0f9d);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="5s"]{--pc-face:url(/assets/cards/5s.webp?v=7075b0070b28);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="6s"]{--pc-face:url(/assets/cards/6s.webp?v=2145a506ba97);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="7s"]{--pc-face:url(/assets/cards/7s.webp?v=dc8e05eae7b5);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="8s"]{--pc-face:url(/assets/cards/8s.webp?v=15e58b947f86);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="9s"]{--pc-face:url(/assets/cards/9s.webp?v=856fb98391af);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Ts"]{--pc-face:url(/assets/cards/ts.webp?v=938d5375c1bc);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Js"]{--pc-face:url(/assets/cards/js.webp?v=5f03acc7a729);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Qs"]{--pc-face:url(/assets/cards/qs.webp?v=708ec840c150);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Ks"]{--pc-face:url(/assets/cards/ks.webp?v=cb97bedc5870);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Ah"]{--pc-face:url(/assets/cards/ah.webp?v=356f6b09c6be);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="2h"]{--pc-face:url(/assets/cards/2h.webp?v=80eb1250a8da);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="3h"]{--pc-face:url(/assets/cards/3h.webp?v=2a904a309458);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="4h"]{--pc-face:url(/assets/cards/4h.webp?v=988d41f682d4);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="5h"]{--pc-face:url(/assets/cards/5h.webp?v=0ead123fb2ca);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="6h"]{--pc-face:url(/assets/cards/6h.webp?v=2a6cc68a1e22);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="7h"]{--pc-face:url(/assets/cards/7h.webp?v=38a097b83834);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="8h"]{--pc-face:url(/assets/cards/8h.webp?v=1d05509de38c);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="9h"]{--pc-face:url(/assets/cards/9h.webp?v=48aaf2255378);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Th"]{--pc-face:url(/assets/cards/th.webp?v=a6952c0f65d4);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Jh"]{--pc-face:url(/assets/cards/jh.webp?v=216b49d0b979);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Qh"]{--pc-face:url(/assets/cards/qh.webp?v=de358bfa0232);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Kh"]{--pc-face:url(/assets/cards/kh.webp?v=f85b52a3dd14);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Ad"]{--pc-face:url(/assets/cards/ad.webp?v=d691c16d360b);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="2d"]{--pc-face:url(/assets/cards/2d.webp?v=eba1d59f0331);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="3d"]{--pc-face:url(/assets/cards/3d.webp?v=8d9e8d55f9f3);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="4d"]{--pc-face:url(/assets/cards/4d.webp?v=418c76238a16);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="5d"]{--pc-face:url(/assets/cards/5d.webp?v=ab3e0efa093b);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="6d"]{--pc-face:url(/assets/cards/6d.webp?v=2244abd909de);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="7d"]{--pc-face:url(/assets/cards/7d.webp?v=5086f0fd3c32);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="8d"]{--pc-face:url(/assets/cards/8d.webp?v=0f1c9a1f76f9);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="9d"]{--pc-face:url(/assets/cards/9d.webp?v=f5a72ed28b10);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Td"]{--pc-face:url(/assets/cards/td.webp?v=90f67ce56e0f);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Jd"]{--pc-face:url(/assets/cards/jd.webp?v=60c43d7fdb67);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Qd"]{--pc-face:url(/assets/cards/qd.webp?v=980c672056dc);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Kd"]{--pc-face:url(/assets/cards/kd.webp?v=8c97aefdca9b);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Ac"]{--pc-face:url(/assets/cards/ac.webp?v=710d6ff03727);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="2c"]{--pc-face:url(/assets/cards/2c.webp?v=d323b98eeefe);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="3c"]{--pc-face:url(/assets/cards/3c.webp?v=15b6957bb36e);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="4c"]{--pc-face:url(/assets/cards/4c.webp?v=a3d5d80673fe);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="5c"]{--pc-face:url(/assets/cards/5c.webp?v=65e51b9bc15f);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="6c"]{--pc-face:url(/assets/cards/6c.webp?v=36bc26a2392e);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="7c"]{--pc-face:url(/assets/cards/7c.webp?v=510de115a059);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="8c"]{--pc-face:url(/assets/cards/8c.webp?v=a24bd2ff822f);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="9c"]{--pc-face:url(/assets/cards/9c.webp?v=cb490ae07c51);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Tc"]{--pc-face:url(/assets/cards/tc.webp?v=73fae8067cfa);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Jc"]{--pc-face:url(/assets/cards/jc.webp?v=851ed0d96ba3);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Qc"]{--pc-face:url(/assets/cards/qc.webp?v=e3b500d34c26);}
+:is(#app,#modal,#social-root) .playing-card[data-photo-card="Kc"]{--pc-face:url(/assets/cards/kc.webp?v=1551ef3ec420);}
+html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-card]{--pc-c1:none;--pc-m1:none;--court-rank-font:max(8px,17cqw);--court-suit-font:max(5px,13cqw);container-type:inline-size;}
+html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-card][data-rank=T]{--court-rank-font:max(8px,15cqw);}
 html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-suit][data-rank=J]{--court-rank-font:max(8px,20cqw);--court-suit-font:max(5px,11cqw);}
-html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])::before{content:"";position:absolute;inset:0;border:0;border-radius:inherit;pointer-events:none;background:var(--pc-face) center/cover no-repeat,var(--pc-win);}
-html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])>b{top:3.5%;left:3.5%;width:max(8px,18cqw);min-width:0;min-height:0;padding:0;text-align:center;line-height:1;background:none;border:0;border-radius:0;text-shadow:0 0 1px #fff6e4;}
-html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])>b.card-bottom{top:auto;left:auto;bottom:3.5%;right:3.5%;}
-html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])>b>i{display:block;width:var(--court-suit-font);height:var(--court-suit-font);margin:1px auto 0;background:var(--pc-ink);mask:var(--pc-suit) center/contain no-repeat;}
+html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-card]::before{content:"";position:absolute;inset:0;border:0;border-radius:inherit;pointer-events:none;background:var(--pc-face) center/cover no-repeat,var(--pc-win);}
+html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-card]>b{top:3.5%;left:3.5%;width:max(8px,18cqw);min-width:0;min-height:0;padding:0;text-align:center;line-height:1;background:none;border:0;border-radius:0;text-shadow:0 0 1px #fff6e4;}
+html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-card]>b.card-bottom{top:auto;left:auto;bottom:3.5%;right:3.5%;}
+html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-card]>b>i{display:block;width:var(--court-suit-font);height:var(--court-suit-font);margin:1px auto 0;background:var(--pc-ink);mask:var(--pc-suit) center/contain no-repeat;}
 @media (max-width:760px){
 :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]{--pc-frame:var(--pc-frame-sm);--pc-pos:right 2px bottom 2px;--pc-cs:48%;--pc-m1:none;}
 :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]>b{top:1px;left:2px;font-size:var(--court-rank-font,11.5px);line-height:1;}
 :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-rank=T]>b{left:1px;font-size:var(--court-rank-font,10px);letter-spacing:-.1em;}
 :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]>b>i{display:none;}
-html[data-ui=current] :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])::before{inset:0;border:0;border-radius:inherit;background:var(--pc-face) center/cover no-repeat,var(--pc-win);}
-html[data-ui=current] :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])>b{top:3.5%;left:3.5%;width:max(8px,18cqw);min-width:0;min-height:0;height:auto;padding:0;border:0;}
-html[data-ui=current] :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-suit]:is([data-rank=J],[data-rank=Q],[data-rank=K])>b>i{display:block;font-size:var(--court-suit-font);width:var(--court-suit-font);height:var(--court-suit-font);margin:1px auto 0;}
+html[data-ui=current] :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-photo-card]::before{inset:0;border:0;border-radius:inherit;background:var(--pc-face) center/cover no-repeat,var(--pc-win);}
+html[data-ui=current] :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-photo-card]>b{top:3.5%;left:3.5%;width:max(8px,18cqw);min-width:0;min-height:0;height:auto;padding:0;border:0;}
+html[data-ui=current] :is(#app,#modal,#social-root) .holdem-room .table-seat:not(.is-me) .playing-card.small[data-photo-card]>b>i{display:block;font-size:var(--court-suit-font);width:var(--court-suit-font);height:var(--court-suit-font);margin:1px auto 0;}
 }
 :is(#app,#modal,#social-root) .night-lobby .game-catalog{container:gamecat/inline-size;}
 :is(#app,#modal,#social-root) .night-lobby .game-catalog>.game-choice{display:grid;grid-template-rows:auto auto auto;align-content:start;padding:0 0 8px;}
@@ -4836,10 +4886,10 @@ html[data-ui=current] :is(#app,#modal,#social-root) .live-room .table-tools>.tab
 #modal .table-help-dialog .slot-paytable b{color:var(--ink-deep);}
 #modal .table-help-dialog .slot-paytable>span>small{color:var(--ink-2);}
 @media (max-width:760px){
-.bet-submit-dock{min-height:48px;}
-:is(#app,#modal,#social-root) .bet-submit-dock[data-has-bets=true]>.bet-submit-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--cream-panel);border-top:2px solid var(--gold-line);box-shadow:0 -6px 18px #3b2a1426;}
-.live-room:has(.bet-submit-dock[data-has-bets=true]){padding-bottom:calc(72px + env(safe-area-inset-bottom));}
-body:has(.bet-submit-dock[data-has-bets=true]) #voice-dock{bottom:calc(76px + env(safe-area-inset-bottom));}
+.bet-submit-dock{min-height:0;}
+:is(#app,#modal,#social-root) .bet-submit-dock>.bet-submit-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--cream-panel);border-top:2px solid var(--gold-line);box-shadow:0 -6px 18px #3b2a1426;}
+.live-room:has(.bet-submit-dock){padding-bottom:calc(132px + env(safe-area-inset-bottom));}
+body:has(.bet-submit-dock) #voice-dock{bottom:calc(136px + env(safe-area-inset-bottom));}
 }
 @media (max-width:760px) and (max-height:740px){
 :is(#app,#modal,#social-root) .holdem-layout>.table-arena{height:326px;min-height:326px;}

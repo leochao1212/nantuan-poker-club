@@ -1,0 +1,321 @@
+{
+  "style": "Ivory paper, antique gold botanical frame, large double-headed photographic portrait",
+  "size": [
+    384,
+    576
+  ],
+  "cards": [
+    {
+      "card": "As",
+      "asset": "static/assets/cards/as.webp",
+      "source_photo": "S__100548618_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "2s",
+      "asset": "static/assets/cards/2s.webp",
+      "source_photo": "S__100548620_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "3s",
+      "asset": "static/assets/cards/3s.webp",
+      "source_photo": "S__100548626_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "4s",
+      "asset": "static/assets/cards/4s.webp",
+      "source_photo": "S__100548629_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "5s",
+      "asset": "static/assets/cards/5s.webp",
+      "source_photo": "S__100548631_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "6s",
+      "asset": "static/assets/cards/6s.webp",
+      "source_photo": "S__100548632_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "7s",
+      "asset": "static/assets/cards/7s.webp",
+      "source_photo": "S__100548639_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "8s",
+      "asset": "static/assets/cards/8s.webp",
+      "source_photo": "S__100548641_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "9s",
+      "asset": "static/assets/cards/9s.webp",
+      "source_photo": "S__100548642_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Ts",
+      "asset": "static/assets/cards/ts.webp",
+      "source_photo": "S__100548646_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Js",
+      "asset": "static/assets/cards/js.webp",
+      "source_photo": "S__100548654_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Qs",
+      "asset": "static/assets/cards/qs.webp",
+      "source_photo": "S__100548657_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Ks",
+      "asset": "static/assets/cards/ks.webp",
+      "source_photo": "S__100548622_0.jpg",
+      "generation": "approved-existing"
+    },
+    {
+      "card": "Ah",
+      "asset": "static/assets/cards/ah.webp",
+      "source_photo": "S__100548658_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "2h",
+      "asset": "static/assets/cards/2h.webp",
+      "source_photo": "S__100548659_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "3h",
+      "asset": "static/assets/cards/3h.webp",
+      "source_photo": "S__100548661_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "4h",
+      "asset": "static/assets/cards/4h.webp",
+      "source_photo": "S__100548663_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "5h",
+      "asset": "static/assets/cards/5h.webp",
+      "source_photo": "S__100548666_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "6h",
+      "asset": "static/assets/cards/6h.webp",
+      "source_photo": "S__100548668_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "7h",
+      "asset": "static/assets/cards/7h.webp",
+      "source_photo": "S__100548670_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "8h",
+      "asset": "static/assets/cards/8h.webp",
+      "source_photo": "S__100548676_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "9h",
+      "asset": "static/assets/cards/9h.webp",
+      "source_photo": "S__100548679_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Th",
+      "asset": "static/assets/cards/th.webp",
+      "source_photo": "S__100548680_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Jh",
+      "asset": "static/assets/cards/jh.webp",
+      "source_photo": "S__100548682_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Qh",
+      "asset": "static/assets/cards/qh.webp",
+      "source_photo": "S__100548707_0.jpg",
+      "generation": "approved-existing"
+    },
+    {
+      "card": "Kh",
+      "asset": "static/assets/cards/kh.webp",
+      "source_photo": "S__100548684_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Ad",
+      "asset": "static/assets/cards/ad.webp",
+      "source_photo": "S__100548686_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "2d",
+      "asset": "static/assets/cards/2d.webp",
+      "source_photo": "S__100548687_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "3d",
+      "asset": "static/assets/cards/3d.webp",
+      "source_photo": "S__100548688_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "4d",
+      "asset": "static/assets/cards/4d.webp",
+      "source_photo": "S__100548689_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "5d",
+      "asset": "static/assets/cards/5d.webp",
+      "source_photo": "S__100548690_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "6d",
+      "asset": "static/assets/cards/6d.webp",
+      "source_photo": "S__100548693_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "7d",
+      "asset": "static/assets/cards/7d.webp",
+      "source_photo": "S__100548696_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "8d",
+      "asset": "static/assets/cards/8d.webp",
+      "source_photo": "S__100548703_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "9d",
+      "asset": "static/assets/cards/9d.webp",
+      "source_photo": "S__100548711_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Td",
+      "asset": "static/assets/cards/td.webp",
+      "source_photo": "S__100548712_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Jd",
+      "asset": "static/assets/cards/jd.webp",
+      "source_photo": "S__100548713_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Qd",
+      "asset": "static/assets/cards/qd.webp",
+      "source_photo": "S__100548714_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Kd",
+      "asset": "static/assets/cards/kd.webp",
+      "source_photo": "S__100548715_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Ac",
+      "asset": "static/assets/cards/ac.webp",
+      "source_photo": "S__100548717_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "2c",
+      "asset": "static/assets/cards/2c.webp",
+      "source_photo": "S__100548721_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "3c",
+      "asset": "static/assets/cards/3c.webp",
+      "source_photo": "S__100548722_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "4c",
+      "asset": "static/assets/cards/4c.webp",
+      "source_photo": "S__100548723_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "5c",
+      "asset": "static/assets/cards/5c.webp",
+      "source_photo": "S__100548724_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "6c",
+      "asset": "static/assets/cards/6c.webp",
+      "source_photo": "S__100548725_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "7c",
+      "asset": "static/assets/cards/7c.webp",
+      "source_photo": "S__100548726_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "8c",
+      "asset": "static/assets/cards/8c.webp",
+      "source_photo": "S__100548728_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "9c",
+      "asset": "static/assets/cards/9c.webp",
+      "source_photo": "S__100548729_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Tc",
+      "asset": "static/assets/cards/tc.webp",
+      "source_photo": "S__100548730_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Jc",
+      "asset": "static/assets/cards/jc.webp",
+      "source_photo": "S__100548630_0.jpg",
+      "generation": "approved-existing"
+    },
+    {
+      "card": "Qc",
+      "asset": "static/assets/cards/qc.webp",
+      "source_photo": "S__100548731_0.jpg",
+      "generation": "built-in-imagegen"
+    },
+    {
+      "card": "Kc",
+      "asset": "static/assets/cards/kc.webp",
+      "source_photo": "S__100548732_0.jpg",
+      "generation": "built-in-imagegen"
+    }
+  ]
+}

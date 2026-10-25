@@ -3,6 +3,14 @@ from pathlib import Path
 import hashlib,json,re,sys
 ROOT=Path(__file__).resolve().parents[1]
 records=[{'path':p.relative_to(ROOT).as_posix(),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted((ROOT/'static/assets').rglob('*')) if p.is_file()]
+# A full deck must keep a distinct, lightweight photograph for every rank/suit.
+deck={r['path']:r for r in records if r['path'].startswith('static/assets/cards/')}
+expected={'static/assets/cards/'+rank+suit+'.webp' for rank in 'a23456789tjqk' for suit in 'shdc'}
+if set(deck)!=expected:raise SystemExit('Expected exactly 52 friend card pictures')
+if len({r['sha256'] for r in deck.values()})!=52:raise SystemExit('Friend card pictures must be distinct')
+if sum(r['bytes'] for r in deck.values())>5*1024*1024:raise SystemExit('Friend deck exceeds the 5 MiB artwork budget')
+allocation=json.loads((ROOT/'docs/design-proposals/friends-deck.json').read_text(encoding='utf-8'))['cards']
+if {r['asset'] for r in allocation}!=expected or len(allocation)!=52 or len({r['source_photo'] for r in allocation})!=52:raise SystemExit('Expected 52 distinct source photographs in the deck allocation')
 versions={r['path'].removeprefix('static/assets/'):r['sha256'][:12] for r in records}
 changes={}
 p=ROOT/'docs/assets-manifest.json';want=json.dumps(records,indent=2)+'\n'

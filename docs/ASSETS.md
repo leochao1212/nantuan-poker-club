@@ -21,7 +21,7 @@
 
 建築、遊戲封面與員工插畫的生成提示詞放在 [asset-prompts](design-proposals/asset-prompts/)。其他新增素材的用途與來源依 [設計交接](design-proposals/cream-theme/HANDOFF.md) 記錄；未隨程式庫提供的原始美術稿不宣稱可完整重現。本清單不推定生成工具的授權條款。
 
-麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。85 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
+麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。134 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
 
 | 素材 | 檔案 | 生成方式 |
 | --- | --- | --- |
@@ -52,12 +52,12 @@
 
 ## 楠團朋友牌組（2026-10-25）
 
-使用者確認 K／Q／J 加牌背概念後，內建 imagegen 依選定的三張朋友照片與確認稿產生正式圖案。J／Q／K 各一張雙頭人物圖，四種花色共用，點數與花色由 HTML／CSS 清楚繪製；原始照片不隨程式發布。預設牌背改為墨綠金色楠團圖樣，已裝備的收藏牌背優先生效。
+從使用者提供的 105 張照片選出 52 張不同照片，使用內建 imagegen 製作上下雙頭人物牌。每個點數與花色有獨立圖片；K♠、Q♥、J♣ 保留使用者已確認的三張正式素材，其餘 49 張沿用象牙白紙感、金色植物雕花與大幅人像。原始照片與高解析生成稿留在本機，不隨程式庫發布。
 
-- 人物圖：static/assets/pieces/card-j.webp、card-q.webp、card-k.webp，384×576。
-- 預設牌背：[card-back-friends.webp](../static/assets/pieces/card-back-friends.webp)，256×384。
-- 生成提示與輸入角色見 [朋友牌組提示詞](design-proposals/asset-prompts/friends-deck.txt)。WebP 僅做等比縮小與編碼；以內容指紋發送，取代先前人物圖。
+- 牌面：static/assets/cards/ 下 52 張 WebP，檔名使用小寫牌碼（例如 as.webp、2h.webp、tc.webp），384×576。僅做等比縮小與 WebP 編碼。
+- 預設牌背：[card-back-friends.webp](../static/assets/pieces/card-back-friends.webp)，256×384；收藏牌背仍優先生效。
+- [朋友牌組提示詞](design-proposals/asset-prompts/friends-deck.txt) 與 [牌碼／來源對照](design-proposals/friends-deck.json) 記錄選圖及製作方式。
 
-人物牌使用滿版等比 cover，移除內縮圖框與大片角標底板。角標跟隨牌寬縮放，J 使用較小花色；花色沿用現行 SVG 的輪廓作單色遮罩，接近確認稿的平面印刷樣式。手機對手牌亦使用滿版圖，不再固定為 16px。本次僅調整元件比例，未再次生成或替換人物素材。
+人物圖滿版等比 cover，點數與花色由 HTML／CSS 繪製，J 的花色較小，10 的字級另調整以容納兩位數。圖片不內建點數，避免與牌局資料矛盾。各遊戲只預載牌背與實際呈現的牌面，不在開桌時一次解碼整副 52 張；失敗時仍保留文字角標，沒有舊人物圖切回。
 
-實際卡牌元件驗收（使用正式渲染函式的隔離測試；桌機為放大檢視）：[手機](screenshots/friends-cards-phone.png)、[桌機](screenshots/friends-cards-desktop.png)。
+實際卡牌元件驗收：[手機](screenshots/friends-cards-phone.png)、[桌機](screenshots/friends-cards-desktop.png)。

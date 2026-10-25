@@ -95,3 +95,6 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 `python -m unittest tests.python.test_fishing -v` 驗證免費竿配額與台灣換日、隱藏漁獲、持久恢復、私有竿號、精確命中邊界／返還數學、魚簍出售、街機不產生可售漁獲、回執重放／意圖衝突、餘額與版本限制、冷卻、停權帳號、派彩失敗的完整回滾，以及20個帳號並行HTTP、同一回執八路重送與同時賣魚。
 
 `npm run test:fishing` 在 Chromium／WebKit、手機／桌機使用獨立資料庫與合成帳號實際拋竿、重載、收竿、出售和魚炮下注；確認改金額後一次點擊即可發射、未知結果跨頁後核對原操作、舊回應不能清除新收據、SSE保留同一Canvas。另測8種尺寸×2模式、主按鈕首屏、正常／減少動態，保存截圖與診斷到 `artifacts/fishing/browser`。未測所有廠牌實體手機；性能量測只代表當次測試環境。
+
+
+`test_gate_protection.py` 獨立枚舉小牌靴的所有排列與保護結果，核對命中率、撞柱率、派彩及點數守恆，並涵蓋 0／50／100% 與門檻邊界、連續柱牌消耗、歷史局相容、設定遷移、局中快照及重送不重扣。`test:layout` 的 `gate-protection-checks.cjs` 在隔離服務測試管理員欄位與預覽，以及手機／桌面 Chromium、WebKit 的保護資訊、作廋牌與機率顯示。

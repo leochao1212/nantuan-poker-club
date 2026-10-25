@@ -1909,6 +1909,10 @@ dialog::backdrop{backdrop-filter:none;}
 .gate-cards>div{display:grid;gap:14px;justify-items:center;min-width:0;}
 .gate-cards>div>span:first-child{font-size:13px;letter-spacing:.08em;color:var(--muted);}
 .gate-shot{padding:18px 8px;border:1px dashed var(--gold);border-radius:16px;background:color-mix(in srgb,var(--gold) 5%,transparent);}
+.gate-protection-discards{margin:8px 0;color:var(--gold);font-size:13px;line-height:1.6;}
+.gate-protection-discards summary{cursor:pointer;min-height:44px;display:flex;align-items:center;}
+.gate-discard-cards{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;}
+.gate-discard-cards .playing-card{width:60px;}
 .gate-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;}
 .gate-stats>div,.gate-preview{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--line);border-radius:12px;}
 .gate-stats span,.gate-preview span{font-size:12px;color:var(--muted);}

@@ -3,6 +3,7 @@ from fractions import Fraction
 import json
 import unittest
 
+import game_settings
 import bonus_engine as gate
 import poker_engine as poker
 from .test_gate_blackjack import points
@@ -12,7 +13,7 @@ class GateShoeRules(unittest.TestCase):
     def test_rounds_consume_one_shoe_and_reshuffle_only_between_hands(self):
         room=gate.new_room('Continuous gate',1,'inbetween',buy_in=2000,stake=100)
         gate.sit(room,1,'Player',0)
-        gate.start_hand(room,1,deck=list(poker.DECK))
+        gate.start_hand(room,1,deck=list(poker.DECK),settings={**game_settings.default('inbetween'),'params':{'target_bps':9700,'post_protection_bps':0}})
         first_id=room['hand']['shoe_id']
         original_points=points(room)
         drawn=[]

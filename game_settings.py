@@ -17,7 +17,7 @@ DEFAULTS={
  'mines':{'target_bps':9700,'bombs':5},
  'tower':{'target_bps':9700,'fixed_bombs':1,'progressive_bombs':[1,1,1,2,2,2]},
  'dice':{'even':1,'faces':[1,2,3],'totals':[50,18,14,12,8,6,6,6,6,8,12,14,18,50],'any_triple':24,'triple':150,'weights':[1]*6},
- 'inbetween':{'target_bps':9700},
+ 'inbetween':{'target_bps':9700,'post_protection_bps':5000},
 }
 NAMES=dict(zip(DEFAULTS,['德州撲克','台灣麻將','大老二','21 點','輪盤','百家樂','拉霸','礦區','爬塔','骰寶','射龍門']))
 DEFAULTS['limits']={'max_bet':10000}
@@ -27,7 +27,7 @@ NAMES['fishing']='楠團漁港'
 def field(key,label,minimum,maximum,labels=None,unit='integer'):
  return {'key':key,'label':label,'min':minimum,'max':maximum,'labels':labels,'unit':unit}
 SCHEMAS={
- 'inbetween':[field('target_bps','派彩基準返還率（%）',100,30000,unit='percent_bp')],
+ 'inbetween':[field('target_bps','保護前派彩基準返還率（%）',100,30000,unit='percent_bp'),field('post_protection_bps','撞柱保護觸發率（%，0 為關閉）',0,10000,unit='percent_bp')],
  'holdem':[],
  'mahjong':[],
  'big2':[field('penalties','剩牌賠付倍率',1,20,['1–7 張','8–12 張','13 張'])],
@@ -42,7 +42,7 @@ SCHEMAS={
 NOTES={
  'limits':'適用原本有單局下注上限的遊戲。輪盤與骰寶限制每人每局合計；21 點限制初始下注，加倍／分牌依原規則追加；射龍門撞柱額外扣點不算新下注。大老二限制每張牌底分，麻將底台與德州全押沿用各自桌規。儲存後下一局生效，進行中的局保留原上限。',
  'mahjong':'台灣 16 張，144 張含八花，五面一將。房主自訂底／台；每筆支付＝底＋台數×台值，最多 64 台；放槍者獨付、自摸三家分別付。莊家 1 台、連莊每次加 2 台，只對涉及莊家的收付加計。胡＞碰／槓＞吃，同時胡採截胡；過胡須自摸一張解禁。公開桌規與逐項結算，公平洗牌，無莊家抽水。',
- 'inbetween':'標準 52 張每局公平重洗，A=1、K=13。同點門柱可選往上／往下。普通撞柱總扣 2 倍、對子撞柱總扣 3 倍。依命中率及撞柱額外扣款調整含本金派彩，向下取整；返還率以實際總扣款計算。相鄰門柱免費略過，新局生效。',
+ 'inbetween':'標準 52 張連續牌靴，剩 13 張以下於下一局重洗。A=1、K=13，同點可選上下。普通撞柱扣 2 倍、對子扣 3 倍；抽中柱牌才依設定機率啟動保護，公開作廢柱牌並按原牌序補到非柱牌，仍可能射出門外。保留保護前含本金倍率，保護會提高整體返還率，牌桌顯示本局實際機率及返還率；小額派彩向下取整。設定只於新局生效，所有玩家一致。',
  'holdem':'玩家按底池與邊池分配，沒有電腦莊家賠率。標準 52 張公平洗牌，機率固定。',
  'big2':'標準 52 張公平洗牌，機率固定。倍率決定輸家扣款及贏家收入，最高賠付預留會一併調整。',
  'blackjack':'標準牌公平洗牌；副數影響自然機率。副數變更後，下一局建立新牌靴。返還率依玩家決策而異。',
@@ -65,6 +65,10 @@ def initialize(db):
  previous_params TEXT NOT NULL,params TEXT NOT NULL,note TEXT NOT NULL,operation_id TEXT NOT NULL,
  fingerprint TEXT NOT NULL,created_at REAL NOT NULL,UNIQUE(actor_id,operation_id));''')
  for game,params in DEFAULTS.items():db.execute('INSERT OR IGNORE INTO game_settings VALUES(?,1,?,NULL,0)',(game,encode(params)))
+ # One-time schema extension: preserve customized payouts; old hands keep their snapshot.
+ row=db.execute("SELECT params FROM game_settings WHERE game_type='inbetween'").fetchone()
+ if row and 'post_protection_bps' not in (old:=json.loads(row[0])):
+  db.execute("UPDATE game_settings SET params=?,revision=revision+1 WHERE game_type='inbetween' AND params=?",(encode({**old,'post_protection_bps':5000}),row[0]))
 
 def encode(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False)
 def default(game):
@@ -166,7 +170,8 @@ def _metrics(game,encoded):
    rates[key]={'win_percent':100*hits/total**3,'rtp_percent':100*returned/total**3}
   return {'bets':rates}
  if game=='fishing':return {'rtp_percent':p['target_bps']/100}
- if game in ('tower','mines','inbetween'):return {'target_percent':p['target_bps']/100}
+ if game=='inbetween':return {'target_percent':p['target_bps']/100,'post_protection_percent':p.get('post_protection_bps',0)/100}
+ if game in ('tower','mines'):return {'target_percent':p['target_bps']/100}
  return {}
 def metrics(game,p):return deepcopy(_metrics(game,encode(p)))
 def public(snapshot):return {**snapshot,'metrics':metrics(snapshot['game_type'],snapshot['params'])}

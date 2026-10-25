@@ -36,11 +36,12 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
      if(selector)try{await page.waitForSelector(selector,{timeout:10000});}catch(e){await page.screenshot({path:path.join(out,'failure-'+engine+'-'+name+'.png')});throw e;}
      await page.evaluate(()=>document.fonts.ready);await pause(120);
      await require('./table-controls.cjs')(page,engine,mobile,name,out);
+     await require('./gate-protection-checks.cjs')(page,name);
      if(name==='holdem'){const colors=await page.evaluate(()=>{const html=document.documentElement,old=html.dataset.cardBack,card=document.querySelector('.playing-card.covered'),values={};for(const key of ['jade','crimson']){html.dataset.cardBack=key;values[key]=getComputedStyle(card).backgroundColor;}if(old===undefined)delete html.dataset.cardBack;else html.dataset.cardBack=old;return values;});assert.deepEqual(colors,{jade:'rgb(22, 75, 63)',crimson:'rgb(101, 42, 58)'},'Equipped card backs must override the default theme');}
      if(name==='gate'){
       const choices=page.locator('[data-gate-direction]:not(:disabled)');
       if(await choices.count())await choices.first().click();
-      const expected=await page.evaluate(()=>{const q=room.hand.gate_quotes[room.hand.direction||((room.hand.gate_quotes||{}).between?'between':document.querySelector('[data-gate-direction][aria-pressed=true]')?.dataset.gateDirection)];return q?(100*q.winning_cards/q.total_cards).toFixed(1).replace(/\.0$/,'')+'%':'0%';});
+      const expected=await page.evaluate(()=>{const q=room.hand.gate_quotes[room.hand.direction||((room.hand.gate_quotes||{}).between?'between':document.querySelector('[data-gate-direction][aria-pressed=true]')?.dataset.gateDirection)];return q?(100*(q.win_numerator??q.winning_cards)/(q.win_denominator??q.total_cards)).toFixed(1).replace(/\.0$/,'')+'%':'0%';});
       assert.equal(await page.locator('#gate-chance').innerText(),expected);
       assert.match(await page.locator('.gate-mode-note').allTextContents().then(a=>a.join(' ')),/本副牌第 2 局/);
      }

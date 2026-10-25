@@ -22,6 +22,8 @@ DEFAULTS={
 NAMES=dict(zip(DEFAULTS,['德州撲克','台灣麻將','大老二','21 點','輪盤','百家樂','拉霸','礦區','爬塔','骰寶','射龍門']))
 DEFAULTS['limits']={'max_bet':10000}
 NAMES['limits']='共用下注上限'
+DEFAULTS['fishing']={'target_bps':9500,'daily_casts':20}
+NAMES['fishing']='楠團漁港'
 def field(key,label,minimum,maximum,labels=None,unit='integer'):
  return {'key':key,'label':label,'min':minimum,'max':maximum,'labels':labels,'unit':unit}
 SCHEMAS={
@@ -51,6 +53,8 @@ NOTES={
  'mines':'地雷等機率分布，最多翻 5 格。派彩含本金、向下取整，小額下注實際返還率較低。',
  'tower':'每層四選一，地雷等機率分布。遞增難度的地雷數須逐層不減。派彩向下取整。',
 }
+SCHEMAS['fishing']=[field('target_bps','街機理論返還率（%）',100,10000,unit='percent_bp'),field('daily_casts','休閒每日免費竿數',1,100)]
+NOTES['fishing']='休閒免費竿數於台灣午夜換日，漁獲可出售；街機每發1–100點且受共用上限限制。單發命中率＝返還率÷魚種總返還倍率，捕獲即入帳，不再累計可售庫存。設定於下次拋竿／發射生效；已拋竿的漁獲保留。'
 SCHEMAS['limits']=[field('max_bet','每人每局下注上限（點）',20,1000000)]
 
 def initialize(db):
@@ -161,6 +165,7 @@ def _metrics(game,encoded):
     multiplier=bonus_engine.dice_multiplier(d,key,p);returned+=w*multiplier;hits+=w*(multiplier>0)
    rates[key]={'win_percent':100*hits/total**3,'rtp_percent':100*returned/total**3}
   return {'bets':rates}
+ if game=='fishing':return {'rtp_percent':p['target_bps']/100}
  if game in ('tower','mines','inbetween'):return {'target_percent':p['target_bps']/100}
  return {}
 def metrics(game,p):return deepcopy(_metrics(game,encode(p)))

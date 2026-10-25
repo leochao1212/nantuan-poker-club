@@ -37,6 +37,7 @@ mahjong_engine.py         台灣 16 張麻將與底／台結算
 game_settings.py          設定驗證、版本快照、派彩／理論指標
 wallet.py                 虛擬錢包、補給、入離桌移轉
 transfers.py              帳號間點數轉帳
+fishing.py                休閒釣魚、街機捕魚、魚簍／圖鑑及耐久回執
 clubhouse.py              被動收益、升級、員工、資金水位
 rewards.py                任務、商品、裝備
 member_accounts.py        暱稱、頭像、密碼／帳號狀態
@@ -48,7 +49,7 @@ result_stats.py           歷史結算統計投影
 backup.py                 SQLite Backup API
 manage_admin.py           由主機操作者建立獨立管理員
 static/                   不需打包的網站與素材；night.css 是唯一遊戲樣式，ui-art.js 管理現行圖片
-tests/python/test_*.py    後端回歸測試（45 檔，使用套件相對引用）
+tests/python/test_*.py    後端回歸測試（46 檔，使用套件相對引用）
 tests/browser/            瀏覽器互動與排版測試
 ~~~
 
@@ -110,3 +111,13 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 `game_settings` 的 `limits` 列保存 `max_bet`，與賠率設定共用管理員驗證、版本與 audit。每局的 `game_settings` 快照另攜帶 `bet_limit`／`bet_limit_revision`，不改寫既有賠率 params；舊手牌缺欄位時為 1,000，新預設為 10,000。建立房間與下一局使用目前設定，回合內的押注與 legal actions 使用當局快照。開局的 `expected_bet_limit_revision` 防止以過期提示扣點；前端將上限版本納入推播重繪判斷。
 
 內部虛擬莊家備付在等待狀態、同一個資料庫交易中處理。`bet_limit_funded` 記錄歷來已備付的最高上限，只有更高上限才重新估算，玩家餘額和局中銀行不會因推播或設定修改而變動。
+
+### 漁港
+
+`#fishing` 是帳號功能頁，由 `static/fishing.js` 管理獨立 Canvas 與控制區，大廳提供入口，既有手機五項導航保持不變。`GET /api/fishing` 只讀取本人資料；`POST /api/fishing/{cast,reel,shot,sell}` 經原 FIFO 寫入佇列，同一 SQLite 交易保存操作回執、漁獲／圖鑑與錢包流水。`fishing_operations` 以使用者與 operation_id 唯一，含完整意圖指紋，重送不重新抽樣。
+
+休閒預設每天20免費竿，台灣時間換日。拋竿時封存魚種、尺寸與3–6秒等待時間，公開快照僅提供本人竿號和就緒時間；領取前不洩漏結果。每帳號同時一竿，跨日、斷線及服務重啟均可繼續。漁獲留在魚簍，出售一次全部可售漁獲；圖鑑累計保留。
+
+街機每發1–100點且不超過共用下注上限，每帳號至少間隔0.6秒。魚種倍率為2、3、5、8、12、20、35、60（總返還），均使用命中率＝target_bps/(10000×倍率)，預設理論返還95%。各次獨立，無隱藏血量或個人機率；動畫不參與判定。街機捕獲僅累計圖鑑，派彩直接入錢包，不產生可售庫存。街機流水納入資金水位的遊戲淨輸贏，免費漁獲出售列為流入。
+
+管理員以現有版本設定／audit調整 `fishing.target_bps` 與 `daily_casts`。新設定於下一次拋竿／發射生效，前端送出預期規則／上限版本避免過期扣點。金錢異動只喚醒大廳頻道，不廣播每發魚炮到所有牌桌。Canvas最多30fps、DPR最多2，離頁／背景停止，支援減少動態；沒有魚群位置推播或每秒輪詢。

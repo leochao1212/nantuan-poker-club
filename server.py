@@ -30,6 +30,7 @@ import voice_transport
 import club_admin
 import game_settings
 import transfers
+import fishing
 import member_accounts
 from realtime import Hub, WriteQueue
 from dataclasses import dataclass
@@ -154,6 +155,7 @@ def initialize():
         db.execute("INSERT OR IGNORE INTO settings VALUES ('invite_code',?)", (secrets.token_hex(4).upper(),))
         online.initialize(db)
         transfers.initialize(db)
+        fishing.initialize(db)
 
 
 class Problem(Exception):
@@ -331,6 +333,11 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
                     value=game_settings.admin_view(db,user)
                 self.reply(200,value)
+            elif path=='/api/fishing':
+                with HTTP_SNAPSHOTS, connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    value=fishing.view(db,user['id'],time.time())
+                self.reply(200,value)
             elif path=='/api/clubhouse/staff':
                 with HTTP_SNAPSHOTS, connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
@@ -411,7 +418,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/fishing.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
                 ext = name.rsplit(".",1)[-1]
@@ -741,6 +748,11 @@ class Handler(BaseHTTPRequestHandler):
                 CLIENT_EVENT_BUDGET[user['id']]=[*budget,clock];CLIENT_EVENT_AT[key]=clock
             print(json.dumps({'event':'client_connection','kind':kind,'client':client,'user_id':user['id'],**fields,'at':now()}),flush=True)
             db.commit();return Reply(200,{'ok':True})
+        if path.startswith('/api/fishing/'):
+            result=fishing.mutate(db,user,path.rsplit('/',1)[1],data,time.time())
+            db.commit()
+            if not result['replayed'] and result['result']['action'] in ('shot','sell'):EVENTS.publish(0,lobby=False)
+            return Reply(200,result)
         if path=='/api/wallet/transfers':
             role=club_admin.identity(db,user['id'])
             if role['is_admin']:club_admin.require(db,user['id'])

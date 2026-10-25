@@ -1,4 +1,4 @@
-# Python 回歸測試（45 個檔案）
+# Python 回歸測試（46 個檔案）
 
 這裡集中所有 Python 測試。整理時移動前後均為 386 個測試案例，案例名稱及次數一致；後續數量以當次 CI 為準。
 
@@ -104,3 +104,5 @@ python -m unittest tests.python.test_transfers.TransferRules.test_conservation_r
 | [test_static_artwork.py](test_static_artwork.py) | 插畫白名單、前端展示與靜態路由回歸。 |
 | [test_static_cache.py](test_static_cache.py) | CSS／JS／SVG 的 gzip、ETag、重新驗證、退役 URL 與 HTML／API 不快取。 |
 | [test_deployment.py](test_deployment.py) | 部署授權、封裝驗證、安全排空、資料保留與回復邊界。 |
+
+- `test_fishing.py`：雙模式釣魚、公開機率、私人漁獲、帳本原子性與20人並行；瀏覽器配套為 `npm run test:fishing`。

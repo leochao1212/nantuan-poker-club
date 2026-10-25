@@ -2651,6 +2651,9 @@ dialog:has(.feature-dialog){width:min(800px,calc(100% - 24px));}
 .game-short-rules[open] summary:after{content:"−";}
 .night-lobby .game-short-rules p{min-height:0;font-size:12px;line-height:1.7;margin:0 0 8px;}
 .rewards-hub{max-width:1100px;margin:auto;}
+.rewards-links{display:flex;flex-wrap:wrap;gap:8px;}
+.rewards-links>*{flex:1;min-height:44px;white-space:nowrap;}
+.rewards-hub .club-missions{scroll-margin-top:100px;}
 .rewards-hub .wallet-panel{margin:0 0 24px;}
 .rewards-hub .club-missions{margin:0;}
 .rewards-hub .supply-boxes{flex:1;min-width:0;}

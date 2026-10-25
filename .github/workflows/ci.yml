@@ -45,6 +45,7 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:ui
       - run: npm run test:journeys
+      - run: npm run test:rewards
       - run: npm run test:cards
       - run: npm run test:limits
       - run: npm run test:reveal
@@ -57,6 +58,7 @@ jobs:
           path: |
             artifacts/browser
             artifacts/table-ux
+            artifacts/rewards
             artifacts/bet-limit-browser
             artifacts/cards
             artifacts/layout

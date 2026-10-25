@@ -10,7 +10,8 @@ flowchart TD
   S --> M["#members 成員"]
   M --> MP["#member/:id 公開名片與資金水位"]
   S --> C["#clubhouse 會所／升級／員工"]
-  S --> R["#collection 任務／收藏／特效"]
+  S --> RW["#rewards 補給與今日任務"]
+  RW --> R["#collection 外觀收藏／特效"]
   S --> W["#wallet 轉帳與紀錄"]
   S --> P["#profile 個人設定／名片／資金"]
   S --> AD["#admin 管理後台"]
@@ -72,3 +73,7 @@ game.js 仍包含頁面、狀態、路由、恢復與遊戲控制；樣式已統
 ## 轉動與揭曉
 
 round-presentation.js 只管理演出，game.js 仍立即處理伺服器回執與點數狀態。開始操作先建立等待演出；HTTP、推播、確認快照進同一 prepare，已確認的同一局只揭曉一次。輪盤約 4.5 秒、拉霸約 3.3 秒，未知結果持續等待，8 秒後暫停循環並保留確認狀態；收到結果再停止。快速演出與略過只影響本機呈現，不建立交易。分頁隱藏／離桌取消演出；回來依伺服器狀態顯示，不補播已退休的操作。
+
+## Android 用戶端
+
+[Flutter Android App](../mobile/nantuan_app/README.md) 共用本網站與後端。APK 建置使用獨立 Android workflow，不加入網站 Docker 映像；App 的帳號、遊戲規則與點數仍由相同服務管理。

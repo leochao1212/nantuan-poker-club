@@ -30,6 +30,13 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-gradle-344-${{ hashFiles('mobile/nantuan_app/android/**/*.kts', 'mobile/nantuan_app/pubspec.lock') }}
+          restore-keys: android-gradle-344-
       - name: Prepare Android project
         run: python3 mobile/nantuan_app/tool/bootstrap_android.py
       - name: Analyze and test Flutter
@@ -41,7 +48,7 @@ jobs:
           flutter test
       - name: Build emulator APK
         working-directory: mobile/nantuan_app
-        run: flutter build apk --debug --dart-define=APP_ORIGIN=http://localhost:8765
+        run: flutter build apk --debug --target-platform android-x64 --dart-define=APP_ORIGIN=http://localhost:8765
       - name: Android emulator and real WebView gameplay
         env:
           PYTHON: python3

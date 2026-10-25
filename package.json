@@ -11,7 +11,8 @@
     "test:reveal": "node tests/browser/round-presentation.cjs",
     "test:limits": "node tests/browser/bet-limits.cjs",
     "test:cards": "node tests/browser/cards.cjs",
-    "test:journeys": "node tests/browser/table-journeys.cjs"
+    "test:journeys": "node tests/browser/table-journeys.cjs",
+    "test:rewards": "node tests/browser/rewards.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

@@ -12,7 +12,7 @@ for source,target in [('MainActivity.kt','app/src/main/kotlin/org/nantuan/nantua
     dest=android/target;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(root/'overlays'/source,dest)
 # Cleartext is allowed only in the disposable debug emulator build, never release.
 p=android/'app/src/debug/AndroidManifest.xml'
-p.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:usesCleartextTraffic="true" /></manifest>\n',encoding='utf-8')
+p.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"><application tools:replace="android:usesCleartextTraffic" android:usesCleartextTraffic="true" /></manifest>\n',encoding='utf-8')
 p=android/'app/build.gradle.kts';s=p.read_text(encoding='utf-8')
 s=s.replace('minSdk = flutter.minSdkVersion','minSdk = 24')
 # A main-only release workflow supplies the persistent private signing key.

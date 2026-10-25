@@ -13,6 +13,7 @@
 | 開始畫頁面、改風格或做響應式 | [設計規格](docs/DESIGN-SYSTEM.md)、[頁面設計工作單](docs/PAGE-DESIGN-BRIEF.md) |
 | 理解資料、籌碼與 API | [資料模型](docs/DATA-MODEL.md)、[API 導覽](docs/API.md) |
 | 開分支、提交 PR | [協作流程](CONTRIBUTING.md) |
+| 檢查牌桌操作與協作互動約定 | [操作流程審查](docs/UX-REVIEW.md) |
 | 執行回歸、操作測試 | [測試方法](docs/TESTING.md) |
 | Docker、備份與更新 | [部署與營運](docs/OPERATIONS.md)、[CI/CD](docs/CI-CD.md) |
 | 圖片、SVG、動畫來源檔 | [素材清單](docs/ASSETS.md) |

@@ -44,6 +44,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:ui
+      - run: npm run test:journeys
       - run: npm run test:cards
       - run: npm run test:limits
       - run: npm run test:reveal
@@ -55,6 +56,7 @@ jobs:
           name: synthetic-browser-diagnostics
           path: |
             artifacts/browser
+            artifacts/table-ux
             artifacts/bet-limit-browser
             artifacts/cards
             artifacts/layout

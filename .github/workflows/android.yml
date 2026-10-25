@@ -45,8 +45,14 @@ jobs:
           dart format --output=none --set-exit-if-changed lib test
           flutter analyze
           flutter test
-      - name: Build emulator APK
+      - uses: actions/cache/restore@v4
+        id: debug_apk
         if: github.event_name == 'pull_request'
+        with:
+          path: mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
+          key: android-debug344-localhost8765-v1-${{ hashFiles('mobile/nantuan_app/lib/**', 'mobile/nantuan_app/pubspec.*', 'mobile/nantuan_app/android/**/*.kts', 'mobile/nantuan_app/android/**/*.kt', 'mobile/nantuan_app/android/app/src/**', 'mobile/nantuan_app/android/gradle.properties', 'mobile/nantuan_app/android/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Build emulator APK
+        if: github.event_name == 'pull_request' && steps.debug_apk.outputs.cache-hit != 'true'
         working-directory: mobile/nantuan_app
         run: flutter build apk --debug --target-platform android-x64 --dart-define=APP_ORIGIN=http://localhost:8765
       - uses: actions/cache/save@v4
@@ -56,6 +62,11 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ steps.gradle.outputs.cache-primary-key }}
+      - uses: actions/cache/save@v4
+        if: github.event_name == 'pull_request' && steps.debug_apk.outputs.cache-hit != 'true'
+        with:
+          path: mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
+          key: ${{ steps.debug_apk.outputs.cache-primary-key }}
       - name: Android emulator and real WebView gameplay
         timeout-minutes: 8
         if: github.event_name == 'pull_request'
@@ -64,9 +75,9 @@ jobs:
         run: |
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          mobile/nantuan_app/android/gradlew --stop
+          if [ -x mobile/nantuan_app/android/gradlew ]; then mobile/nantuan_app/android/gradlew --stop; fi
           sudo apt-get update -qq
-          sudo apt-get install -y libpulse0
+          sudo apt-get install -y libpulse0 gdb
           sudo chmod 666 /dev/kvm
           sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
           # Pinned official emulator archive: avoid host SIGSEGV seen with 37.2.12.
@@ -85,7 +96,7 @@ jobs:
           printf '\nhw.lcd.width=720\nhw.lcd.height=1560\nhw.lcd.density=320\n' >> "$ANDROID_AVD_HOME/nantuan-test.avd/config.ini"
           mkdir -p artifacts/android
           trap 'tail -60 artifacts/android/emulator.log || true' EXIT
-          nohup "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swiftshader -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
+          nohup gdb --batch -ex run -ex "thread apply all bt" --args "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swangle -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
           timeout 90s adb wait-for-device
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
@@ -125,6 +136,7 @@ jobs:
         run: |
           mkdir -p artifacts/android
           tar --exclude=.gradle --exclude=local.properties --exclude=GeneratedPluginRegistrant.java --exclude='app/src/main/java' -czf artifacts/android/android-scaffold.tar.gz -C mobile/nantuan_app android
+          if [ -f mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk ]; then cp mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk artifacts/android/test-app.apk; fi
           cp mobile/nantuan_app/pubspec.lock artifacts/android/pubspec.lock || true
           tar -czf artifacts/android/formatted-dart.tar.gz -C mobile/nantuan_app lib test
       - uses: actions/upload-artifact@v4

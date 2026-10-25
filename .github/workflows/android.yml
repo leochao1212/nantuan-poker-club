@@ -65,6 +65,8 @@ jobs:
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           mobile/nantuan_app/android/gradlew --stop
+          sudo apt-get update -qq
+          sudo apt-get install -y libpulse0
           sudo chmod 666 /dev/kvm
           sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
           # Pinned official emulator archive: avoid host SIGSEGV seen with 37.2.12.

@@ -1,0 +1,98 @@
+name: Android APK
+on:
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/android.yml', 'tests/android/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Prepare Android project
+        run: python3 mobile/nantuan_app/tool/bootstrap_android.py
+      - name: Analyze and test Flutter
+        working-directory: mobile/nantuan_app
+        run: |
+          flutter pub get
+          dart format lib test
+          flutter analyze
+          flutter test
+      - name: Build emulator APK
+        working-directory: mobile/nantuan_app
+        run: flutter build apk --debug --dart-define=APP_ORIGIN=http://localhost:8765
+      - name: Android emulator and real WebView gameplay
+        env:
+          PYTHON: python3
+        run: |
+          sudo chmod 666 /dev/kvm
+          sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
+          echo no | avdmanager create avd --force --name nantuan-test --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
+          mkdir -p artifacts/android
+          nohup "$ANDROID_HOME/emulator/emulator" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >artifacts/android/emulator.log 2>&1 &
+          adb wait-for-device
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          adb shell input keyevent 82
+          adb install mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
+          node tests/android/webview-smoke.cjs
+      - name: Prepare private release signing
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE"
+          test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/nantuan-release.jks"
+          chmod 600 "$RUNNER_TEMP/nantuan-release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/nantuan-release.jks" >> "$GITHUB_ENV"
+      - name: Build signed trial APK
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        working-directory: mobile/nantuan_app
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          flutter build apk --release
+          mkdir -p ../../artifacts/android/release
+          cp build/app/outputs/flutter-apk/app-release.apk ../../artifacts/android/release/nantuan-club-0.1.0.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose build/app/outputs/flutter-apk/app-release.apk
+          cd ../../artifacts/android/release
+          sha256sum nantuan-club-0.1.0.apk > SHA256SUMS
+      - name: Save generated project for reproducibility
+        if: always()
+        run: |
+          mkdir -p artifacts/android
+          tar --exclude=.gradle --exclude=local.properties --exclude=GeneratedPluginRegistrant.java --exclude='app/src/main/java' -czf artifacts/android/android-scaffold.tar.gz -C mobile/nantuan_app android
+          cp mobile/nantuan_app/pubspec.lock artifacts/android/pubspec.lock || true
+          tar -czf artifacts/android/formatted-dart.tar.gz -C mobile/nantuan_app lib test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-build-${{ github.run_id }}
+          path: artifacts/android/
+          retention-days: 14

@@ -2650,6 +2650,23 @@ dialog:has(.feature-dialog){width:min(800px,calc(100% - 24px));}
 .game-short-rules summary:after{content:"＋";margin-left:7px;}
 .game-short-rules[open] summary:after{content:"−";}
 .night-lobby .game-short-rules p{min-height:0;font-size:12px;line-height:1.7;margin:0 0 8px;}
+.rewards-hub{max-width:1100px;margin:auto;}
+.rewards-hub .wallet-panel{margin:0 0 24px;}
+.rewards-hub .club-missions{margin:0;}
+.rewards-hub .supply-boxes{flex:1;min-width:0;}
+.rewards-hub .daily-box{padding:16px;}
+.rewards-hub .daily-box .button{min-height:48px;white-space:normal;}
+.sidebar .nav-item[href="#rewards"]{position:relative;}
+.sidebar .nav-item .reward-count{display:inline-block;border-radius:12px;padding:3px 7px;background:var(--gold);color:var(--night);font-size:11px;font-weight:700;white-space:nowrap;}
+.reward-count[hidden]{display:none!important;}
+@media(max-width:760px){
+.rewards-hub .page-heading{align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.rewards-hub .wallet-panel{padding:16px;margin-bottom:16px;}
+.rewards-hub .wallet-main{gap:10px;}
+.rewards-hub .mission-card{min-width:0;}
+.sidebar .nav-item[href="#rewards"] .reward-count{position:absolute;right:0;top:0;font-size:10px;padding:2px 4px;}
+.rewards-shortcut{min-height:44px;padding:8px 12px;white-space:nowrap;}
+}
 .night-supply{border-top:1px solid #2c3947;padding-top:6px;margin:15px 0 24px;}
 .night-supply>summary{min-height:48px;display:flex;align-items:center;font-size:17px;cursor:pointer;list-style:none;}
 .night-supply>summary:after{content:"＋";margin-left:auto;color:#aab6c5;}

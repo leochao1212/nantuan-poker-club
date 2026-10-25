@@ -2,7 +2,7 @@
 window.ClubFishing=(()=>{
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),num=n=>Number(n||0).toLocaleString('zh-TW');
  const fishIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 12c4-8 11-8 15 0-4 8-11 8-15 0Zm15 0 4-5v10Z"/><circle cx="7.5" cy="10.5" r=".8" fill="currentColor"/></svg>';
- let root=null,ctx=null,state=null,user=null,mode='leisure',selected='sardine',stake=5,pending=null,sending=false,epoch=0,frame=0,lastFrame=0,readyTimer=0,observer=null,scene=null,swimmers=[],shots=[],lastResult=null,aim={x:.5,y:.4},message='',error=false,loading=false,offset=0,readSequence=0,readController=null;
+ let root=null,ctx=null,state=null,user=null,mode='leisure',selected='sardine',stake=5,pending=null,sending=false,epoch=0,frame=0,lastFrame=0,readyTimer=0,observer=null,scene=null,swimmers=[],shots=[],lastResult=null,aim={x:.5,y:.4},message='',error=false,loading=false,offset=0,readSequence=0,readController=null,autoDaySeen=null;
  const images=new Map(),reduce=matchMedia('(prefers-reduced-motion: reduce)'),q=s=>root?.querySelector(s),clock=()=>Date.now()/1000+offset;
  function page(){return '<section id="fishing-page" class="fishing-page" aria-label="楠團漁港"></section>';}
  function key(){return 'nantuan-fishing-pending:'+user;}
@@ -15,7 +15,7 @@ window.ClubFishing=(()=>{
  }
  function sprite(f){if(images.has(f.id))return images.get(f.id);const image=new Image();image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg(f,'body'));image.onload=()=>draw(performance.now());images.set(f.id,image);return image;}
  function fishSvg(f,id){return svg(f,'fish-'+f.id+'-'+id);}
- function accept(next){if(state&&next.server_time<state.server_time)return;state=next;offset=next.server_time-Date.now()/1000;stake=Math.min(stake,next.max_shot);ctx.wallet(next.wallet);}
+ function accept(next){if(state&&next.server_time<state.server_time)return;state=next;offset=next.server_time-Date.now()/1000;stake=Math.min(stake,next.max_shot);ctx.onWallet(next.wallet);}
  function resultText(r){if(!r)return '';const f=state.catalog.find(f=>f.id===r.species);if(r.action==='cast')return '浮標已入水，等魚咬鉤。';if(r.action==='reel')return `釣到${f.name} ${r.size_cm} cm，已放入魚簍。`;if(r.action==='sell')return `售出 ${r.count} 條魚，獲得 ${num(r.amount)} 點。`;return r.caught?`捕獲${f.name}，總返還 ${num(r.gross)} 點（本發扣 ${num(r.stake)} 點）。`:`${f.name}游走了，本發扣 ${num(r.stake)} 點。`;}
  async function read(){readController?.abort();const controller=readController=new AbortController(),token=epoch,sequence=++readSequence;loading=true;paint();try{const data=await ctx.api('/api/fishing',undefined,{controller});if(token!==epoch||sequence!==readSequence)return;accept(data);loading=false;message=pending?'有一筆尚未確認的操作，請核對原操作。':'';error=false;paint();}catch(e){if(token!==epoch||sequence!==readSequence)return;loading=false;message=e.message;error=true;paint();}}
  async function act(action,extra={}){
@@ -82,8 +82,8 @@ window.ClubFishing=(()=>{
  }
  function tick(now){frame=0;if(!root||document.hidden||reduce.matches)return;if(now-lastFrame>32){draw(now);lastFrame=now;}frame=requestAnimationFrame(tick);}
  function startAnimation(){if(!frame&&!document.hidden&&!reduce.matches)frame=requestAnimationFrame(tick);}
- function unmount(){epoch++;readController?.abort();readController=null;cancelAnimationFrame(frame);frame=0;clearTimeout(readyTimer);observer?.disconnect();observer=null;scene=null;root=null;ctx=null;sending=false;shots=[];}
- function mount(context){const next=document.querySelector('#fishing-page');if(!next)return;if(root===next&&user===context.user.id){ctx=context;if(state&&context.serverTime>=state.server_time){state.wallet=context.wallet;const balance=q('.fish-wallet strong');if(balance)balance.textContent=num(context.wallet.balance);}return;}unmount();ctx=context;root=next;user=context.user.id;state=null;pending=loadPending();lastResult=null;message='';error=false;void read();}
+ function unmount(){autoDaySeen=null;epoch++;readController?.abort();readController=null;cancelAnimationFrame(frame);frame=0;clearTimeout(readyTimer);observer?.disconnect();observer=null;scene=null;root=null;ctx=null;sending=false;shots=[];}
+ function mount(context){const next=document.querySelector('#fishing-page');if(!next)return;if(root===next&&user===context.user.id){ctx=context;if(state&&context.serverTime>=state.server_time){state.wallet=context.wallet;const balance=q('.fish-wallet strong');if(balance)balance.textContent=num(context.wallet.balance);if(context.wallet.day&&context.wallet.day!==state.day&&autoDaySeen!==context.wallet.day&&!sending&&!loading){autoDaySeen=context.wallet.day;void read();}}return;}unmount();ctx=context;root=next;user=context.user.id;state=null;pending=loadPending();lastResult=null;message='';error=false;void read();}
  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;clearTimeout(readyTimer);}else if(root){startAnimation();scheduleReady();if(!sending)void read();}});
  reduce.addEventListener('change',()=>{cancelAnimationFrame(frame);frame=0;draw(performance.now());startAnimation();});
  return {page,mount,unmount,card:()=>`<a class="fish-lobby-entry" href="#fishing"><span class="fish-lobby-emblem">${fishIcon}</span><span><strong>楠團漁港</strong><small>休閒釣魚與街機捕魚</small></span><span aria-hidden="true">↗</span></a>`};

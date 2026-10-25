@@ -36,7 +36,10 @@ class FishingRules(unittest.TestCase):
         with self.assertRaises(f.RuleError):self.call('sell')
     def test_quota_taipei_midnight_and_setting_revision(self):
         cfg=game_settings.current(self.db,'fishing');cfg['params']['daily_casts']=1
-        self.db.execute("UPDATE game_settings SET params=?,revision=2 WHERE game_type='fishing'",(game_settings.encode(cfg['params']),))
+        cfg['params']['target_bps']=9000
+        self.db.execute('INSERT INTO club_admins VALUES(1,0,?)',(self.t,))
+        game_settings.update(self.db,{'id':1},dict(game_type='fishing',revision=cfg['revision'],params=cfg['params'],note='Fishing quota test',operation_id='fishing_settings_test_001'),self.t)
+        self.assertEqual(f.view(self.db,1,self.t)['catalog'][0]['catch_percent'],45)
         with self.assertRaises(f.RuleError):self.call('cast',expected_revision=1)
         cast=self.call('cast',clock=self.t)
         self.call('reel',cast_id=cast['result']['cast_id'],clock=self.t+10)

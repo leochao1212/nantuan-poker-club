@@ -42,6 +42,7 @@ module.exports=async function round4Checks(page,engine,out){
   return bad;
  });
  assert.deepEqual(clips,[],engine+' card corner suit is clipped');
+ await page.waitForFunction(()=>[...document.querySelectorAll('#round4-card-fixture [data-photo-card]')].every(e=>e.dataset.faceState==='ready'));
  await page.locator('#round4-card-fixture').screenshot({path:path.join(out,engine+'-face-cards.png')});
  await page.evaluate(()=>document.querySelector('#round4-card-fixture').remove());
  await require('./court-checks.cjs')(page,engine,out);

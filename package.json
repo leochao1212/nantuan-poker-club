@@ -9,7 +9,8 @@
     "test:layout": "node tests/browser/layout.cjs",
     "test:motion": "node tests/browser/art-motion.cjs",
     "test:reveal": "node tests/browser/round-presentation.cjs",
-    "test:limits": "node tests/browser/bet-limits.cjs"
+    "test:limits": "node tests/browser/bet-limits.cjs",
+    "test:cards": "node tests/browser/cards.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

@@ -26,6 +26,7 @@ await q.locator('#deal-hand').click();await q.waitForFunction(()=>room.hand_no==
 state=await api(contexts[0],rp);assert.deepEqual(state.hand.players.map(s=>s.contribution),[100,200]);
 for(const page of [p,q])assert.equal(await page.locator('.blackjack-player:visible').count(),2);
 if(state.status==='playing')assert.equal(state.hand.dealer[1],null);
+await Promise.all([p,q].map(page=>page.waitForFunction(()=>[...document.querySelectorAll('[data-photo-card]')].every(e=>e.dataset.faceState==='ready'))));
 await p.locator('.arcade-surface').screenshot({path:path.join(out,'blackjack-desktop.png')});await q.locator('.blackjack-others').screenshot({path:path.join(out,'blackjack-peer-mobile.png')});
 checks.push('last confirmation deals both exactly once; all player hands visible; dealer hole remains private');
 assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks,errors,scope:'Synthetic accounts, isolated database, viewport/touch emulation'},null,2));console.log(JSON.stringify({checks,errors}));

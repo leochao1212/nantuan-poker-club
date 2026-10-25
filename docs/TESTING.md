@@ -15,7 +15,7 @@ python -m unittest discover -s tests/python -t . -v
 | 德州規則與資金 | test_poker、test_rules、test_transactions、test_funding |
 | 21 點下注／多人 | test_blackjack_confirmation、test_gate_blackjack、test_arcade |
 | 房間推播、離線恢復 | test_realtime、test_presence、test_mobile_recovery、test_connection_review、test_push_views |
-| 遊戲設定 | test_game_settings、test_payouts、test_fairness |
+| 遊戲設定 | test_game_settings、test_bet_limits、test_payouts、test_fairness |
 | 會所與員工 | test_income、test_upgrades、test_clubhouse_speed、test_staff |
 | 語音 | test_voice |
 | 個人資料／管理／轉帳 | test_profiles、test_admin、test_transfers |
@@ -67,3 +67,9 @@ GitHub Actions 執行程式庫內的檢查。正式部署前還需在部署目�
 `test:layout` 透過 `tests/browser/court-checks.cjs` 檢查真實 `card()` 元件：德州自己／對手／公共牌、大老二、21 點、射龍門、紀錄與獨立卡牌共 8 種上下文，28／52／72／140px 牌寬、A～K 全點數與四花色，393／1366px 視窗。Chromium 與 WebKit 各 3,328 組檢查滿版等比人物圖、按牌寬縮放的角標、J 較小花色及無大片白底，並確認每張牌指向自己的圖片；既有全點數裁切測試另檢查角標不被裁掉。
 
 `deck-checks.cjs` 另在獨立頁面確認 52 張圖片皆可解碼、牌碼與花色各有獨立圖片、只準備牌局時不預載整副、只顯示兩張時僅取兩張，以及未公開牌面不產生圖片網址。它會保存整副與手機八張的實際元件截圖。HTTP 測試另逐張驗證 52 個路徑與已退役的三個舊路徑。
+
+### 共用下注上限
+
+`test_bet_limits.py` 涵蓋預設／自訂值、越權與格式拒絕、合計上限、六人輪盤／骰寶最高派彩守恆、各遊戲初注、21 點加倍、射龍門擔保、局中快照與舊局相容、過期設定拒絕且不扣點、收據重送，以及莊家備付只在更高上限時處理。德州不建立額外莊家或全押限制。
+
+`npm run test:limits` 啟動隔離資料庫，在 Chromium／WebKit 的手機與桌機實際操作管理員預覽／儲存，再檢查輪盤、骰寶、拉霸、21 點各 10,000 點的送出 payload、超額押注阻擋、每次一筆請求，以及設定推播後同頁輸入框上限更新。拒絕回應以測試攔截器產生，不扣實際玩家點數。截圖與結果在 artifacts/bet-limit-browser，CI 同步執行。

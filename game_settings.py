@@ -20,6 +20,8 @@ DEFAULTS={
  'inbetween':{'target_bps':9700},
 }
 NAMES=dict(zip(DEFAULTS,['德州撲克','台灣麻將','大老二','21 點','輪盤','百家樂','拉霸','礦區','爬塔','骰寶','射龍門']))
+DEFAULTS['limits']={'max_bet':10000}
+NAMES['limits']='共用下注上限'
 def field(key,label,minimum,maximum,labels=None,unit='integer'):
  return {'key':key,'label':label,'min':minimum,'max':maximum,'labels':labels,'unit':unit}
 SCHEMAS={
@@ -36,6 +38,7 @@ SCHEMAS={
  'dice':[field('even','大小／單雙淨贏倍數',0,500),field('faces','單骰點數淨贏倍數',0,500,['出現 1 顆','出現 2 顆','出現 3 顆']),field('totals','總和淨贏倍數',0,500,[str(i) for i in range(4,18)]),field('any_triple','任意豹子淨贏倍數',0,500),field('triple','指定豹子淨贏倍數',0,500),field('weights','每顆骰子共用的點數權重',0,1000,[str(i) for i in range(1,7)])],
 }
 NOTES={
+ 'limits':'適用原本有單局下注上限的遊戲。輪盤與骰寶限制每人每局合計；21 點限制初始下注，加倍／分牌依原規則追加；射龍門撞柱額外扣點不算新下注。大老二限制每張牌底分，麻將底台與德州全押沿用各自桌規。儲存後下一局生效，進行中的局保留原上限。',
  'mahjong':'台灣 16 張，144 張含八花，五面一將。房主自訂底／台；每筆支付＝底＋台數×台值，最多 64 台；放槍者獨付、自摸三家分別付。莊家 1 台、連莊每次加 2 台，只對涉及莊家的收付加計。胡＞碰／槓＞吃，同時胡採截胡；過胡須自摸一張解禁。公開桌規與逐項結算，公平洗牌，無莊家抽水。',
  'inbetween':'標準 52 張每局公平重洗，A=1、K=13。同點門柱可選往上／往下。普通撞柱總扣 2 倍、對子撞柱總扣 3 倍。依命中率及撞柱額外扣款調整含本金派彩，向下取整；返還率以實際總扣款計算。相鄰門柱免費略過，新局生效。',
  'holdem':'玩家按底池與邊池分配，沒有電腦莊家賠率。標準 52 張公平洗牌，機率固定。',
@@ -48,6 +51,7 @@ NOTES={
  'mines':'地雷等機率分布，最多翻 5 格。派彩含本金、向下取整，小額下注實際返還率較低。',
  'tower':'每層四選一，地雷等機率分布。遞增難度的地雷數須逐層不減。派彩向下取整。',
 }
+SCHEMAS['limits']=[field('max_bet','每人每局下注上限（點）',20,1000000)]
 
 def initialize(db):
  db.executescript('''CREATE TABLE IF NOT EXISTS game_settings (
@@ -59,10 +63,45 @@ def initialize(db):
  for game,params in DEFAULTS.items():db.execute('INSERT OR IGNORE INTO game_settings VALUES(?,1,?,NULL,0)',(game,encode(params)))
 
 def encode(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False)
-def default(game):return {'game_type':game,'revision':0,'params':deepcopy(DEFAULTS[game])}
+def default(game):
+ value={'game_type':game,'revision':0,'params':deepcopy(DEFAULTS[game])}
+ if game!='limits':value.update(bet_limit=DEFAULTS['limits']['max_bet'],bet_limit_revision=0)
+ return value
 def current(db,game):
  row=db.execute('SELECT revision,params FROM game_settings WHERE game_type=?',(game,)).fetchone()
- return {'game_type':game,'revision':row[0],'params':json.loads(row[1])} if row else default(game)
+ value={'game_type':game,'revision':row[0],'params':json.loads(row[1])} if row else default(game)
+ if game!='limits':
+  limits=current(db,'limits');value.update(bet_limit=limits['params']['max_bet'],bet_limit_revision=limits['revision'])
+ return value
+
+def bet_limit(snapshot=None):
+ # Missing metadata belongs to a hand dealt before configurable limits existed.
+ return snapshot.get('bet_limit',1000) if snapshot is not None else DEFAULTS['limits']['max_bet']
+
+def room_bet_limit(room):
+ return bet_limit(room['hand'].get('game_settings',{})) if room.get('status')=='playing' else bet_limit(room.get('next_game_settings'))
+
+def fund_bet_limit(room,snapshot):
+ """Fund virtual house reserves only when the configured ceiling reaches a new high.
+
+ This never moves player/wallet points or changes outcomes, and is called only
+ between hands in the same transaction as opening/starting a table.
+ """
+ if room.get('status')!='waiting':return
+ kind=room.get('game_type','holdem');limit=bet_limit(snapshot)
+ if kind in ('holdem','mahjong','big2') or limit<=room.get('bet_limit_funded',1000):return
+ p=snapshot['params'];cap=room.get('capacity',6)
+ if kind=='roulette':multiple=Fraction(max(p[k] for k in ('number_bp','even_bp','group_bp')),10000)+1
+ elif kind=='dice':multiple=max(p['even'],*p['faces'],*p['totals'],p['any_triple'],p['triple'])+1
+ elif kind=='blackjack':multiple=Fraction(max(p['blackjack_bp'],8*p['win_bp'],4*p['five_card_bp']),10000)+1
+ elif kind=='baccarat':multiple=Fraction(max(p[k] for k in ('player_bp','banker_bp','tie_bp')),10000)+1
+ elif kind=='slot':multiple=max(*p['triples'],p['pair'])
+ elif kind in ('tower','mines'):
+  import bonus_engine
+  multiple=max(Fraction(bonus_engine.risk_return(kind,limit,5 if kind=='mines' else 6,mode=m,settings=p),limit) for m in ('fixed','progressive'))
+ else:multiple=500
+ reserve=max(1000000,(limit*multiple*cap).__ceil__())
+ room['bank']=max(room['bank'],reserve);room['bet_limit_funded']=limit
 def params(hand,game):return hand.get('game_settings',{}).get('params',DEFAULTS[game])
 
 def validate(game,value):
@@ -99,6 +138,7 @@ def roulette_bp(p,kind):return p['number_bp'] if kind.startswith('number') else 
 @lru_cache(maxsize=64)
 def _metrics(game,encoded):
  p=json.loads(encoded)
+ if game=='limits':return {'max_bet':p['max_bet']}
  if game=='slot':
   w=p['weights'];total=sum(w);pay=Fraction(0)
   for a,b,c in product(range(6),repeat=3):

@@ -19,7 +19,6 @@ CATALOG={
 RED={1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
 BIG_RANKS='3456789TJQKA2'
 SUITS='cdhs'
-MAX_ROULETTE_TOTAL=1000
 BLACKJACK_DECKS=6
 BLACKJACK_CUT_REMAINING=78
 
@@ -42,13 +41,14 @@ def big2_reserve(room,settings=None):
 def _modern_big2(room):return room['hand'].get('big2_rules',{}).get('version')==2
 
 
-def new_room(name,owner_id,game_type,buy_in=1000,stake=10):
+def new_room(name,owner_id,game_type,buy_in=1000,stake=10,settings=None):
     if game_type not in CATALOG:raise RuleError('找不到這個遊戲。')
-    poker.integer(stake,'每局基本點數',2 if game_type=='blackjack' else 1,1000)
+    poker.integer(stake,'每局基本點數',2 if game_type=='blackjack' else 1,game_settings.bet_limit(settings))
     if game_type=='blackjack' and stake%2:raise RuleError('21 點基本下注須為偶數，以完整支付 Blackjack 3:2 點數。')
     room=poker.new_room(name,owner_id,buy_in=buy_in)
     room.update(game_type=game_type,stake=stake,capacity=CATALOG[game_type]['capacity'],bank=1_000_000 if game_type!='big2' else 0)
     if game_type=='big2':room['big2_rules']=big2_options()
+    game_settings.fund_bet_limit(room,settings or game_settings.default(game_type))
     return room
 
 
@@ -72,11 +72,11 @@ def _player(room,uid):return next((p for p in room['hand']['players'] if p['user
 def blackjack_bet(room,seat):return seat.get('blackjack_bet',room['stake'])
 
 
-def set_blackjack_bet(room,uid,amount):
+def set_blackjack_bet(room,uid,amount,settings=None):
     if room.get('game_type')!='blackjack' or room['status']!='waiting':raise RuleError('請在 21 點開局前設定下注。')
     seat=poker.seated(room,uid)
     if not seat or seat['away'] or seat['leaving']:raise RuleError('請先回到座位再設定下注。')
-    poker.integer(amount,'下注點數',2,1000)
+    poker.integer(amount,'下注點數',2,game_settings.bet_limit(settings))
     if amount%2:raise RuleError('21 點下注須為偶數，以完整支付 Blackjack 3:2 點數。')
     if amount>seat['stack']:raise RuleError('下注超過你的桌上籌碼，請先從錢包帶入。')
     seat['blackjack_bet']=amount
@@ -97,7 +97,9 @@ def confirm_blackjack_bet(room,uid,amount,clock,expected_hand_number,settings=No
     if type(expected_hand_number) is not int or expected_hand_number!=room['hand_no']+1:
         raise RuleError('下注已換局，請更新牌桌後再確認。')
     if clock<room['next_hand_at']:raise RuleError('請等本局結算後再確認下一局下注。')
-    set_blackjack_bet(room,uid,amount)
+    set_blackjack_bet(room,uid,amount,settings)
+    for seat in room['seats']:
+        if blackjack_bet(room,seat)>game_settings.bet_limit(settings):seat.pop('blackjack_ready_for',None)
     poker.seated(room,uid)['blackjack_ready_for']=room['hand_no']+1
     players=blackjack_waiting_players(room)
     if players and all(blackjack_ready(room,s) for s in players):
@@ -141,7 +143,10 @@ def start_hand(room,clock,deck=None,settings=None):
     minimum=1 if kind=='roulette' else big2_reserve(room,snapshot) if kind=='big2' else room['stake']
     seats=[s for s in room['seats'] if not s['away'] and not s['leaving'] and s['stack']>=(blackjack_bet(room,s) if kind=='blackjack' else minimum)]
     if len(seats)<CATALOG[kind]['minimum']:raise RuleError(f"至少需要 {CATALOG[kind]['minimum']} 位未暫離且有足夠籌碼的玩家。"+(f' 大老二每人須有 {minimum:,} 點作為本局最高賠付預留，未使用的點數會退還。' if kind=='big2' else ''))
-    if kind=='roulette':liability=(MAX_ROULETTE_TOTAL*max(cfg[k] for k in ('number_bp','even_bp','group_bp'))+9999)//10000*len(seats)
+    if kind=='blackjack':
+        for seat in seats:poker.integer(blackjack_bet(room,seat),'下注點數',2,game_settings.bet_limit(snapshot))
+    if kind=='big2':poker.integer(room['stake'],'每張牌點數',1,game_settings.bet_limit(snapshot))
+    if kind=='roulette':liability=(game_settings.bet_limit(snapshot)*max(cfg[k] for k in ('number_bp','even_bp','group_bp'))+9999)//10000*len(seats)
     elif kind=='blackjack':liability=sum((blackjack_bet(room,s)*max(cfg['blackjack_bp'],8*cfg['win_bp'],4*cfg['five_card_bp'])+9999)//10000 for s in seats)
     else:liability=0
     if kind!='big2' and room['bank']<liability:raise RuleError('本桌電腦莊家的虛擬點數不足，請另開新桌。')
@@ -322,12 +327,12 @@ def _act_roulette(room,uid,action,data,clock):
             kind=b.get('kind');number=b.get('number');amount=b.get('amount')
             if kind not in ('number','red','black','odd','even','low','high','dozen1','dozen2','dozen3','column1','column2','column3'):raise RuleError('押注種類無效。')
             if kind=='number' and (type(number) is not int or not 0<=number<=36):raise RuleError('號碼須為 0–36。')
-            poker.integer(amount,'押注點數',1,MAX_ROULETTE_TOTAL)
+            poker.integer(amount,'押注點數',1,game_settings.room_bet_limit(room))
             key=(kind,number if kind=='number' else None)
             if key in keys:raise RuleError('相同押注請合併金額。')
             keys.add(key);bets.append({'kind':kind,'number':number if kind=='number' else None,'amount':amount})
         total=sum(b['amount'] for b in bets)
-        if total>min(p['stack'],MAX_ROULETTE_TOTAL):raise RuleError('本局押注超過可用籌碼或 1,000 點上限。')
+        if total>min(p['stack'],game_settings.room_bet_limit(room)):raise RuleError(f'本局押注超過可用籌碼或 {game_settings.room_bet_limit(room):,} 點上限。')
         poker.pay(p,total)
     p['bets']=bets;p['last_action']='已押注' if bets else '本局略過'
     hand['pending'].remove(uid)
@@ -340,7 +345,7 @@ def legal_actions(room,uid):
     hand=room['hand'];p=_player(room,uid)
     if not p or p['folded']:return None
     kind=room['game_type']
-    if kind=='roulette':return {'actions':['bet','skip'],'max_total':min(p['stack'],MAX_ROULETTE_TOTAL)} if uid in hand['pending'] else None
+    if kind=='roulette':return {'actions':['bet','skip'],'max_total':min(p['stack'],game_settings.room_bet_limit(room))} if uid in hand['pending'] else None
     if hand['actor']!=uid:return None
     if kind=='big2':return {'actions':['play']+(['pass'] if hand['current_play'] else []),'first_card':hand['first_card'] if hand['first_play'] else None,'required_single':_top_card(room,p),'triples':hand.get('big2_rules',{}).get('triples',True)}
     h=p['hands'][hand['active_index']];actions=['hit','stand']

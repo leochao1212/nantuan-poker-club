@@ -2,17 +2,17 @@
 // One visual round lifecycle. Financial state and operation receipts stay in game.js/server.
 window.ClubRoundPresentation=(()=>{
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),names=new Set(['roulette','slot']);
- let current=null,panel=null,seen=null,fast=false,retired=null,redrawOnReturn=false;
+ let current=null,panel=null,seen=null,fast=false,retired=null,redrawOnReturn=false,scrollFrame=0;
  try{fast=localStorage.getItem('club.fastReveal')==='1';}catch{}
  const instant=()=>fast||reduced.matches;
  const active=r=>!!current&&current.room===r.id;
  const masked=r=>active(r)&&!instant();
  const stage=r=>active(r)?current.paused?'confirming':current.phase:'idle';
  const emit=()=>document.dispatchEvent(new Event('club:presentation-change'));
- function stopTracks(s){for(const record of s?.tracks.values()||[])record.animation?.cancel();s?.tracks.clear();}
+ function stopTracks(s){for(const [el,record] of s?.tracks||[]){record.animation?.cancel();el.closest('.roulette-wheel')?.classList.remove('is-spinning');}s?.tracks.clear();}
  function clearTimers(s){for(const key of ['stopTimer','finishTimer','waitTimer'])clearTimeout(s?.[key]);}
  function removePanel(){panel?.node.remove();panel=null;}
- function cancel(redraw=false){const had=!!current;clearTimers(current);stopTracks(current);current=null;removePanel();if(had&&redraw)emit();}
+ function cancel(redraw=false){const had=!!current;cancelAnimationFrame(scrollFrame);scrollFrame=0;clearTimers(current);stopTracks(current);current=null;removePanel();if(had&&redraw)emit();}
  function finish(){
   const s=current;if(!s?.result)return;
   clearTimers(s);stopTracks(s);current=null;
@@ -80,11 +80,17 @@ window.ClubRoundPresentation=(()=>{
  function play(){
   document.querySelectorAll('[data-fast-reveal]').forEach(el=>el.onchange=()=>{fast=el.checked;try{localStorage.setItem('club.fastReveal',fast?'1':'0');}catch{}if(fast){if(current?.result)finish();else cancel(true);}else emit();});
   document.querySelectorAll('[data-skip-reveal]').forEach(el=>el.onclick=finish);
-  const s=current;if(!s||s.paused)return;
+  const s=current;if(!s)return;
+  if(panel){panel.node.querySelector('p').textContent=caption({id:s.room});const b=panel.node.querySelector('button');b.disabled=!s.result;b.textContent=s.result?'略過動畫':'確認中…';}
+  if(s.paused)return;
   for(const [el,record] of s.tracks)if(!el.isConnected){record.animation?.cancel();s.tracks.delete(el);}
   if(s.kind==='slot')document.querySelectorAll('.arcade-slot .slot-track').forEach((el,i)=>slotTrack(s,el,i));
-  else{const w=wheelFor(s);if(!w)return;w.classList.add('is-spinning');w.querySelector('.wheel-hub').textContent='♠';if(panel){panel.hand=s.hand;panel.node.querySelector('p').textContent=caption({id:s.room});const b=panel.node.querySelector('button');b.disabled=!s.result;b.textContent=s.result?'略過動畫':'確認中…';}const width=w.clientWidth;wheelTrack(s,w.querySelector('.roulette-rotor'),'rotor',width);wheelTrack(s,w.querySelector('.roulette-ball-orbit'),'orbit',width);wheelTrack(s,w.querySelector('.roulette-ball'),'ball',width);}
+  else{const w=wheelFor(s);if(!w)return;
+   // Moving into a floating view transfers ownership; never run both wheels.
+   for(const [el,record] of s.tracks)if(el.closest('.roulette-wheel')!==w){record.animation?.cancel();el.closest('.roulette-wheel')?.classList.remove('is-spinning');s.tracks.delete(el);}
+   w.classList.add('is-spinning');w.querySelector('.wheel-hub').textContent='♠';if(panel){panel.hand=s.hand;panel.node.querySelector('p').textContent=caption({id:s.room});const b=panel.node.querySelector('button');b.disabled=!s.result;b.textContent=s.result?'略過動畫':'確認中…';}const width=w.clientWidth;wheelTrack(s,w.querySelector('.roulette-rotor'),'rotor',width);wheelTrack(s,w.querySelector('.roulette-ball-orbit'),'orbit',width);wheelTrack(s,w.querySelector('.roulette-ball'),'ball',width);}
  }
+ window.addEventListener('scroll',()=>{if(!panel&&current?.kind==='roulette'&&!scrollFrame)scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;if(!panel&&current?.kind==='roulette')play();});},{passive:true});
  document.addEventListener('visibilitychange',()=>{if(document.hidden){redrawOnReturn=!!current;if(current?.operation)retired={room:current.room,operation:current.operation};cancel();}else if(redrawOnReturn){redrawOnReturn=false;emit();}});window.addEventListener('pagehide',()=>cancel());
  reduced.addEventListener?.('change',()=>cancel(true));
  return {begin,prepare,play,cancel,fail,masked,stage,caption,options,skip:finish,running:()=>!!current};

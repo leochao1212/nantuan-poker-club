@@ -28,12 +28,13 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
     const started=await page.evaluate(()=>({elapsed:performance.now(),caption:ClubRoundPresentation.caption(room),running:document.getAnimations().filter(a=>a.effect?.target?.closest('.roulette-wheel,.slot-reels')).length}));
     assert.ok(started.running>=3,'Click must begin motion before any outcome');
     const target=game==='slot'?'.slot-track':'.roulette-wheel.is-spinning .roulette-rotor';
-    const first=await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform);await pause(120);assert.notEqual(await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform),first,'Visual must actually move');
+    const first=await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform);await pause(120);const second=await page.locator(target).first().evaluate(e=>({matrix:getComputedStyle(e).transform,box:e.getBoundingClientRect().toJSON(),animations:e.getAnimations().map(a=>({time:a.currentTime,state:a.playState}))}));assert.notEqual(second.matrix,first,engine+' '+mobile+' '+game+' must actually move: '+JSON.stringify(second));
     await page.waitForFunction(n=>room.hand_no>n&&!busy&&!pendingOperation,before.number);
     assert.ok(await page.evaluate(()=>ClubRoundPresentation.masked(room)),'Receipt must not expose result early');
     if(game==='roulette'){assert.equal(await page.locator('.roulette-stage h2').innerText(),'轉盤運轉中…');assert.ok((await page.locator('.roulette-wheel .wheel-hub').allTextContents()).every(x=>x==='♠'));}
     else{assert.equal(await page.locator('.slot-track').count(),3);assert.doesNotMatch(await page.locator('.slot-machine p[role=status]').innerText(),/總返還|未中獎|三連/);}
-    await page.evaluate(()=>applyState(structuredClone(room),true,false,'duplicate-check'));
+    await page.evaluate(()=>{if(room.game_type==='roulette')window.scrollTo(0,document.documentElement.scrollHeight);applyState(structuredClone(room),true,false,'duplicate-check');});
+    if(game==='roulette'){assert.equal(await page.locator('.roulette-wheel.is-spinning').count(),1,'Only the visible wheel may animate');assert.ok((await page.locator('.roulette-wheel.is-spinning .roulette-rotor').evaluate(e=>getComputedStyle(e,'::after').backgroundImage)).includes('roul-hub.webp'),'Wheel ornament must turn with the rotor');assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.effect?.target?.closest('.roulette-wheel')).length),3,'Do not keep offscreen GPU animation layers');}
     assert.ok(await page.evaluate(()=>ClubRoundPresentation.masked(room)),'Duplicate snapshot must not cancel the presentation');
     await page.screenshot({path:path.join(out,`${engine}-${mobile?'phone':'desktop'}-${game}-spinning.png`)});
     await page.waitForFunction(()=>!ClubRoundPresentation.masked(room),null,{timeout:9000});

@@ -31,6 +31,7 @@ jobs:
           cache: npm
       - run: npm ci
       - uses: actions/cache@v4
+        id: gradle
         with:
           path: |
             ~/.gradle/caches
@@ -48,15 +49,22 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: mobile/nantuan_app
         run: flutter build apk --debug --target-platform android-x64 --dart-define=APP_ORIGIN=http://localhost:8765
+      - uses: actions/cache/save@v4
+        if: github.event_name == 'pull_request' && steps.gradle.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle.outputs.cache-primary-key }}
       - name: Android emulator and real WebView gameplay
         if: github.event_name == 'pull_request'
         env:
           PYTHON: python3
         run: |
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           sudo chmod 666 /dev/kvm
-          sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
+          sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
           echo no | avdmanager create avd --force --name nantuan-test --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
           mkdir -p artifacts/android
           nohup "$ANDROID_HOME/emulator/emulator" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >artifacts/android/emulator.log 2>&1 &

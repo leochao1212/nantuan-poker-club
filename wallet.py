@@ -62,7 +62,7 @@ def maybe_activate(db,clock):
     return True
 
 
-def transfer(db,uid,amount,kind,key,clock):
+def transfer(db,uid,amount,kind,key,clock,*,game=False):
     if not active(db):return
     if db.execute('SELECT 1 FROM wallet_ledger WHERE user_id=? AND event_key=?',(uid,key)).fetchone():return
     create(db,uid,clock)
@@ -72,7 +72,7 @@ def transfer(db,uid,amount,kind,key,clock):
     db.execute('UPDATE wallets SET balance=? WHERE user_id=?',(balance,uid))
     db.execute('INSERT INTO wallet_ledger(user_id,amount,balance_after,kind,event_key,created_at) VALUES(?,?,?,?,?,?)',
                (uid,amount,balance,kind,key,clock))
-    clubhouse.record(db,uid,amount,kind,key,clock)
+    clubhouse.record(db,uid,amount,kind,key,clock,game=game)
 
 
 def claim(db,uid,clock):

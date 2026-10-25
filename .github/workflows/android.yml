@@ -127,10 +127,12 @@ jobs:
         run: |
           flutter build apk --release
           mkdir -p ../../artifacts/android/release
-          cp build/app/outputs/flutter-apk/app-release.apk ../../artifacts/android/release/nantuan-club-0.1.0.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose build/app/outputs/flutter-apk/app-release.apk
+          apk_version=$(awk '/^version:/ {split($2,v,"[+]");print v[1]}' pubspec.yaml)
+          [[ "$apk_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          cp build/app/outputs/flutter-apk/app-release.apk "../../artifacts/android/release/nantuan-club-$apk_version.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs build/app/outputs/flutter-apk/app-release.apk
           cd ../../artifacts/android/release
-          sha256sum nantuan-club-0.1.0.apk > SHA256SUMS
+          sha256sum "nantuan-club-$apk_version.apk" > SHA256SUMS
       - name: Save generated project for reproducibility
         if: always()
         run: |

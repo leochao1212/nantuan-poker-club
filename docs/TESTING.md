@@ -87,3 +87,5 @@ GitHub Actions 執行程式庫內的檢查。正式部署前還需在部署目�
 ### 補給與 Android
 
 `npm run test:rewards` 檢查四個手機／桌機引擎組合的補給入口、五項手機導航、每日／每小時領取、任務進度推播／領取、原收據重送、重載深層連結與收藏入口。重載前先隔離上一份文件的背景診斷，避免 WebKit 把卸載中的診斷 fetch 當作新頁面的例外。Android workflow 執行 [App 驗證](../mobile/nantuan_app/README.md)，使用模擬器及獨立資料庫，完全不接正式遊戲資料。
+
+Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，檢查五種顯示尺寸、手勢／三鍵導覽、鍵盤關閉後視口恢復、大字體與整頁水平捲動，保存原生與 WebView 截圖、底部白帶像素量測及尺寸 JSON。清理失敗不覆蓋原始錯誤；模擬器結果不代表每個手機品牌。

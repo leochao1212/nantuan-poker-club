@@ -16,7 +16,7 @@ module.exports=async function deckChecks(parent,engine,out){
    for(const e of sheet.children){e.style.width='88px';e.style.height='132px';}
    return {count:sheet.children.length,unique:new Set(codes.map(c=>ClubArt.cardFace(c))).size};
   });
-  assert.deepEqual(count,{count:52,unique:52});await page.setViewportSize({width:1366,height:900});await page.locator('#full-friend-deck').screenshot({path:path.join(out,engine+'-friends-deck.png')});
+  assert.deepEqual(count,{count:52,unique:52});await page.waitForFunction(()=>[...document.querySelectorAll('#full-friend-deck [data-photo-card]')].every(e=>e.dataset.faceState==='ready'));await page.setViewportSize({width:1366,height:900});await page.locator('#full-friend-deck').screenshot({path:path.join(out,engine+'-friends-deck.png')});
   await page.setViewportSize({width:393,height:852});await page.evaluate(()=>{const s=document.querySelector('#full-friend-deck');s.style.gridTemplateColumns='repeat(4,78px)';s.innerHTML=['As','Ah','Ad','Ac','2s','2h','2d','2c'].map(c=>card(c)).join('');for(const e of s.children){e.style.width='78px';e.style.height='117px';}});await page.locator('#full-friend-deck').screenshot({path:path.join(out,engine+'-friends-deck-phone.png')});
   console.log('full deck OK: '+engine+' 52 distinct decoded pictures; on-demand loading; hidden-card privacy');
  }finally{await page.close();await parent.bringToFront();}

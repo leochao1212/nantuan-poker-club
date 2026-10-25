@@ -28,7 +28,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
     const started=await page.evaluate(()=>({elapsed:performance.now(),caption:ClubRoundPresentation.caption(room),running:document.getAnimations().filter(a=>a.effect?.target?.closest('.roulette-wheel,.slot-reels')).length}));
     assert.ok(started.running>=3,'Click must begin motion before any outcome');
     const target=game==='slot'?'.slot-track':'.roulette-wheel.is-spinning .roulette-rotor';
-    const first=await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform);await pause(120);const second=await page.locator(target).first().evaluate(e=>({matrix:getComputedStyle(e).transform,box:e.getBoundingClientRect().toJSON(),documentTime:document.timeline.currentTime,visible:document.visibilityState,focus:document.hasFocus(),animations:e.getAnimations().map(a=>({time:a.currentTime,start:a.startTime,pending:a.pending,state:a.playState}))}));assert.notEqual(second.matrix,first,engine+' '+mobile+' '+game+' must actually move: '+JSON.stringify(second));
+    await page.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));const first=await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform);await pause(120);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));const second=await page.locator(target).first().evaluate(e=>({matrix:getComputedStyle(e).transform,box:e.getBoundingClientRect().toJSON(),documentTime:document.timeline.currentTime,visible:document.visibilityState,focus:document.hasFocus(),animations:e.getAnimations().map(a=>({time:a.currentTime,start:a.startTime,pending:a.pending,state:a.playState}))}));assert.notEqual(second.matrix,first,engine+' '+mobile+' '+game+' must actually move: '+JSON.stringify(second));
     await page.waitForFunction(n=>room.hand_no>n&&!busy&&!pendingOperation,before.number);
     assert.ok(await page.evaluate(()=>ClubRoundPresentation.masked(room)),'Receipt must not expose result early');
     if(game==='roulette'){assert.equal(await page.locator('.roulette-stage h2').innerText(),'轉盤運轉中…');assert.ok((await page.locator('.roulette-wheel .wheel-hub').allTextContents()).every(x=>x==='♠'));}
@@ -79,13 +79,14 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
   const numbers=[];for(const p of pages){await p.waitForFunction(()=>!ClubRoundPresentation.masked(room),null,{timeout:9000});numbers.push(await p.evaluate(()=>room.hand.number));}assert.equal(numbers[0],numbers[1]);
   checks.push({shared_roulette:true,players:2,matching_result:true});
   // Production card renderer and CSS, with actual decoded selected artwork.
-  const p=pages[0];await p.evaluate(()=>live.close());
+  const p=pages[0];await p.evaluate(()=>{credentialsChanging=true;stopLive();});
   for(const mobile of [false,true]){
    await p.setViewportSize({width:mobile?393:1366,height:900});
    await p.evaluate(async mobile=>{
     document.querySelector('#friend-card-fixture')?.remove();const host=document.createElement('section');host.id='friend-card-fixture';host.className='panel';host.style.cssText='display:flex;flex-wrap:wrap;gap:8px;padding:16px;background:#e9dcc1';host.innerHTML=card('Ks')+card('Qh')+card('Jc')+card(null);document.querySelector('#main').prepend(host);for(const c of host.children){c.style.width=(mobile?76:140)+'px';c.style.height=(mobile?114:210)+'px';c.style.transform='none';};
     await Promise.all(['cards/ks.webp','cards/qh.webp','cards/jc.webp','pieces/card-back-friends.webp'].map(async n=>{const im=new Image();im.src=ClubArt.url(n);await im.decode();}));await document.fonts.ready;
    },mobile);
+   await p.waitForFunction(()=>[...document.querySelectorAll('#friend-card-fixture [data-photo-card]')].every(e=>e.dataset.faceState==='ready'));
    const artwork=await p.evaluate(()=>[...document.querySelectorAll('#friend-card-fixture .playing-card[data-rank]')].map(e=>getComputedStyle(e,'::before').backgroundImage));assert.ok(artwork.every((s,i)=>s.includes(['/cards/ks.webp','/cards/qh.webp','/cards/jc.webp'][i])));
    const back=await p.evaluate(()=>getComputedStyle(document.querySelector('#friend-card-fixture .covered')).backgroundImage);assert.ok(back.includes('card-back-friends.webp'));
    const flight=await p.evaluate(()=>{const t=document.createElement('template');t.innerHTML=card(null);const g=t.content.firstElementChild;document.querySelector('#deal-layer').append(g);const b=getComputedStyle(g).backgroundImage;g.remove();return b;});assert.ok(flight.includes('card-back-friends.webp'),'Flight must use the same current back');

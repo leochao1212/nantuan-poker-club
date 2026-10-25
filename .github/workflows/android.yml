@@ -68,7 +68,7 @@ jobs:
           path: mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
           key: ${{ steps.debug_apk.outputs.cache-primary-key }}
       - name: Android emulator and real WebView gameplay
-        timeout-minutes: 8
+        timeout-minutes: 12
         if: github.event_name == 'pull_request'
         env:
           PYTHON: python3

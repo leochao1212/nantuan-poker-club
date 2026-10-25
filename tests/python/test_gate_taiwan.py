@@ -2,7 +2,7 @@
 from copy import deepcopy
 from fractions import Fraction
 import json, unittest
-import bonus_engine as b, poker_engine as p, online, wallet
+import bonus_engine as b, poker_engine as p, online, wallet, game_settings
 from . import test_club
 from .test_gate_blackjack import deck_order, points
 
@@ -10,7 +10,7 @@ from .test_gate_blackjack import deck_order, points
 def make_gate(left='7c',right='7d',third='9h',legacy=False,stack=10000):
     room=b.new_room('Taiwan gate',1,'inbetween',buy_in=stack,stake=100)
     b.sit(room,1,'Player',0)
-    b.start_hand(room,1,deck=deck_order([left,right,third]))
+    b.start_hand(room,1,deck=deck_order([left,right,third]),settings={**game_settings.default('inbetween'),'params':{'target_bps':9700,'post_protection_bps':0}})
     if legacy:
         for key in ('gate_rules_version','gate_shoe_version','gate_quotes'):room['hand'].pop(key,None)
     return room
@@ -83,7 +83,7 @@ class TaiwanGateRules(unittest.TestCase):
             self.assertEqual(room['hand']['results'][0]['payout'],payout);self.assertEqual(room['hand']['charged'],charge)
         room=make_gate(legacy=True);self.assertEqual(b.legal_actions(room,1)['actions'],['skip'])
         b.act(room,1,'skip',2);b.start_hand(room,3,deck=deck_order(['7c','7d','7h']))
-        self.assertEqual(room['hand']['gate_rules_version'],2)
+        self.assertEqual(room['hand']['gate_rules_version'],3)
 
     def test_public_quotes_never_depend_on_secret_third_or_deck_order(self):
         first=make_gate(third='8h');second=make_gate(third='2h')
@@ -108,7 +108,7 @@ class TaiwanGateReceipts(unittest.TestCase):
         rid=online.mutate(self.db,'/api/online/rooms',{'game_type':'inbetween','operation_id':'taiwan_create_00001'},user,clock)['id'];path=f'/api/online/rooms/{rid}'
         online.mutate(self.db,path+'/start',{'operation_id':'taiwan_start_000001'},user,clock+1)
         room=online.get_room(self.db,rid);shoe=deck_order(['7c','7d','7h']);shoe.pop();shoe.pop()
-        room['hand']['pillars']=['7c','7d'];room['hand']['deck']=shoe;room['hand'].pop('gate_quotes',None)
+        room['hand']['game_settings']['params']['post_protection_bps']=0;room['hand']['pillars']=['7c','7d'];room['hand']['deck']=shoe;room['hand'].pop('gate_quotes',None)
         room['hand']['gate_quotes']=b.gate_quotes(room['hand']);online.save(self.db,room,clock+1)
         data={'action':'shoot','direction':'up','stake':100,'hand_id':room['hand']['id'],'turn_id':room['hand']['turn_id'],'operation_id':'taiwan_shoot_000001'}
         online.mutate(self.db,path+'/action',data,user,clock+2)

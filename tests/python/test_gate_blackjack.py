@@ -13,7 +13,7 @@ def blackjack(count=2):
     return r
 def gate(left='3c',right='Kc',third='7d'):
     r=b.new_room('Gate',1,'inbetween',buy_in=2000,stake=10);b.sit(r,1,'P1',0)
-    b.start_hand(r,1,deck=deck_order([left,right,third]));return r
+    b.start_hand(r,1,deck=deck_order([left,right,third]),settings={**game_settings.default('inbetween'),'params':{'target_bps':9700,'post_protection_bps':0}});return r
 
 class BlackjackWagers(unittest.TestCase):
     def test_personal_bets_and_settlement_use_each_players_amount(self):
@@ -98,7 +98,7 @@ class GateTransactions(unittest.TestCase):
         made=self.call('/api/online/rooms',{'game_type':'inbetween','operation_id':'gate_create_00000001'});rid=made['id'];path=f'/api/online/rooms/{rid}'
         request={'operation_id':'gate_start_000000001'};self.call(path+'/start',request);self.assertTrue(self.call(path+'/start',request)['replayed'])
         r=online.get_room(self.db,rid);shoe=deck_order(['3c','Kc','7d']);shoe.pop();shoe.pop()
-        r['hand']['pillars']=['3c','Kc'];r['hand']['deck']=shoe;r['hand'].pop('gate_quotes',None)
+        r['hand']['game_settings']['params']['post_protection_bps']=0;r['hand']['pillars']=['3c','Kc'];r['hand']['deck']=shoe;r['hand'].pop('gate_quotes',None)
         r['hand']['gate_quotes']=b.gate_quotes(r['hand']);online.save(self.db,r,self.clock+1)
         request={'action':'shoot','stake':100,'hand_id':r['hand']['id'],'turn_id':r['hand']['turn_id'],'operation_id':'gate_shoot_000000001'}
         self.call(path+'/action',request,at=2);r=online.get_room(self.db,rid);self.assertEqual(r['seats'][0]['stack'],1050)

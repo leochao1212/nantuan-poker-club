@@ -1,9 +1,10 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks}){
+module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPage}){
  const serial=adb('get-serialno').toString().trim();assert.match(serial,/^emulator-\d+$/,'Adaptive settings are emulator-only');
  const sim=(...args)=>adb('-s',serial,...args),pause=ms=>new Promise(r=>setTimeout(r,ms)),results=[],failures=[];
  const profiles=[['small',640,1280],['standard',786,1704],['large',864,1920],['landscape',1560,720],['tablet',1280,800,160]];
+ async function configured(){await pause(1800);p=await getPage();await p.waitForFunction(()=>typeof lobby!=='undefined'&&lobby&&liveReady,{},{timeout:30000});await p.emulateMedia({reducedMotion:'reduce'});}
  await p.emulateMedia({reducedMotion:'reduce'});
  async function open(view){await p.evaluate(v=>go(v),view);await p.waitForFunction(v=>typeof lobby!=='undefined'&&lobby&&(typeof v==='number'?view==='table'&&room?.id===v:view===v),view);await pause(220);}
  async function capture(name,{keyboard=false}={}){
@@ -22,13 +23,13 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks}){
  try{
   sim('shell','settings','put','secure','show_ime_with_hard_keyboard','1');
   for(const mode of ['gestural','threebutton']){
-   sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.'+mode);await pause(600);
+   sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.'+mode);await configured();
    for(const [label,width,height,density=320] of profiles){
-    sim('shell','wm','size',width+'x'+height);sim('shell','wm','density',String(density));await pause(600);
+    sim('shell','wm','size',width+'x'+height);sim('shell','wm','density',String(density));await configured();
     await open('lobby');await capture(mode+'-'+label+'-lobby');
     await open(roomId);await p.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await pause(150);await capture(mode+'-'+label+'-game-bottom');
    }
-   sim('shell','wm','size','786x1704');await pause(600);await open('members');
+   sim('shell','wm','size','786x1704');await configured();await open('members');
    const height=await p.evaluate(()=>innerHeight);await p.locator('#member-search').tap();await p.locator('#member-search').fill('Android');
    let keyboardShown=false;try{await p.waitForFunction(h=>(visualViewport?.height||innerHeight)<h-100,height,{timeout:10000});keyboardShown=true;}catch{failures.push(mode+': software keyboard did not open');fs.writeFileSync(path.join(out,'ime-'+mode+'.txt'),sim('shell','dumpsys','input_method'));}
    await capture(mode+'-keyboard-open',{keyboard:true});
@@ -36,7 +37,7 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks}){
    else await p.locator('#member-search').blur();
    await open(roomId);await p.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await capture(mode+'-keyboard-return');
   }
-  sim('shell','settings','put','system','font_scale','1.5');await pause(500);await open('rewards');await capture('large-font-rewards');
+  sim('shell','settings','put','system','font_scale','1.5');await configured();await open('rewards');await capture('large-font-rewards');
  }finally{
   try{if(sim('get-state').toString().trim()==='device'){sim('shell','settings','put','system','font_scale','1');sim('shell','wm','size','reset');sim('shell','wm','density','reset');sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.gestural');}}catch{console.warn('Emulator unavailable during cleanup; preserving original failure');}
   fs.writeFileSync(path.join(out,'adaptive-layout.json'),JSON.stringify({results,failures,scope:'Android emulator; gesture/three-button, small/standard/large/landscape/tablet, keyboard, font scale'},null,2));

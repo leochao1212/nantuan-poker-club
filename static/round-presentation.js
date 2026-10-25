@@ -52,7 +52,10 @@ window.ClubRoundPresentation=(()=>{
  function fail(operation){if(current?.operation===operation)cancel(true);}
  function caption(r){if(!masked(r))return '';return current.paused?'仍在確認本局結果…':current.phase==='waiting'?'正在送出，轉動中…':current.phase==='stopping'?'慢慢停下，準備揭曉…':'轉動中，準備揭曉…';}
  function options(r){if(!names.has(r.game_type))return '';const reveal=active(r)&&!!current.result;return `<div class="round-presentation-options"><label><input type="checkbox" data-fast-reveal ${instant()?'checked':''} ${reduced.matches?'disabled':''}>${reduced.matches?'減少動態':'快速演出'}</label><button class="button ghost" type="button" data-skip-reveal ${reveal?'':'disabled'}>略過動畫</button></div>`;}
- function animate(el,frames,options){try{const a=el.animate(frames,options);a.finished.catch(()=>{});return a;}catch{return null;}}
+ function animate(el,frames,options){try{const a=el.animate(frames,options);
+  // Anchor immediately instead of leaving WebKit's first refresh to assign time.
+  try{if(typeof document.timeline.currentTime==='number')a.startTime=document.timeline.currentTime;}catch{/* Keep the animation handle even when explicit timing is unsupported. */}
+  a.finished.catch(()=>{});return a;}catch{return null;}}
  function angle(el){try{const m=new DOMMatrixReadOnly(getComputedStyle(el).transform);return Math.atan2(m.b,m.a)*180/Math.PI;}catch{return 0;}}
  function wheelFor(s){
   if(panel)return panel.node.querySelector('.roulette-wheel');

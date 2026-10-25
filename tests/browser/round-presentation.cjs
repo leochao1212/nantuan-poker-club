@@ -17,7 +17,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
     const room=await api(context,'/api/online/rooms',{game_type:game,name:'轉動測試',buy_in:1000,stake:10,operation_id:crypto.randomUUID()}),page=await context.newPage(),posts=[];
     page.on('pageerror',e=>errors.push(engine+' '+game+': '+e.message));
     page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/'+room.id+'/start'))posts.push(r.postDataJSON());});
-    await page.goto(base+'/#table/'+room.id);await page.waitForFunction(()=>typeof room!=='undefined'&&room&&liveReady);
+    await page.goto(base+'/#table/'+room.id);await page.waitForFunction(()=>typeof room!=='undefined'&&room&&liveReady);await page.bringToFront();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));
     const delayed=mobile;
     if(delayed)await page.evaluate(()=>live.close());
     await page.route('**/api/online/rooms/'+room.id+'/start',async route=>{if(!delayed)await pause(600);const response=await route.fetch();if(delayed)await pause(1800);await route.fulfill({response});});
@@ -28,7 +28,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
     const started=await page.evaluate(()=>({elapsed:performance.now(),caption:ClubRoundPresentation.caption(room),running:document.getAnimations().filter(a=>a.effect?.target?.closest('.roulette-wheel,.slot-reels')).length}));
     assert.ok(started.running>=3,'Click must begin motion before any outcome');
     const target=game==='slot'?'.slot-track':'.roulette-wheel.is-spinning .roulette-rotor';
-    const first=await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform);await pause(120);const second=await page.locator(target).first().evaluate(e=>({matrix:getComputedStyle(e).transform,box:e.getBoundingClientRect().toJSON(),animations:e.getAnimations().map(a=>({time:a.currentTime,state:a.playState}))}));assert.notEqual(second.matrix,first,engine+' '+mobile+' '+game+' must actually move: '+JSON.stringify(second));
+    const first=await page.locator(target).first().evaluate(e=>getComputedStyle(e).transform);await pause(120);const second=await page.locator(target).first().evaluate(e=>({matrix:getComputedStyle(e).transform,box:e.getBoundingClientRect().toJSON(),documentTime:document.timeline.currentTime,visible:document.visibilityState,focus:document.hasFocus(),animations:e.getAnimations().map(a=>({time:a.currentTime,start:a.startTime,pending:a.pending,state:a.playState}))}));assert.notEqual(second.matrix,first,engine+' '+mobile+' '+game+' must actually move: '+JSON.stringify(second));
     await page.waitForFunction(n=>room.hand_no>n&&!busy&&!pendingOperation,before.number);
     assert.ok(await page.evaluate(()=>ClubRoundPresentation.masked(room)),'Receipt must not expose result early');
     if(game==='roulette'){assert.equal(await page.locator('.roulette-stage h2').innerText(),'轉盤運轉中…');assert.ok((await page.locator('.roulette-wheel .wheel-hub').allTextContents()).every(x=>x==='♠'));}
@@ -62,11 +62,13 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
     checks.push({engine,mobile,game,verification_first:delayed,real_motion:true,delayed_reveal:true,duplicate_snapshot:true,receipt_replay:true,skip:true,fast:true,rapid_clicks:true,background_return:true});
     await context.close();
    }
+   await browser.close();
   }
+  const extraBrowser=await chromium.launch({headless:true});browsers.push(extraBrowser);
   // Two real roulette players share the outcome and each sees a full reveal.
   const shared=[];
   for(let i=0;i<2;i++){
-   const c=await browsers[0].newContext({viewport:{width:1366,height:900},reducedMotion:'no-preference'});serial++;await api(c,'/api/register',{username:'shared_wheel_'+serial,nickname:'同桌測試'+i,password:'SyntheticRound123',invite_code:invite});shared.push(c);
+   const c=await extraBrowser.newContext({viewport:{width:1366,height:900},reducedMotion:'no-preference'});serial++;await api(c,'/api/register',{username:'shared_wheel_'+serial,nickname:'同桌測試'+i,password:'SyntheticRound123',invite_code:invite});shared.push(c);
   }
   const room=await api(shared[0],'/api/online/rooms',{game_type:'roulette',name:'共用輪盤測試',buy_in:1000,stake:10,operation_id:crypto.randomUUID()});
   await api(shared[1],'/api/online/rooms/'+room.id+'/join',{buy_in:1000,seat:1,operation_id:crypto.randomUUID()});
@@ -92,7 +94,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
   await p.evaluate(()=>document.documentElement.dataset.cardBack='jade');assert.ok(!(await p.locator('#friend-card-fixture .covered').evaluate(e=>getComputedStyle(e).backgroundImage)).includes('card-back-friends.webp'));const sameBack=await p.evaluate(()=>{const t=document.createElement('template');t.innerHTML=card(null);const g=t.content.firstElementChild;document.querySelector('#deal-layer').append(g);const same=getComputedStyle(g).backgroundImage===getComputedStyle(document.querySelector('#friend-card-fixture .covered')).backgroundImage;g.remove();return same;});assert.ok(sameBack,'Equipped back must also match during dealing');checks.push({friends_deck:true,desktop:true,phone:true,collectible_back:true});
   for(const c of shared)await c.close();
   // An unconfirmed operation pauses visual work, then retries the same receipt.
-  const uncertain=await browsers[0].newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});serial++;
+  const uncertain=await extraBrowser.newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});serial++;
   await api(uncertain,'/api/register',{username:'uncertain_spin_'+serial,nickname:'確認測試',password:'SyntheticRound123',invite_code:invite});
   const ur=await api(uncertain,'/api/online/rooms',{game_type:'slot',buy_in:1000,stake:10,operation_id:crypto.randomUUID()}),up=await uncertain.newPage(),attempts=[];
   up.on('pageerror',e=>errors.push(e.message));up.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/'+ur.id+'/start'))attempts.push(r.postDataJSON().operation_id);});
@@ -103,5 +105,5 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
   await up.unroute('**/api/online/rooms/'+ur.id+'/start');await up.locator('#retry-operation').click();await up.waitForFunction(()=>room.hand_no===1&&!busy&&!pendingOperation);await up.locator('[data-skip-reveal]').click();
   assert.equal(new Set(attempts).size,1,'Retries must retain the original operation id');assert.equal(await up.evaluate(()=>room.hand_no),1);checks.push({uncertain_wait:true,visual_work_pauses:true,same_receipt_retry:true});await uncertain.close();
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors}));
- }finally{for(const b of browsers)await b.close();server.kill();fs.writeFileSync(path.join(out,'server.log'),logs);}
+ }finally{for(const b of browsers)if(b.isConnected())await b.close();server.kill();fs.writeFileSync(path.join(out,'server.log'),logs);}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -4,11 +4,11 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPag
  const serial=adb('get-serialno').toString().trim();assert.match(serial,/^emulator-\d+$/,'Adaptive settings are emulator-only');
  const sim=(...args)=>adb('-s',serial,...args),pause=ms=>new Promise(r=>setTimeout(r,ms)),results=[],failures=[];
  const profiles=[['small',640,1280],['standard',786,1704],['large',864,1920],['landscape',1560,720],['tablet',1280,800,160]];
- async function configured(){await pause(1800);p=await getPage();await p.waitForFunction(()=>typeof lobby!=='undefined'&&lobby&&liveReady,{},{timeout:30000});await p.emulateMedia({reducedMotion:'reduce'});}
+ async function configured(){await pause(1800);sim('shell','am','start','-n','org.nantuan.nantuan_club/.MainActivity');p=await getPage();await p.waitForFunction(()=>typeof lobby!=='undefined'&&lobby&&liveReady&&document.visibilityState==='visible',{},{timeout:30000});await p.emulateMedia({reducedMotion:'reduce'});}
  await p.emulateMedia({reducedMotion:'reduce'});
  async function open(view){await p.evaluate(v=>go(v),view);await p.waitForFunction(v=>typeof lobby!=='undefined'&&lobby&&(typeof v==='number'?view==='table'&&room?.id===v:view===v),view);await pause(220);}
  async function capture(name,{keyboard=false}={}){
-  await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await pause(150);
+  console.log('Adaptive capture: '+name);await p.waitForFunction(()=>document.visibilityState==='visible',{}, {timeout:15000});await pause(150);
   const png=sim('exec-out','screencap','-p');fs.writeFileSync(path.join(out,'layout-'+name+'.png'),png);
   const geometry=await p.evaluate(()=>({headers:document.querySelectorAll('.topbar').length,width:innerWidth,height:innerHeight,visualHeight:visualViewport?.height,visualTop:visualViewport?.offsetTop,dpr:devicePixelRatio,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,scrollY,body:getComputedStyle(document.body).backgroundColor,nav:(()=>{const n=document.querySelector('.sidebar');if(!n||getComputedStyle(n).display==='none')return null;const r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height};})(),feedback:(()=>{const n=document.querySelector('.bet-submit-bar>#action-feedback');if(!n)return null;const r=n.getBoundingClientRect();return {height:r.height,text:n.textContent,visibility:getComputedStyle(n).visibility};})()}));
   try{await p.screenshot({path:path.join(out,'web-layout-'+name+'.png'),timeout:3000});}catch(e){console.warn('Optional DevTools screenshot unavailable: '+e.message);}
@@ -29,7 +29,7 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPag
     await open('lobby');await capture(mode+'-'+label+'-lobby');
     await open(roomId);await p.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await pause(150);await capture(mode+'-'+label+'-game-bottom');
    }
-   sim('shell','wm','size','786x1704');await configured();await open('members');
+   sim('shell','wm','size','786x1704');sim('shell','wm','density','320');await configured();await open('members');
    const height=await p.evaluate(()=>innerHeight);await p.locator('#member-search').tap();await p.locator('#member-search').fill('Android');
    let keyboardShown=false;try{await p.waitForFunction(h=>(visualViewport?.height||innerHeight)<h-100,height,{timeout:10000});keyboardShown=true;}catch{failures.push(mode+': software keyboard did not open');fs.writeFileSync(path.join(out,'ime-'+mode+'.txt'),sim('shell','dumpsys','input_method'));}
    await capture(mode+'-keyboard-open',{keyboard:true});
@@ -39,7 +39,7 @@ module.exports=async function adaptiveLayout({p,adb,api,roomId,out,checks,getPag
   }
   sim('shell','settings','put','system','font_scale','1.5');await configured();await open('rewards');await capture('large-font-rewards');
  }finally{
-  try{if(sim('get-state').toString().trim()==='device'){sim('shell','settings','put','system','font_scale','1');sim('shell','wm','size','reset');sim('shell','wm','density','reset');sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.gestural');}}catch{console.warn('Emulator unavailable during cleanup; preserving original failure');}
+  try{if(sim('get-state').toString().trim()==='device'){sim('shell','settings','put','system','font_scale','1');sim('shell','wm','size','reset');sim('shell','wm','density','reset');sim('shell','cmd','overlay','enable-exclusive','--category','com.android.internal.systemui.navbar.gestural');await configured();}}catch{console.warn('Emulator unavailable during cleanup; preserving original failure');}
   fs.writeFileSync(path.join(out,'adaptive-layout.json'),JSON.stringify({results,failures,scope:'Android emulator; gesture/three-button, small/standard/large/landscape/tablet, keyboard, font scale'},null,2));
  }
  assert.deepEqual(failures,[]);checks.push('Adaptive native layouts: gesture/three-button, 5 sizes, keyboard return and large text');

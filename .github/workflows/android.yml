@@ -12,6 +12,12 @@ jobs:
   android:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(github.event_name == 'pull_request' && '["gestural-small","gestural-standard","gestural-large","gestural-landscape","gestural-tablet","threebutton-small","threebutton-standard","threebutton-large","threebutton-landscape","threebutton-tablet"]' || '["release"]') }}
+    env:
+      ADAPTIVE_TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,7 +74,7 @@ jobs:
           path: mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
           key: ${{ steps.debug_apk.outputs.cache-primary-key }}
       - name: Android emulator and real WebView gameplay
-        timeout-minutes: 12
+        timeout-minutes: 18
         if: github.event_name == 'pull_request'
         env:
           PYTHON: python3
@@ -113,14 +119,23 @@ jobs:
           adb shell input keyevent 82
           sleep 5
           adb install mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
-          # A navigation overlay is a system-wide resource change that relaunches
-          # Activities. Select it before launching each fresh, isolated test run.
-          for mode in gestural threebutton; do
-            adb shell am force-stop org.nantuan.nantuan_club
-            adb shell cmd overlay enable-exclusive --category "com.android.internal.systemui.navbar.$mode"
-            sleep 3
-            ANDROID_NAV_MODE="$mode" node tests/android/webview-smoke.cjs
-          done
+          # Each job launches a fresh App at its display density; hot emulator
+          # density changes leave stale surface metrics unrelated to a fixed phone.
+          mode="${ADAPTIVE_TARGET%%-*}"
+          profile="${ADAPTIVE_TARGET#*-}"
+          case "$profile" in
+            small) size=640x1280; density=320 ;;
+            standard) size=786x1704; density=320 ;;
+            large) size=864x1920; density=320 ;;
+            landscape) size=1560x720; density=320 ;;
+            tablet) size=1280x800; density=160 ;;
+            *) exit 1 ;;
+          esac
+          adb shell cmd overlay enable-exclusive --category "com.android.internal.systemui.navbar.$mode"
+          adb shell wm size "$size"
+          adb shell wm density "$density"
+          sleep 3
+          ANDROID_NAV_MODE="$mode" ANDROID_PROFILE="$profile" node tests/android/webview-smoke.cjs
       - name: Prepare private release signing
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         env:
@@ -151,12 +166,12 @@ jobs:
         run: |
           mkdir -p artifacts/android
           tar --exclude=.gradle --exclude=local.properties --exclude=GeneratedPluginRegistrant.java --exclude='app/src/main/java' -czf artifacts/android/android-scaffold.tar.gz -C mobile/nantuan_app android
-          if [ -f mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk ]; then cp mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk artifacts/android/test-app.apk; fi
+          if [ "$ADAPTIVE_TARGET" = gestural-standard ] && [ -f mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk ]; then cp mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk artifacts/android/test-app.apk; fi
           cp mobile/nantuan_app/pubspec.lock artifacts/android/pubspec.lock || true
           tar -czf artifacts/android/formatted-dart.tar.gz -C mobile/nantuan_app lib test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-build-${{ github.run_id }}
+          name: android-build-${{ github.run_id }}${{ github.event_name == 'pull_request' && format('-{0}', matrix.target) || '' }}
           path: artifacts/android/
           retention-days: 14

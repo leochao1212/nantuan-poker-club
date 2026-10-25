@@ -17,10 +17,11 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
   async function fixture(page,r,value,animate=true,waitReady=true){return page.evaluate(async({r,value,animate,waitReady})=>{
    const prior=structuredClone(r);prior.hand={id:'prior',phase:'dice'};
    r.hand={id:'fixture-'+Math.random(),phase:'showdown',results:[],players:[],summary:'合成動畫檢查',reels:[value,value,value],dice:[value,value,value],game_settings:r.next_game_settings,slot_payout_version:3,selected:[0],hazards:r.game_type==='tower'?Array.from({length:6},()=>[1]):[1],steps:1,returns:[],bomb_counts:[1,1,1,1,1,1]};r.status='waiting';
+   if(r.game_type==='slot')ClubRoundPresentation.prepare(prior,r,true);
    const template=document.createElement('template');template.innerHTML='<section id="art-fixture" class="arcade-table arcade-'+r.game_type+'">'+ClubBonus.board(r,me(),card)+'</section>';
    const current=document.querySelector('#art-fixture');if(current)patchNode(current,template.content.firstElementChild);else dialog(template.innerHTML);
    const host=document.querySelector('#art-fixture');ClubArt.prepare(r.game_type);const decoded=Promise.all([...host.querySelectorAll('.current-art')].map(ClubArt.ready));if(waitReady)await decoded;
-   if(animate){ClubBonus.prepare(prior,r);ClubBonus.play();}
+   if(animate){ClubBonus.prepare(prior,r);ClubBonus.play();if(r.game_type==='slot')ClubRoundPresentation.play();}
    return {images:host.querySelectorAll('.current-art').length,legacy:host.querySelectorAll('svg.sym,.mj-symbol').length};
   },{r,value,animate,waitReady});}
   for(const [engine,browser] of browsers)for(const mobile of [true,false]){
@@ -33,7 +34,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
    assert.equal(requested.filter(u=>/\/assets\/pieces\/(?:slot-|dice-)/.test(u)).length,0,'Lobby must not preload unrelated game pieces');
    let frames=0;
    for(const game of ['slot','dice'])for(const value of game==='slot'?[0,0,1,2,3,4,5,5]:[1,1,2,3,4,5,6,6]){
-    const result=await fixture(page,models[game],value);assert.equal(result.images,3);assert.equal(result.legacy,0);
+    const result=await fixture(page,models[game],value);assert.equal(result.images,game==='slot'?39:3);assert.equal(result.legacy,0);
     await page.waitForFunction(()=>document.querySelector('#art-fixture').getAnimations({subtree:true}).length>=3);
     await page.evaluate(()=>{window.artTracks=document.querySelector('#art-fixture').getAnimations({subtree:true});artTracks.forEach(a=>a.pause());});
     for(const time of [0,40,120,250,500,900]){
@@ -42,7 +43,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
      if(value===(game==='slot'?0:1)&&[0,250,900].includes(time))await page.locator('#art-fixture').screenshot({path:path.join(out,`${engine}-${mobile?'phone':'desktop'}-${game}-${time}.png`)});
      frames++;
     }
-    await page.evaluate(()=>ClubBonus.cancel());
+    await page.evaluate(()=>{ClubBonus.cancel();ClubRoundPresentation.cancel();});
    }
    for(const game of ['mines','tower']){
     const r=await model(c,game),v=await fixture(page,r,0,false);assert.equal(v.images,game==='mines'?25:24);assert.equal(v.legacy,0);

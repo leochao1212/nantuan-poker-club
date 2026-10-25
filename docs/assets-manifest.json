@@ -245,19 +245,24 @@
     "sha256": "623a4b7fc3841ee3865c7c9bd4c3b7aa00bed2b4b39c5256df32fab4c047aace"
   },
   {
+    "path": "static/assets/pieces/card-back-friends.webp",
+    "bytes": 26746,
+    "sha256": "17933355170e4e6c71afc96f2c18905d820bb134e1fb391b3ed7eb1d90702fc1"
+  },
+  {
     "path": "static/assets/pieces/card-j.webp",
-    "bytes": 20816,
-    "sha256": "cfd819f7f05a400e1993a85392c72fdea2e462b7d2299f6bb5649e851a190290"
+    "bytes": 54618,
+    "sha256": "851ed0d96ba360ded5b544c2aa8b5b2d977daa5b094a648b50b1b31c973c9958"
   },
   {
     "path": "static/assets/pieces/card-k.webp",
-    "bytes": 17424,
-    "sha256": "f51073e98839b55b86945cfd7a3fe63d0b3c9089e6a5c300b86160dc041b905f"
+    "bytes": 67680,
+    "sha256": "cb97bedc58704ee34a8782387c43d113b51ab842d67ed9fb78166969aa479410"
   },
   {
     "path": "static/assets/pieces/card-q.webp",
-    "bytes": 16192,
-    "sha256": "5743c98415dc2b36db64ce0aac9d4c704e519222a3ca3f303334537abdbc03d6"
+    "bytes": 59638,
+    "sha256": "de358bfa0232d140060ebe59a82b4fa0ef001ff498946f62a9fe9b2d7b327480"
   },
   {
     "path": "static/assets/pieces/dealer-btn.webp",

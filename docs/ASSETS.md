@@ -12,7 +12,7 @@
 | 會所 Lv.4 | [桌機圖片](../static/assets/clubhouse/tier-4.webp)／[手機圖片](../static/assets/clubhouse/tier-4-small.webp) | 曜金行宮，3:2 展示區 |
 | 大廳主圖 | [poker-night.webp](../static/assets/poker-night.webp) | 大廳主圖區（左側留白給標題） |
 | 遊戲封面 ×11 | static/assets/covers/*.webp（德州、大老二、21 點、輪盤、百家樂、拉霸、礦區、骰寶、爬塔、射龍門、麻將） | 大廳遊戲卡封面，由 `.game-art` 的現行圖片元件直接顯示；需後端白名單放行 `/assets/covers/` |
-| 遊戲零件 ×32 | static/assets/pieces/*.webp | 拉霸、骰面、礦區、人像牌、輪盤框／軸、莊家鈕、下注籌碼、21 點牌靴、麻將鳥與花牌插畫 |
+| 遊戲零件 ×33 | static/assets/pieces/*.webp | 拉霸、骰面、礦區、人像牌、輪盤框／軸、莊家鈕、下注籌碼、21 點牌靴、麻將鳥與花牌插畫 |
 | 麻將牌面精靈圖 ×1 | [mj-tiles.svg](../static/assets/pieces/mj-tiles.svg) | 43 種大牌面及 43 種小牌面；透過 gzip／ETag 傳送，直接顯示現行牌面，圖片依麻將頁載入 |
 | 按鈕零件 ×28 | static/assets/buttons/*.webp | 主要／次要／危險牌匾切片、選中／未選分頁切片、牌桌／卡片框、四色籌碼及金幣；直接使用現行切片，不切換舊版按鈕 |
 | 網站圖示 | [favicon.svg](../static/favicon.svg) | 瀏覽器標誌 |
@@ -21,7 +21,7 @@
 
 建築、遊戲封面與員工插畫的生成提示詞放在 [asset-prompts](design-proposals/asset-prompts/)。其他新增素材的用途與來源依 [設計交接](design-proposals/cream-theme/HANDOFF.md) 記錄；未隨程式庫提供的原始美術稿不宣稱可完整重現。本清單不推定生成工具的授權條款。
 
-麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。84 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
+麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。85 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
 
 | 素材 | 檔案 | 生成方式 |
 | --- | --- | --- |
@@ -29,7 +29,7 @@
 | 遊戲封面 ×11 | static/assets/covers/*.webp | `cover-*` 提示詞，裁成 4:3，480×360 |
 | 會所四級（桌機＋手機） | static/assets/clubhouse/tier-1～4(-small).webp | 同一街角場景；第 1 級先畫，第 2～4 級各以前一級為參考圖逐級升級；桌機 1200×800，手機 600×400 |
 | 員工 3 人走路貼圖 | static/assets/staff/concierge.webp、host.webp、steward.webp（高 220，共用檔案） | `staff-*` 提示詞，純洋紅背景生成後色鍵去背；同一張圖也用在 profile.js 的員工卡半身像 |
-| 牌背、絨布紋理 | 不是檔案，在 night.css 以內嵌 SVG 產生 | 手寫 |
+| 收藏牌背、絨布紋理 | night.css 內嵌 SVG；預設牌背另見下方朋友牌組 | 手寫 |
 | 拉霸符號、骰面、礦區寶石與地雷、狐狸、貓 | 現行 WebP 圖片與個人頭像元件 | 遊戲零件直接使用上方現行 WebP，已移除舊 SVG 備用畫法 |
 | favicon | static/favicon.svg | 手寫 |
 
@@ -49,3 +49,13 @@
 第六輪新增輪盤／德州／21 點零件依出現的頁面載入；麻將精靈圖與鳥圖僅在麻將桌載入，花牌插畫出現時才下載。圖片網址使用內容指紋 `?v=<sha256 前 12 碼>`；WebP 指紋吻合時可快取一年，原始網址用 no-cache／ETag，錯誤指紋回 404、no-store。SVG 仍使用 no-cache＋gzip／ETag。更新素材後執行 `python scripts/check-ui-assets.py --write`，同步版本表、CSS 網址和素材清單；CI 會檢查三者一致。
 
 遊戲 UI 的圖片與樣式只保留一套現行版本。ui-art.js 管理圖片元素、解碼與失敗占位，按遊戲準備拉霸、骰子、人物牌、麻將素材；按鈕與框線由唯一的 night.css 直接使用現行切片。三張員工貼圖由會所與員工卡共用，不再內嵌於 JavaScript。
+
+## 楠團朋友牌組（2026-10-25）
+
+使用者確認 K／Q／J 加牌背概念後，內建 imagegen 依選定的三張朋友照片與確認稿產生正式圖案。J／Q／K 各一張雙頭人物圖，四種花色共用，點數與花色由 HTML／CSS 清楚繪製；原始照片不隨程式發布。預設牌背改為墨綠金色楠團圖樣，已裝備的收藏牌背優先生效。
+
+- 人物圖：static/assets/pieces/card-j.webp、card-q.webp、card-k.webp，384×576。
+- 預設牌背：[card-back-friends.webp](../static/assets/pieces/card-back-friends.webp)，256×384。
+- 生成提示與輸入角色見 [朋友牌組提示詞](design-proposals/asset-prompts/friends-deck.txt)。WebP 僅做等比縮小與編碼；以內容指紋發送，取代先前人物圖。
+
+實際卡牌元件驗收：[手機](screenshots/friends-cards-phone.png)、[桌機](screenshots/friends-cards-desktop.png)。

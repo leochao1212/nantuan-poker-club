@@ -38,7 +38,8 @@ flowchart TD
 | 管理帳號、籌碼 | admin.js | night.css |
 | 遊戲設定與派彩說明 | game-settings.js | night.css |
 | 點數轉帳 | transfers.js | night.css |
-| 發牌與輪盤動畫 | dealer.js、arcade-motion.js | night.css |
+| 發牌、靜止輪盤 | dealer.js、arcade-motion.js | night.css |
+| 輪盤／拉霸等待、轉動與揭曉 | round-presentation.js：ClubRoundPresentation | night.css |
 
 ## 單一樣式來源
 
@@ -67,3 +68,7 @@ game.js 的 patchNode 比對 id、data-seat、data-player、data-room、data-act
 game.js 仍包含頁面、狀態、路由、恢復與遊戲控制；樣式已統一為 night.css。後續協作宜一次處理一個現行元件，保留行為契約，直接修改既有規則並執行回歸，避免繼續追加覆蓋層。
 
 21 點同桌手牌現已常駐顯示，手機先放自己的手牌、莊家和操作，再接同桌手牌。會所手機以標題、建築、升級入口分區。一般牌桌仍留在同一頁，不另開獨立桌頁視窗。
+
+## 轉動與揭曉
+
+round-presentation.js 只管理演出，game.js 仍立即處理伺服器回執與點數狀態。開始操作先建立等待演出；HTTP、推播、確認快照進同一 prepare，已確認的同一局只揭曉一次。輪盤約 4.5 秒、拉霸約 3.3 秒，未知結果持續等待，8 秒後暫停循環並保留確認狀態；收到結果再停止。快速演出與略過只影響本機呈現，不建立交易。分頁隱藏／離桌取消演出；回來依伺服器狀態顯示，不補播已退休的操作。

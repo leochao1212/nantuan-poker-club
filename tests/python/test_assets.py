@@ -40,6 +40,7 @@ class StaticImages(unittest.TestCase):
         html=body.decode('utf-8')
         self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=current-ui-20261025'])
         self.assertIn('/ui-art.js?v=current-ui-20261025',html)
+        self.assertIn('/round-presentation.js',html)
         for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):
             self.assertEqual(self.get('/'+name+'.css')[0],404,name)
         for name in ('concierge','host','steward'):
@@ -50,7 +51,7 @@ class StaticImages(unittest.TestCase):
             self.assertEqual(self.get(path)[0],404)
 
     def test_fingerprinted_images_are_immutable_and_reject_stale_versions(self):
-        for path in ('/assets/covers/slot.webp','/assets/pieces/dice-1.webp','/assets/buttons/coin.webp','/assets/clubhouse/tier-1-small.webp','/assets/staff/host.webp'):
+        for path in ('/assets/covers/slot.webp','/assets/pieces/dice-1.webp','/assets/buttons/coin.webp','/assets/clubhouse/tier-1-small.webp','/assets/staff/host.webp','/assets/pieces/card-back-friends.webp'):
             raw_status,raw_headers,raw=self.get(path)
             self.assertEqual(raw_status,200);self.assertEqual(raw_headers['Cache-Control'],'no-cache')
             version=hashlib.sha256(raw).hexdigest()[:12]
@@ -84,7 +85,7 @@ class StaticImages(unittest.TestCase):
                      '/assets/pieces/../../server.py','/assets/pieces/dice-1.webp%00.png',
                      '/assets/pieces/mine-tile-q.webp','/assets/pieces/mine-gem-256.webp','/assets/pieces/mine-gems.webp','/assets/pieces/MINE-GEM.webp','/assets/pieces/mine-.webp','/assets/pieces/mine-bomb.png',
                      '/assets/pieces/card-a.webp','/assets/pieces/card-2.webp','/assets/pieces/card-J.webp','/assets/pieces/CARD-K.webp','/assets/pieces/card-jq.webp','/assets/pieces/card-.webp',
-                     '/assets/pieces/card-k-256.webp','/assets/pieces/card-q.png','/assets/pieces/card-j.webp/','/assets/pieces/%63ard-k.webp','/assets/pieces/../pieces/card-k.webp'):
+                     '/assets/pieces/card-back-wrong.webp','/assets/pieces/card-k-256.webp','/assets/pieces/card-q.png','/assets/pieces/card-j.webp/','/assets/pieces/%63ard-k.webp','/assets/pieces/../pieces/card-k.webp'):
             self.assertEqual(self.get(path)[0],404,path)
     def test_every_table_piece_is_served(self):
         self.assertEqual(len(TABLE_PIECES),5)

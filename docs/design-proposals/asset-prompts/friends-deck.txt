@@ -1,0 +1,13 @@
+Friends deck production prompts — built-in imagegen, 2026-10-25.
+Inputs: one locally selected portrait as the identity target, plus the user-approved four-card concept as the style reference. Original photographs and full-size generation outputs are kept outside the runtime repository.
+
+Shared court-panel prompt (one request each for K, Q, J):
+Production playing-card interior artwork, identity-preserve compositing. Reference 1 is the actual portrait target; reference 2 is the approved deck concept for style. Make ONE isolated upright rectangular card-interior ART PANEL with a 2:3 portrait aspect ratio. Preserve this photographed person's facial identity, expression, hairstyle, glasses if present, original clothing and recognizable hand gesture. Cleanly remove original photo background. Reproduce the approved antique gold engraved botanical ornament and warm ivory paper aesthetic with a symmetrical DOUBLE-HEADED portrait: upright upper half, same portrait rotated 180 degrees in lower half, joined by a tasteful gold ornamental center divider. Large recognizable photographic faces, natural skin, original wardrobe, no royal costume. Ornament should be suit-neutral leaves and flourishes; the same panel must work for ALL FOUR SUITS. NO letters, numbers, rank indices, suit symbols, Chinese text, outer card edge, rounded corners, surrounding tabletop, external shadow or extra people. Edge-to-edge ivory artwork, front-on flat 2D print design. Leave upper-left and lower-right regions quiet for HTML rank/suit labels. No watermarks.
+K subject: beige jacket over navy shirt, arms spread; approved leftmost portrait.
+Q subject: round glasses, pink shirt, smiling and making a half-heart gesture; approved second portrait.
+J subject: beige T-shirt, peace hand gesture; approved third portrait.
+
+Card-back prompt:
+Production playing-card BACK artwork based on the RIGHTMOST approved reference card. One perfectly flat front-on portrait 2:3 rectangular panel filling the entire image, no surrounding tabletop, perspective, external shadow or other cards. Deep emerald green, finely engraved antique gold botanical linework, balanced 180-degree rotationally symmetric ornament, generous clean outer trim margin and thin double gold border. Central gold spade emblem with the exact Chinese text 楠團 arranged vertically inside. Opaque and finished edge-to-edge, a website card-back texture, not a product photo. No extra text or watermarks.
+
+Web packaging: equal-aspect thumbnail encoding only; court panels 384×576, back 256×384, WebP quality 80. Rank/suit rendering remains code-native.

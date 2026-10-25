@@ -96,7 +96,7 @@ jobs:
           printf '\nhw.lcd.width=720\nhw.lcd.height=1560\nhw.lcd.density=320\n' >> "$ANDROID_AVD_HOME/nantuan-test.avd/config.ini"
           mkdir -p artifacts/android
           trap 'tail -60 artifacts/android/emulator.log || true' EXIT
-          nohup gdb --batch -ex run -ex "thread apply all bt" --args "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swangle -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
+          nohup gdb --batch -ex "set disable-randomization off" -ex "handle SIGPIPE SIGUSR1 SIGUSR2 nostop noprint pass" -ex run -ex "thread apply all bt" --args "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swangle -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
           timeout 90s adb wait-for-device
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi

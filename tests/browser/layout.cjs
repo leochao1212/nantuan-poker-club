@@ -96,7 +96,7 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
    }
    results.push({name,route,viewports:inspected});console.log('layout OK: '+name+' ('+inspected+' views)');
   }
-  for(const [route,name,selector] of [['lobby','lobby','#lobby-games'],['stats','ranking','.rank-row'],['members','members','.member-panel'],['clubhouse','clubhouse','.clubhouse-scene'],['collection','collection','.collection-card'],['profile','profile','#profile-console'],['wallet','transfers','#transfer-form'],['admin','admin','#admin-console']])await checkRoute(route==='admin'?admin:member,route,name,selector);
+  for(const [route,name,selector] of [['lobby','lobby','#lobby-games'],['stats','ranking','.rank-row'],['members','members','.member-panel'],['clubhouse','clubhouse','.clubhouse-scene'],['rewards','rewards','.rewards-hub'],['collection','collection','.collection-card'],['profile','profile','#profile-console'],['wallet','transfers','#transfer-form'],['admin','admin','#admin-console']])await checkRoute(route==='admin'?admin:member,route,name,selector);
   const games=[['holdem',6,'.table-arena'],['big2',4,'.arcade-surface'],['blackjack',6,'.blackjack-player'],['mahjong',4,'.mj-table'],['roulette',1,'.roulette-stage'],['baccarat',1,'.arcade-surface'],['slot',1,'.slot-machine'],['mines',1,'.risk-cell'],['tower',1,'.tower-floor'],['dice',2,'.dice-board'],['inbetween',1,'.gate-board']];
   for(const [kind,count,selector] of games){
    if(only.size&&!only.has(kind==='inbetween'?'gate':kind))continue;

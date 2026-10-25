@@ -1,0 +1,147 @@
+name: Android APK
+on:
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/android.yml', 'tests/android/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        id: gradle
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-gradle-344-${{ hashFiles('mobile/nantuan_app/android/**/*.kts', 'mobile/nantuan_app/pubspec.lock') }}
+          restore-keys: android-gradle-344-
+      - name: Analyze and test Flutter
+        working-directory: mobile/nantuan_app
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed lib test
+          flutter analyze
+          flutter test
+      - uses: actions/cache/restore@v4
+        id: debug_apk
+        if: github.event_name == 'pull_request'
+        with:
+          path: mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
+          key: android-debug344-localhost8765-v1-${{ hashFiles('mobile/nantuan_app/lib/**', 'mobile/nantuan_app/pubspec.*', 'mobile/nantuan_app/android/**/*.kts', 'mobile/nantuan_app/android/**/*.kt', 'mobile/nantuan_app/android/app/src/**', 'mobile/nantuan_app/android/gradle.properties', 'mobile/nantuan_app/android/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Build emulator APK
+        if: github.event_name == 'pull_request' && steps.debug_apk.outputs.cache-hit != 'true'
+        working-directory: mobile/nantuan_app
+        run: flutter build apk --debug --target-platform android-x64 --dart-define=APP_ORIGIN=http://localhost:8765
+      - uses: actions/cache/save@v4
+        if: github.event_name == 'pull_request' && steps.gradle.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle.outputs.cache-primary-key }}
+      - uses: actions/cache/save@v4
+        if: github.event_name == 'pull_request' && steps.debug_apk.outputs.cache-hit != 'true'
+        with:
+          path: mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
+          key: ${{ steps.debug_apk.outputs.cache-primary-key }}
+      - name: Android emulator and real WebView gameplay
+        timeout-minutes: 8
+        if: github.event_name == 'pull_request'
+        env:
+          PYTHON: python3
+        run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x mobile/nantuan_app/android/gradlew ]; then mobile/nantuan_app/android/gradlew --stop; fi
+          sudo apt-get update -qq
+          sudo apt-get install -y libpulse0
+          sudo chmod 666 /dev/kvm
+          sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' >/dev/null
+          # Pinned official emulator archive: avoid host SIGSEGV seen with 37.2.12.
+          # https://developer.android.com/studio/emulator_archive (36.4.10 Stable)
+          curl --fail --location --retry 2 https://dl.google.com/android/repository/emulator-linux_x64-15004761.zip -o "$RUNNER_TEMP/emulator.zip"
+          echo "58bfdf0572f06ec007a7287154cdc6b2ebfea947d07a1e26a0f6b5e1a39e9191  $RUNNER_TEMP/emulator.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/emulator.zip" -d "$RUNNER_TEMP/nantuan-emulator"
+          EMULATOR_BIN="$RUNNER_TEMP/nantuan-emulator/emulator/emulator"
+          "$EMULATOR_BIN" -version
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/nantuan-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd --force --name nantuan-test --path "$ANDROID_AVD_HOME/nantuan-test.avd" --package 'system-images;android-35;google_apis;x86_64' --device pixel_5
+          printf 'avd.ini.encoding=UTF-8\npath=%s/nantuan-test.avd\ntarget=android-35\n' "$ANDROID_AVD_HOME" > "$ANDROID_AVD_HOME/nantuan-test.ini"
+          "$EMULATOR_BIN" -list-avds | grep -x nantuan-test
+          # Keep the disposable CI phone within the hosted runner memory/GPU budget.
+          printf '\nhw.lcd.width=720\nhw.lcd.height=1560\nhw.lcd.density=320\n' >> "$ANDROID_AVD_HOME/nantuan-test.avd/config.ini"
+          mkdir -p artifacts/android
+          trap 'tail -60 artifacts/android/emulator.log || true' EXIT
+          nohup "$EMULATOR_BIN" -avd nantuan-test -no-window -no-audio -no-boot-anim -no-snapshot -memory 2048 -cores 2 -gpu swangle -feature -Vulkan >artifacts/android/emulator.log 2>&1 &
+          timeout 90s adb wait-for-device
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          adb logcat -c
+          adb logcat >artifacts/android/logcat-live.txt 2>&1 &
+          adb shell input keyevent 82
+          adb install mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk
+          node tests/android/webview-smoke.cjs
+      - name: Prepare private release signing
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE"
+          test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/nantuan-release.jks"
+          chmod 600 "$RUNNER_TEMP/nantuan-release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/nantuan-release.jks" >> "$GITHUB_ENV"
+      - name: Build signed trial APK
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        working-directory: mobile/nantuan_app
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          flutter build apk --release
+          mkdir -p ../../artifacts/android/release
+          cp build/app/outputs/flutter-apk/app-release.apk ../../artifacts/android/release/nantuan-club-0.1.0.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose build/app/outputs/flutter-apk/app-release.apk
+          cd ../../artifacts/android/release
+          sha256sum nantuan-club-0.1.0.apk > SHA256SUMS
+      - name: Save generated project for reproducibility
+        if: always()
+        run: |
+          mkdir -p artifacts/android
+          tar --exclude=.gradle --exclude=local.properties --exclude=GeneratedPluginRegistrant.java --exclude='app/src/main/java' -czf artifacts/android/android-scaffold.tar.gz -C mobile/nantuan_app android
+          if [ -f mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk ]; then cp mobile/nantuan_app/build/app/outputs/flutter-apk/app-debug.apk artifacts/android/test-app.apk; fi
+          cp mobile/nantuan_app/pubspec.lock artifacts/android/pubspec.lock || true
+          tar -czf artifacts/android/formatted-dart.tar.gz -C mobile/nantuan_app lib test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-build-${{ github.run_id }}
+          path: artifacts/android/
+          retention-days: 14

@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"><application tools:replace="android:usesCleartextTraffic" android:usesCleartextTraffic="true" /></manifest>

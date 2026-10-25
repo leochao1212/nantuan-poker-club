@@ -38,8 +38,8 @@ class StaticImages(unittest.TestCase):
         status,_,body=self.get('/')
         self.assertEqual(status,200)
         html=body.decode('utf-8')
-        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=gate-protection-20261026'])
-        self.assertIn('/ui-art.js?v=current-ui-20261025',html)
+        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=night-harbor-20261026'])
+        self.assertIn('/ui-art.js?v=night-harbor-20261026',html)
         self.assertIn('/round-presentation.js',html)
         for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):
             self.assertEqual(self.get('/'+name+'.css')[0],404,name)
@@ -75,6 +75,22 @@ class StaticImages(unittest.TestCase):
         for path in ('/assets/cards/As.webp','/assets/cards/10s.webp','/assets/cards/1s.webp','/assets/cards/ax.webp','/assets/cards/as.webp/','/assets/cards/../pieces/dice-1.webp','/assets/cards/%61s.webp','/assets/pieces/card-j.webp','/assets/pieces/card-q.webp','/assets/pieces/card-k.webp'):
             status,headers,_=self.get(path)
             self.assertEqual(status,404,path);self.assertEqual(headers['Cache-Control'],'no-store')
+
+    def test_fishing_art_is_current_lightweight_and_alpha_sprites_are_served(self):
+        size=0
+        for name in ('fish-atlas','gear-atlas','reef','harbor'):
+            path='/assets/fishing/'+name+'.webp'
+            status,headers,body=self.get(path);self.assertEqual(status,200)
+            self.assertEqual(headers['Content-Type'],'image/webp');size+=len(body)
+            version=hashlib.sha256(body).hexdigest()[:12]
+            self.assertEqual(self.get(path+'?v='+version)[1]['Cache-Control'],'public, max-age=31536000, immutable')
+            self.assertEqual(self.get(path+'?v=retired')[0],404)
+            if name.endswith('atlas'):
+                self.assertEqual(body[12:16],b'VP8X');self.assertTrue(body[20]&16,'sprite atlas needs real alpha')
+        self.assertLess(size,1600*1024)
+        for path in ('/assets/fishing/../../.env','/assets/fishing/FISH-ATLAS.webp','/assets/fishing/reef.png','/assets/fishing/nope.webp'):
+            self.assertEqual(self.get(path)[0],404)
+        self.assertEqual(self.get('/fishing-scene.js')[0],200)
 
     def test_every_cover_is_served(self):
         for name in COVERS:

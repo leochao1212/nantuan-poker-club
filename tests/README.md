@@ -15,3 +15,5 @@ npm run test:motion
 命令從程式庫根目錄執行；瀏覽器測試先 npm ci，並安裝 Chromium／WebKit。兩層 __init__.py 讓標準 unittest 能以套件探索，沒有額外測試框架或路徑修改。輸出位於忽略的 artifacts/，不屬發布原始碼。
 
 完整驗證策略見 [docs/TESTING.md](../docs/TESTING.md)。
+
+- `npm run test:reveal`：輪盤與拉霸的真實開局、慢回應確認、延後揭曉、收據重送、快速／略過。

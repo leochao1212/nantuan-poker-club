@@ -44,6 +44,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:ui
+      - run: npm run test:reveal
       - run: npm run test:layout
       - run: npm run test:motion
       - uses: actions/upload-artifact@v4
@@ -54,6 +55,7 @@ jobs:
             artifacts/browser
             artifacts/layout
             artifacts/art-motion
+            artifacts/round-presentation
           retention-days: 7
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

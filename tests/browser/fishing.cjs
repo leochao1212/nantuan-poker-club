@@ -15,7 +15,7 @@ try{for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){if(p
  await p.locator('#fishing-scene').evaluate(e=>window.savedFishCanvas=e);assert.deepEqual((await api('/api/fishing?version=3')).loadout,{rod:1,cannon:2});
  const before=await api('/api/fishing?version=3');
  async function catchFish(sliderMode=false,reload=false){
-  await p.locator('[data-fish-main]').click();let state=await api('/api/fishing?version=3');assert.equal(state.pending.mechanic,'tension');assert.ok(!state.pending.species);const id=state.pending.id;
+  const accepted=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/fishing/cast'&&r.request().method()==='POST');await p.locator('[data-fish-main]').click();const castResponse=await accepted;assert.equal(castResponse.status(),200,await castResponse.text());let state=await api('/api/fishing?version=3');assert.ok(state.pending,'accepted cast must be committed');assert.equal(state.pending.mechanic,'tension');assert.ok(!state.pending.species);const id=state.pending.id;
   if(reload){await p.waitForFunction(()=>!telemetryTransport.active&&!telemetryTransport.queue.length);await p.evaluate(()=>{credentialsChanging=true;stopLive();lobby=null;});await p.reload();await p.waitForSelector('[data-fish-main]');assert.equal((await api('/api/fishing?version=3')).pending.id,id);}
   await p.waitForFunction(()=>document.querySelector('[data-fish-main] span').textContent==='提竿！');await p.locator('[data-fish-main]').click();await p.waitForFunction(()=>!document.querySelector('[data-fish-fight]').hidden);
   let pressed=false,done=false,sliderBox;

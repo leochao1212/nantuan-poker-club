@@ -112,3 +112,6 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 
 
 射龍門v4由[test_gate_refund.py](../tests/python/test_gate_refund.py)枚舉所有小牌靴排列及0／50／100%保護，核對實際柱牌率不變、保護即零扣款、只耗一張牌、普通／對子扣款免除、既有命中倍率與命中率不變、籌碼守恆及公開觸發者。既有v3補牌測試保留以驗證局中／歷史相容；回執測試驗證v4重送不重抽且profit=0。`LAYOUT_ONLY=gate,admin,blackjack`可只跑相關手機／桌機版面，包含姓名與免除金額提示。二十一點另驗證六副牌十點牌密度、20點後取牌和五張21點不算Blackjack、玩家自然Blackjack優先。
+
+
+[test_blackjack_benefits.py](../tests/python/test_blackjack_benefits.py)驗證0／邊界／100%優待、同牌序與守恆、自然Blackjack例外、加倍／分牌逐手退注、舊快照、移轉只啟用一次、後台記錄及回執重送／離桌入帳。瀏覽器layout的admin／blackjack檢查覆蓋三個快捷設定、自訂、預覽取消、填預設後事件重綁、牌桌優待與逐手返還。可從根目錄執行[配對模擬](../scripts/bench-blackjack-benefits.py)，僅使用固定種子的合成牌局與虛擬點數，無資料庫或網路，結果存忽略的artifacts。

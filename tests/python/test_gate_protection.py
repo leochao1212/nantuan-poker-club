@@ -9,11 +9,12 @@ from .test_gate_blackjack import deck_order,points
 from . import test_club,test_game_settings
 
 
-def room(rate=5000,cards=None,stack=10000):
+def room(rate=5000,cards=None,stack=10000,version=3):
     r=b.new_room('Protection fixture',1,'inbetween',buy_in=stack,stake=100)
     b.sit(r,1,'Player',0)
     snapshot=g.default('inbetween');snapshot['params']['post_protection_bps']=rate
     b.start_hand(r,1,deck=deck_order(cards or ['5c','9c','5d','9d','7h']),settings=snapshot)
+    h=r['hand'];h['gate_rules_version']=version;h.pop('gate_quotes');h['gate_quotes']=b.gate_quotes(h)
     return r
 
 
@@ -153,7 +154,7 @@ class ProtectionReceipts(unittest.TestCase):
             self.assertTrue(online.mutate(self.db,path+'/action',{**data,'operation_id':'protected_shot_receipt_02'},user,self.clock+3)['conflict'])
             draw.assert_called_once_with(10000)
         self.assertEqual(online.get_room(self.db,rid),saved)
-        self.assertEqual(saved['hand']['protected_discards'],['5d','9d']);self.assertEqual(saved['hand']['third'],'2h')
-        self.assertEqual(saved['seats'][0]['stack'],900)
-        self.assertEqual(self.db.execute('SELECT hands,profit FROM player_result_totals WHERE user_id=?',(user['id'],)).fetchone()[:],(1,-100))
+        self.assertEqual(saved['hand']['protected_discards'],[]);self.assertEqual(saved['hand']['third'],'5d');self.assertEqual(saved['hand']['protection_event']['user_id'],user['id'])
+        self.assertEqual(saved['seats'][0]['stack'],1000)
+        self.assertEqual(self.db.execute('SELECT hands,profit FROM player_result_totals WHERE user_id=?',(user['id'],)).fetchone()[:],(1,0))
         self.assertEqual(self.db.execute('SELECT count(*) FROM poker_operations WHERE operation_id=?',(data['operation_id'],)).fetchone()[0],1)

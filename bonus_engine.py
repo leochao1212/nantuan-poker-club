@@ -158,7 +158,7 @@ def start_hand(room, clock, deck=None, options=None, user_id=None,settings=None)
         p=players[0]
         if kind=='inbetween':
             pillars=sorted([shoe.pop(),shoe.pop()],key=gate_rank)
-            h.update(deck=shoe,pillars=pillars,third=None,remaining_cards=len(shoe),gate_rules_version=3,
+            h.update(deck=shoe,pillars=pillars,third=None,remaining_cards=len(shoe),gate_rules_version=4,
                      gate_shoe_version=1,shoe_id=shoe_state['id'],shoe_round=shoe_state['round_no'],shoe_reshuffled=reshuffled)
             h['gate_quotes']=gate_quotes(h)
             h['winning_cards']=h['gate_quotes'].get('between',{}).get('winning_cards',0)
@@ -261,19 +261,23 @@ def gate_quotes(hand):
         posts=2 if low==high else 6
     loss=(3 if low==high else 2) if modern else 1
     # Protection changes outcomes but intentionally retains the original gross payout.
-    # Only v3 hands opt in: a historical/missing snapshot must never acquire protection.
+    # Historical hands retain their frozen outcome model; v4 protects by waiving the charge.
     protection=hand.get('game_settings',{}).get('params',{}).get('post_protection_bps',0) if hand.get('gate_rules_version',1)>=3 else 0
     quotes={}
     for direction,wins in choices.items():
         if not wins:continue
         rate=Fraction(protection,10000)
-        win=Fraction(wins,total)*(1+rate*Fraction(posts,total-posts))
+        refund=hand.get('gate_rules_version',1)>=4
+        protected=Fraction(posts,total)*rate
+        win=Fraction(wins,total) if refund else Fraction(wins,total)*(1+rate*Fraction(posts,total-posts))
         post=Fraction(posts,total)*(1-rate)
-        charge=1+(loss-1)*post
+        charge=1+Fraction((loss-1)*posts,total)-loss*protected if refund else 1+(loss-1)*post
         payout=Fraction(target*(total+(loss-1)*posts),10000*wins)
         quotes[direction]={'winning_cards':wins,'total_cards':total,'post_cards':posts,'loss_multiplier':loss,
                           'return_numerator':payout.numerator,'return_denominator':payout.denominator,
                           'post_protection_bps':protection,'max_loss_multiplier':1 if protection==10000 else loss,
+                          'protection_mode':'refund' if refund else 'redraw',
+                          'protected_numerator':protected.numerator,'protected_denominator':protected.denominator,
                           'win_numerator':win.numerator,'win_denominator':win.denominator,
                           'post_numerator':post.numerator,'post_denominator':post.denominator,
                           'charge_numerator':charge.numerator,'charge_denominator':charge.denominator,
@@ -293,19 +297,28 @@ def finish_gate(room,clock,stake=None,direction=None):
         if maximum_loss>p['stack']:raise RuleError(f'籌碼須足以支付最大損失 {maximum_loss:,} 點，請降低下注或從錢包帶入。')
         potential=stake*quote['return_numerator']//quote['return_denominator']
         if room['bank']+stake<potential:raise RuleError('本桌莊家點數不足以支付這次最高派彩，請降低下注或另開新桌。')
-        low,high=map(gate_rank,h['pillars']);discarded=[]
+        low,high=map(gate_rank,h['pillars']);discarded=[];protected=False
         protection=quote.get('post_protection_bps',0)
+        initial_post=gate_rank(h['deck'][-1]) in (low,high)
         # Roll only after all validation, and only for an initial post. Do not reshuffle.
-        if gate_rank(h['deck'][-1]) in (low,high) and protection and (protection==10000 or secrets.randbelow(10000)<protection):
-            while gate_rank(h['deck'][-1]) in (low,high):discarded.append(h['deck'].pop())
+        if initial_post and protection and (protection==10000 or secrets.randbelow(10000)<protection):
+            protected=True
+            if h.get('gate_rules_version',1)<4:
+                while gate_rank(h['deck'][-1]) in (low,high):discarded.append(h['deck'].pop())
         third=h['deck'][-1];point=gate_rank(third)
         won=point>low if direction=='up' else point<low if direction=='down' else low<point<high
-        post=point in (low,high);charged=maximum_loss if post else stake
+        post=point in (low,high);waived=protected and h.get('gate_rules_version',1)>=4
+        charged=0 if waived else maximum_loss if post else stake
         poker.pay(p,charged);room['stake']=stake;h['third']=h['deck'].pop();gross=potential if won else 0
-        label='射中龍門' if won else '對子撞柱' if post and low==high else '撞柱' if post else '射出門外'
+        label='撞柱保護 · 免扣點' if waived else '射中龍門' if won else '對子撞柱' if post and low==high else '撞柱' if post else '射出門外'
+        if post and not waived and protection and h.get('gate_rules_version',1)>=4:label+=' · 保護未觸發'
         h.update(board=[h['pillars'][0],h['third'],h['pillars'][1]],stake=stake,direction=direction,
                  winning_cards=quote['winning_cards'],charged=charged,max_loss=maximum_loss,
-                 protected_discards=discarded,post_protection_triggered=bool(discarded))
+                 protected_discards=discarded,post_protection_checked=bool(initial_post and protection),post_protection_triggered=protected)
+        if waived:
+            h['protection_event']={'mode':'refund','user_id':p['user_id'],'nickname':p['nickname'],'card':h['third'],
+                                   'rate_bps':protection,'avoided_charge':stake*quote['loss_multiplier']}
+            poker.log(room,f'{p["nickname"]} 觸發撞柱保護 · 本局免扣點，免除 {h["protection_event"]["avoided_charge"]:,} 點撞柱扣款',clock)
         if discarded:poker.log(room,'撞柱保護 · 公開作廢 '+ '、'.join(discarded)+' · 按原牌序補牌',clock)
     p['last_action']=label
     h['remaining_cards']=len(h['deck'])

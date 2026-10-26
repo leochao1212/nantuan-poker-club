@@ -43,4 +43,23 @@ class BlackjackFairness(unittest.TestCase):
         self.assertFalse(r['hand']['dealer_natural'])
         self.assertEqual(points(r),before)
 
+    def test_ten_point_density_counts_all_face_cards_and_depletes_without_replacement(self):
+        cards=list(p.DECK)*6
+        self.assertEqual(sum(c[0] in 'TJQK' for c in cards),96)
+        cards.remove('Tc');cards.remove('Qd')
+        self.assertEqual(Fraction(sum(c[0] in 'TJQK' for c in cards),len(cards)),Fraction(94,310))
+        self.assertEqual(sum(a.blackjack_total(['Tc','Qd',c])<=21 for c in cards),24)
+        self.assertEqual(sum(a.blackjack_total(['Tc','Qd',c])>21 for c in cards),286)
+
+    def test_five_card_dealer_twenty_one_is_normal_twenty_one_and_loses_to_natural(self):
+        for player,natural in ((['Tc','Qd'],False),(['Ac','Kd'],True)):
+            r=room('blackjack',1);before=points(r)
+            a.start_hand(r,101,shoe([player[0],'2c',player[1],'3d','4h','5s','7c']))
+            if r['status']=='playing':a.act(r,1,'stand',102)
+            self.assertEqual(r['hand']['dealer'],['2c','3d','4h','5s','7c'])
+            self.assertFalse(r['hand']['dealer_natural']);self.assertEqual(a.blackjack_total(r['hand']['dealer']),21)
+            h=r['hand']['players'][0]['hands'][0]
+            self.assertEqual(h['outcome'],'Blackjack' if natural else '落敗')
+            self.assertEqual(h['payout'],25 if natural else 0);self.assertEqual(points(r),before)
+
 if __name__=='__main__':unittest.main()

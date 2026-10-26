@@ -3,14 +3,14 @@ from copy import deepcopy
 from fractions import Fraction
 from functools import lru_cache
 from itertools import product
-import hashlib,json,re,secrets
+import hashlib,json,re,secrets,time
 from poker_engine import RuleError
 
 DEFAULTS={
  'holdem':{},
  'mahjong':{},
  'big2':{'penalties':[1,2,4]},
- 'blackjack':{'win_bp':10000,'blackjack_bp':15000,'five_card_bp':20000,'decks':6},
+ 'blackjack':{'win_bp':10000,'blackjack_bp':15000,'five_card_bp':20000,'decks':6,'tie_win_bps':0,'bust_refund_bps':0},
  'roulette':{'number_bp':350000,'even_bp':10000,'group_bp':20000,'weights':[1]*37},
  'baccarat':{'player_bp':10000,'banker_bp':9500,'tie_bp':80000,'decks':8},
  'slot':{'triples':[77,32,20,14,10,7],'pair':4,'weights':[1]*6},
@@ -31,7 +31,7 @@ SCHEMAS={
  'holdem':[],
  'mahjong':[],
  'big2':[field('penalties','剩牌賠付倍率',1,20,['1–7 張','8–12 張','13 張'])],
- 'blackjack':[field('win_bp','普通勝局淨贏倍數',0,1000000,unit='net_bp'),field('blackjack_bp','Blackjack 淨贏倍數',0,1000000,unit='net_bp'),field('five_card_bp','五張未爆淨贏倍數',0,1000000,unit='net_bp'),field('decks','牌靴副數',1,8)],
+ 'blackjack':[field('tie_win_bps','普通同點轉為玩家勝出（%）',0,10000,unit='percent_bp'),field('bust_refund_bps','爆牌退回本手下注（%）',0,10000,unit='percent_bp'),field('win_bp','普通勝局淨贏倍數',0,1000000,unit='net_bp'),field('blackjack_bp','Blackjack 淨贏倍數',0,1000000,unit='net_bp'),field('five_card_bp','五張未爆淨贏倍數',0,1000000,unit='net_bp'),field('decks','牌靴副數',1,8)],
  'roulette':[field('number_bp','單號淨贏倍數',0,1000000,unit='net_bp'),field('even_bp','紅黑／單雙／大小淨贏倍數',0,1000000,unit='net_bp'),field('group_bp','打／列淨贏倍數',0,1000000,unit='net_bp'),field('weights','號碼抽樣權重',0,1000,[str(i) for i in range(37)])],
  'baccarat':[field('player_bp','閒勝淨贏倍數',0,1000000,unit='net_bp'),field('banker_bp','莊勝淨贏倍數',0,1000000,unit='net_bp'),field('tie_bp','和局淨贏倍數',0,1000000,unit='net_bp'),field('decks','每局洗牌副數',1,8)],
  'slot':[field('triples','三連線總返還倍數（含本金）',1,500,['七','皇冠','鑽石','鈴鐺','櫻桃','BAR']),field('pair','只有前兩格相同：總返還倍數',1,500),field('weights','各軸共用的符號權重',0,1000,['七','皇冠','鑽石','鈴鐺','櫻桃','BAR'])],
@@ -45,7 +45,7 @@ NOTES={
  'inbetween':'標準 52 張連續牌靴，剩 13 張以下於下一局重洗。A=1、K=13，同點可選上下。普通撞柱扣 2 倍、對子扣 3 倍；抽中柱牌才依設定機率啟動保護，保留原柱牌，本局免扣點，不補牌；結果顯示觸發者及免除點數；每次撞柱獨立判定，可能連續未觸發。保留保護前含本金倍率，保護會提高整體返還率，牌桌顯示本局實際機率及返還率；小額派彩向下取整。設定只於新局生效，所有玩家一致。',
  'holdem':'玩家按底池與邊池分配，沒有電腦莊家賠率。標準 52 張公平洗牌，機率固定。',
  'big2':'標準 52 張公平洗牌，機率固定。倍率決定輸家扣款及贏家收入，最高賠付預留會一併調整。',
- 'blackjack':'標準牌公平洗牌；副數影響自然機率。副數變更後，下一局建立新牌靴。返還率依玩家決策而異。',
+ 'blackjack':'標準牌公平洗牌，玩家優待只在結算時判定，不改取牌。普通同點可按設定比例改為玩家勝出，按普通勝局派彩；雙方自然Blackjack仍和局。爆牌可按設定比例退回該手全部下注，加倍／分牌按各手實際下注計算，屬退注而非勝出。優待是本站娛樂規則，所有玩家一致；設定新局生效、牌桌公開，返還率依決策與牌靴狀態而異。副數變更後下局建立新牌靴。',
  'baccarat':'標準牌公平洗牌、每局重洗，依標準補牌規則。副數影響自然機率，和局退本金不加倍。',
  'slot':'三軸獨立使用相同權重。總返還含本金；前兩格相同與三連線不疊加。',
  'roulette':'抽中號碼的機率＝該號碼權重／全部權重。0 不命中紅黑、單雙、大小、打或列。',
@@ -63,12 +63,25 @@ def initialize(db):
  CREATE TABLE IF NOT EXISTS game_settings_audit (
  id INTEGER PRIMARY KEY,actor_id INTEGER NOT NULL,game_type TEXT NOT NULL,revision INTEGER NOT NULL,
  previous_params TEXT NOT NULL,params TEXT NOT NULL,note TEXT NOT NULL,operation_id TEXT NOT NULL,
- fingerprint TEXT NOT NULL,created_at REAL NOT NULL,UNIQUE(actor_id,operation_id));''')
+ fingerprint TEXT NOT NULL,created_at REAL NOT NULL,UNIQUE(actor_id,operation_id));
+ CREATE TABLE IF NOT EXISTS game_settings_migrations (
+ migration_key TEXT PRIMARY KEY,game_type TEXT NOT NULL,revision INTEGER NOT NULL,
+ previous_params TEXT NOT NULL,params TEXT NOT NULL,note TEXT NOT NULL,created_at REAL NOT NULL);''')
  for game,params in DEFAULTS.items():db.execute('INSERT OR IGNORE INTO game_settings VALUES(?,1,?,NULL,0)',(game,encode(params)))
  # One-time schema extension: preserve customized payouts; old hands keep their snapshot.
  row=db.execute("SELECT params FROM game_settings WHERE game_type='inbetween'").fetchone()
  if row and 'post_protection_bps' not in (old:=json.loads(row[0])):
   db.execute("UPDATE game_settings SET params=?,revision=revision+1 WHERE game_type='inbetween' AND params=?",(encode({**old,'post_protection_bps':5000}),row[0]))
+ row=db.execute("SELECT params FROM game_settings WHERE game_type='blackjack'").fetchone()
+ if row:
+  # The owner requested activation on the existing club. Fresh installs stay off;
+  # a once-only, visible system migration enables Easy for pre-feature settings.
+  old=json.loads(row[0]);extended={'tie_win_bps':5000,'bust_refund_bps':2500,**old}
+  if old!=extended:
+   clock=time.time()
+   db.execute("UPDATE game_settings SET params=?,revision=revision+1,updated_by=NULL,updated_at=? WHERE game_type='blackjack' AND params=?",(encode(extended),clock,row[0]))
+   revision=db.execute("SELECT revision FROM game_settings WHERE game_type='blackjack'").fetchone()[0]
+   db.execute('INSERT OR IGNORE INTO game_settings_migrations VALUES(?,?,?,?,?,?,?)',('blackjack-player-benefits-v1','blackjack',revision,row[0],encode(extended),'依站長要求首次啟用玩家優待；不改洗牌，所有玩家公開適用。',clock))
 
 def encode(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False)
 def default(game):
@@ -170,6 +183,7 @@ def _metrics(game,encoded):
    rates[key]={'win_percent':100*hits/total**3,'rtp_percent':100*returned/total**3}
   return {'bets':rates}
  if game=='fishing':return {'hit_return_basis_percent':p['target_bps']/100}
+ if game=='blackjack':return {'tie_win_percent':p.get('tie_win_bps',0)/100,'bust_refund_percent':p.get('bust_refund_bps',0)/100,'note':'優待只改結算，不改取牌；整體返還率依玩家決策與牌靴而異。'}
  if game=='inbetween':return {'target_percent':p['target_bps']/100,'post_protection_percent':p.get('post_protection_bps',0)/100}
  if game in ('tower','mines'):return {'target_percent':p['target_bps']/100}
  return {}
@@ -181,6 +195,8 @@ def admin_view(db,actor):
  club_admin.require(db,actor['id'])
  games=[{'name':NAMES[g],'note':NOTES[g],'fields':SCHEMAS[g],'defaults':deepcopy(DEFAULTS[g]),**public(current(db,g))} for g in DEFAULTS]
  history=[dict(r) for r in db.execute('SELECT a.id,a.game_type,a.revision,a.note,a.previous_params,a.params,a.created_at,u.username AS actor FROM game_settings_audit a JOIN users u ON u.id=a.actor_id ORDER BY a.id DESC LIMIT 30')]
+ history.extend(dict(r) for r in db.execute("SELECT migration_key AS id,game_type,revision,note,previous_params,params,created_at,'系統移轉（站長授權）' AS actor FROM game_settings_migrations ORDER BY created_at DESC LIMIT 30"))
+ history.sort(key=lambda r:r['created_at'],reverse=True);history=history[:30]
  return {'games':games,'history':history}
 
 def update(db,actor,data,clock):

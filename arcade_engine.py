@@ -420,12 +420,18 @@ def _finish_blackjack(room,clock):
         payout=0;names=[]
         for h in p['hands']:
             total=blackjack_total(h['cards']);bj=not h['split'] and blackjack_natural(h['cards'])
-            if total>21:gross=0;label='爆牌'
+            if total>21:
+                rate=cfg.get('bust_refund_bps',0);protected=rate==10000 or rate>0 and secrets.randbelow(10000)<rate
+                gross=h['bet'] if protected else 0;label='爆牌保護 · 本手全額退注' if protected else '爆牌'
+                if rate:h['benefit']={'kind':'bust_refund','rate_bps':rate,'triggered':bool(protected)}
             elif natural:gross=h['bet'] if bj else 0;label='和局' if bj else '莊家 Blackjack'
             elif _five_card_win(hand,h):gross=game_settings.net_return(h['bet'],cfg['five_card_bp']);label=f"五張未爆 · 淨贏 {cfg['five_card_bp']/10000:g} 倍"
             elif bj:gross=game_settings.net_return(h['bet'],cfg['blackjack_bp']);label='Blackjack'
             elif score>21 or total>score:gross=game_settings.net_return(h['bet'],cfg['win_bp']);label='勝出'
-            elif total==score:gross=h['bet'];label='和局'
+            elif total==score:
+                rate=cfg.get('tie_win_bps',0);preferred=rate==10000 or rate>0 and secrets.randbelow(10000)<rate
+                gross=game_settings.net_return(h['bet'],cfg['win_bp']) if preferred else h['bet'];label='同點優待 · 玩家勝出' if preferred else '和局'
+                if rate:h['benefit']={'kind':'tie_win','rate_bps':rate,'triggered':bool(preferred)}
             else:gross=0;label='落敗'
             h['outcome']=label;h['payout']=gross;payout+=gross;names.append(label)
         payouts[p['user_id']]=payout;labels[p['user_id']]='／'.join(names)

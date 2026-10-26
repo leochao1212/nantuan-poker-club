@@ -1,5 +1,7 @@
 # 釣魚固定參考與改版對照
 
+街機方向已依使用者指定改成[黃金捕魚場](fishing-golden-carnival.md)；以下Ocean King部分保留為上一版設計歷史。
+
 固定檢視版本：2026-10-26。參考公開可觀察的遊戲回合、構圖與動畫，不宣稱取得未公開原廠數值／原始碼。
 
 ## 休閒：Fishing Clash（Ten Square Games）

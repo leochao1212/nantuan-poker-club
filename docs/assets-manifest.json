@@ -495,6 +495,11 @@
     "sha256": "24b505f7a9c7595be0351b7a039c448d7222f16c668219bd797b7cd1821b660d"
   },
   {
+    "path": "static/assets/fishing/arcade-atlas.webp",
+    "bytes": 360530,
+    "sha256": "ffe1dbe16f180119184d8fd3840ff7cfd6c1b7eba85ef44f4739c0221137a2b4"
+  },
+  {
     "path": "static/assets/fishing/boss-atlas.webp",
     "bytes": 588110,
     "sha256": "4ccd439b8a7af7ea9d1bffbf7da7bb6e000e791a3b74047c9305c6b8c6c705cd"
@@ -511,8 +516,8 @@
   },
   {
     "path": "static/assets/fishing/sea-board.webp",
-    "bytes": 254832,
-    "sha256": "5c1037ede2ed2692d325bb2b9f17b1b49de3ac75ce36b3bf0b2bf5384e29c477"
+    "bytes": 385026,
+    "sha256": "7ede34909e62ba4de868108df2710e9a59c42ab2ff2edd25782a90539cebaa09"
   },
   {
     "path": "static/assets/fishing/shore.webp",

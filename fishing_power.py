@@ -1,9 +1,9 @@
 """Versioned, account-independent capture pricing. Accepted old shots keep their rules."""
 import secrets
 
-AMMO=[dict(stake=10,power=1,name='巡航彈',color='#78eaff'),
-      dict(stake=100,power=10,name='雷霆彈',color='#bca1ff'),
-      dict(stake=1000,power=100,name='龍焰彈',color='#ffc35c')]
+AMMO=[dict(stake=10,power=1,speed=1150,radius_bonus=0,name='巡航彈',color='#78eaff'),
+      dict(stake=100,power=10,speed=1400,radius_bonus=6,name='雷霆彈',color='#bca1ff'),
+      dict(stake=1000,power=100,speed=1650,radius_bonus=12,name='龍焰彈',color='#ffc35c')]
 
 def resolve(shot,multiplier,bonus_hundredths=0):
     if shot.get('pricing')=='cannon-v1':

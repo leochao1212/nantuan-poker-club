@@ -19,7 +19,7 @@ FISH = [
     dict(id='crab',name='黃金帝王蟹',rarity='特殊',color='#f5c54c',weight=0,value=0,multiplier=80,length=140,feature='bomb'),
     dict(id='octopus',name='深海章魚',rarity='特殊',color='#b17ee9',weight=0,value=0,multiplier=90,length=180,feature='arms'),
     dict(id='eel',name='雷霆電鰻',rarity='特殊',color='#6bb8f2',weight=0,value=0,multiplier=100,length=220,feature='lightning'),
-    dict(id='dragon',name='翡翠海龍',rarity='特殊',color='#6be2b6',weight=0,value=0,multiplier=120,length=300,feature='dragon'),
+    dict(id='dragon',name='翡翠海龍',rarity='特殊',color='#6be2b6',weight=0,value=0,multiplier=120,bonus_step=30,length=300,feature='dragon'),
     dict(id='turtle',name='翡翠金甲龜',rarity='稀有',color='#80dfad',weight=0,value=0,multiplier=25,length=130),
     dict(id='shark',name='深藍獵鯊',rarity='稀有',color='#80c9ff',weight=0,value=0,multiplier=80,length=250),
     dict(id='mermaid',name='珍珠人魚',rarity='重獎',color='#e6b2ff',weight=0,value=0,multiplier=200,bonus_step=100,length=190,feature='treasure'),

@@ -206,7 +206,7 @@ def prepare_room(db,rid,clock):
     for slot in range(SLOTS):
         old=rows.get(slot)
         if old is None or old['expires_at']<clock:
-            _put_entity(db,rid,spawn(room,slot,clock,json.loads(old['data']) if old else None,stagger=old is None))
+            _put_entity(db,rid,spawn(room,slot,clock,json.loads(old['data']) if old else None,stagger=old is None or old['expires_at']<clock-5))
     epoch=int(clock//120)
     if clock%120<25 and room['boss_epoch']!=epoch:
         old=db.execute('SELECT data FROM fishing_entities WHERE room_id=? AND slot=?',(rid,SLOTS-1)).fetchone()

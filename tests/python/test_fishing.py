@@ -98,6 +98,13 @@ class FishingRules(unittest.TestCase):
             bosses.append(g.spawn(room,g.SLOTS-1,self.t,boss=True)['species'])
         self.assertEqual(len(set(bosses)),6)
         self.assertEqual({g.room_view(self.db,rid,self.t)['theme'] for rid in range(1,7)},{'sea-board','sea-palace','sea-wreck'})
+
+    def test_returning_to_idle_room_starts_with_fish_already_in_the_field(self):
+        self.call('join',clock=self.t,room_id=1)
+        self.db.execute('UPDATE fishing_entities SET expires_at=? WHERE room_id=1',(self.t-10,))
+        g.prepare_room(self.db,1,self.t+1)
+        entities=g.room_view(self.db,1,self.t+1)['entities']
+        self.assertGreaterEqual(sum(0<g.position(f,self.t+1)[0]<1000 for f in entities),6)
     def hook(self,rod=0):
         cast=self.call('cast',clock=self.t,rod=rod);ident=cast['result']['cast_id'];at=cast['result']['ready_at']+.1
         return self.call('hook',clock=at,cast_id=ident)['state']['pending']

@@ -1,5 +1,8 @@
 # 黃金捕魚場方向：火力、技能與金色魚場
 
+此為PR #29已取代的v4歷史設計；目前規則以[漁港規格](../FISHING.md)及[實玩核對](fishing-reference-audit-20261026.md)為準。
+
+
 公開參考：[黃金捕魚場官網](https://www.fishingcarnival.com/)、[官方商店](https://play.google.com/store/apps/details?id=com.golden.fishing.android.avidly&hl=zh_TW)。公開資訊可確認四人同場、特色海域、動態倍率Boss及特殊事件；原廠未公開的捕獲公式不宣稱一致。
 
 ## 設計計畫

@@ -21,67 +21,61 @@ window.ClubFishingScene=(()=>{
 
  const cache=new Map();
  function image(name,redraw){if(!cache.has(name)){const img=new Image();img.decoding='async';img.src=url(name);cache.set(name,img);}const img=cache.get(name);if(!img.complete){const done=()=>{img.removeEventListener('load',done);img.removeEventListener('error',done);redraw();};img.addEventListener('load',done);img.addEventListener('error',done);}return img;}
- function create(canvas,{pick,ready}){
-  let model=null,frame=0,last=0,alive=true,visible=true,entities=[],mode=null,flight=null,castAt=0,aim={x:.5,y:.4},resultKey=null,celebration=null,pickedAim=null;
+ function worldPosition(f,clock,effects=[]){let t=Math.max(0,clock-f.spawned_at);for(const e of effects)t-=Math.max(0,Math.min(clock,e.ends_at)-Math.max(f.spawned_at,e.starts_at));return {x:f.x0+f.vx*t,y:f.y0+f.amplitude*Math.sin(t*f.frequency+f.phase)};}
+ function fishY(data,at){const t=Math.max(0,at-data.hooked_at),p=data.path;return Math.min(.93,Math.max(.07,.5+p.a*Math.sin(t*p.speed+p.phase)+p.b*Math.sin(t*p.speed*2.17+p.phase*.7)));}
+ function skillProjection(source,clock,holding){if(!source||source.phase!=='playing')return source;const d={...source},target=Math.min(clock,d.deadline);d.holding=holding;d.input_at=clock;let count=0;while(d.sim_at+.05<=target+1e-7&&d.phase==='playing'&&count++<80){const at=d.sim_at+.05,held=d.holding&&at-d.input_at<=1.1;let v=Math.max(-.85,Math.min(.85,d.velocity*.86+(held?-.125:.105))),y=d.zone_y+v*.05,half=d.width/2;if(y<half){y=half;v=0;}if(y>1-half){y=1-half;v=0;}const inside=Math.abs(fishY(d,at)-y)<=half;d.progress=Math.max(0,Math.min(1,d.progress+(inside?.155*d.rate:-.105)*.05));d.escape=Math.max(0,Math.min(1,d.escape+(inside?-.055:.145)*.05));Object.assign(d,{sim_at:at,zone_y:y,velocity:v});if(d.progress>=1)d.phase='caught';else if(d.escape>=1)d.phase='escaped';}return d;}
+ function create(canvas,callbacks){
+  let model=null,frame=0,last=0,alive=true,visible=true,localShots=new Map(),castAt=0,lastHud=0,aim={x:500,y:250},targetId=null;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)'),c=canvas.getContext('2d'),assets={};
-  function drawImage(name,sx,sy,sw,sh,x,y,w,h){const img=assets[name];if(img?.complete&&img.naturalWidth)c.drawImage(img,sx,sy,sw,sh,x,y,w,h);}
-  function fish(id,x,y,size,dir=1,angle=0,alpha=1){const img=assets['fish-atlas'],i=ids.indexOf(id);if(!img?.naturalWidth||i<0)return;const [rx,ry,rw]=regions[i],unit=img.naturalWidth/4,sw=unit*rw,sh=img.naturalHeight/2;c.save();c.translate(x,y);c.rotate(angle);c.scale(dir,1);c.globalAlpha=alpha;drawImage('fish-atlas',rx*unit,ry*sh,sw,sh,-size/2,-size*sh/sw/2,size,size*sh/sw);c.restore();}
-  function gear(kind,index,x,y,size,angle=0){const img=assets['gear-atlas'];if(!img?.naturalWidth)return;const sw=img.naturalWidth/3,sy=kind==='rod'?0:img.naturalHeight*.46,sh=kind==='rod'?img.naturalHeight*.46:img.naturalHeight*.54;c.save();c.translate(x,y);c.rotate(angle);drawImage('gear-atlas',index*sw,sy,sw,sh,-size/2,-size*.8,size,size*sh/sw);c.restore();}
-  function setup(){entities=[];for(let i=0;i<8;i++){const id=ids[i],v=traits[id];entities.push({id,seed:i*.147+.08,lane:.22+(i%4)*.15,dir:i%2?1:-1,size:v.size,speed:v.speed,main:true});if(i<3)for(let j=0;j<2;j++)entities.push({id,seed:i*.147+.1+j*.045,lane:.25+(i%4)*.15+j*.045,dir:i%2?1:-1,size:v.size*.64,speed:v.speed,main:false});}}
-  function position(f,t,w,h){const phase=(t*.014*f.speed+f.seed)%1,size=Math.min(w*.22,145)*f.size;let x=(reduced.matches?.12+(ids.indexOf(f.id)%4)*.25:f.dir>0?phase:1-phase)*w;if(reduced.matches)x=Math.max(size*.45+4,Math.min(w-size*.45-4,x));return {x,y:(reduced.matches?.34+Math.floor(ids.indexOf(f.id)/4)*.3+(ids.indexOf(f.id)%2)*.025:f.lane+Math.sin(t*.65+f.seed*20)*.025)*h,size};}
-
+  function imagePart(name,sx,sy,sw,sh,x,y,w,h){const img=assets[name];if(img?.complete&&img.naturalWidth)c.drawImage(img,sx,sy,sw,sh,x,y,w,h);}
+  function fish(id,x,y,size,dir=1,angle=0,alpha=1){const img=assets['fish-atlas'],i=ids.indexOf(id);if(!img?.naturalWidth||i<0)return;const [rx,ry,rw]=regions[i],unit=img.naturalWidth/4,sw=unit*rw,sh=img.naturalHeight/2;c.save();c.translate(x,y);c.rotate(angle);c.scale(dir,1);c.globalAlpha=alpha;imagePart('fish-atlas',rx*unit,ry*sh,sw,sh,-size/2,-size*sh/sw/2,size,size*sh/sw);c.restore();}
+  function gear(kind,index,x,y,size,angle=0){const img=assets['gear-atlas'];if(!img?.naturalWidth)return;const sw=img.naturalWidth/3,sy=kind==='rod'?0:img.naturalHeight*.46,sh=kind==='rod'?img.naturalHeight*.46:img.naturalHeight*.54;c.save();c.translate(x,y);c.rotate(angle);imagePart('gear-atlas',index*sw,sy,sw,sh,-size/2,-size*.8,size,size*sh/sw);c.restore();}
+  function text(value,x,y,size=13,color='#f9e8bd'){c.font='600 '+size+'px system-ui';c.textAlign='center';c.fillStyle=color;c.shadowColor='#082b31';c.shadowBlur=3;c.fillText(value,x,y);c.shadowBlur=0;}
+  function projectile(s,clock,own){if(clock<s.born_at)return;const age=clock-s.born_at,color=own?'#ffe29b':'#9bdbf2';if(s.state==='flying'||!s.state){if(age>1.3)return;const x=s.x0+s.vx*age,y=s.y0+s.vy*age;c.strokeStyle=color;c.lineWidth=own?4:2;c.beginPath();c.moveTo(x-s.vx*.035,y-s.vy*.035);c.lineTo(x,y);c.stroke();c.fillStyle=color;c.beginPath();c.arc(x,y,own?6:4,0,Math.PI*2);c.fill();}else if(s.hit_x!==undefined&&clock-s.resolved_at<.65){const r=s.radius+15;c.save();c.globalAlpha=Math.max(0,1-(clock-s.resolved_at)/.65);c.translate(s.hit_x,s.hit_y);c.strokeStyle=s.caught?'#ffe29b':color;c.lineWidth=2;c.beginPath();c.arc(0,0,r,0,Math.PI*2);for(let j=-2;j<=2;j++){const v=j*r/3,e=Math.sqrt(r*r-v*v);c.moveTo(-e,v);c.lineTo(e,v);c.moveTo(v,-e);c.lineTo(v,e);}c.stroke();if(s.caught)text('＋'+s.gross,0,-r-10,20);c.restore();}}
   function draw(now=performance.now()){
    if(!alive||!model||document.hidden||!visible)return;const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,ratio=Math.min(w<600?1.5:2,devicePixelRatio||1);if(!w||!h)return;
-   if(canvas.width!==Math.round(w*ratio)||canvas.height!==Math.round(h*ratio)){canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);}c.setTransform(ratio,0,0,ratio,0,0);c.clearRect(0,0,w,h);
-   const bg=assets[model.mode==='leisure'?'harbor':'reef'];c.fillStyle='#123c43';c.fillRect(0,0,w,h);
-   if(bg?.naturalWidth){const scale=Math.max(w/bg.naturalWidth,h/bg.naturalHeight),bw=bg.naturalWidth*scale,bh=bg.naturalHeight*scale;c.drawImage(bg,(w-bw)/2,(h-bh)/2,bw,bh);}else{c.font='14px system-ui';c.textAlign='center';c.fillStyle='#f5e7c4';c.fillText(bg?.complete?'場景暫時無法載入，仍可使用下方按鈕':'正在展開海圖…',w/2,h/2);}
-   const t=reduced.matches?0:now/1000;
+   if(canvas.width!==Math.round(w*ratio)||canvas.height!==Math.round(h*ratio)){canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);}c.setTransform(ratio,0,0,ratio,0,0);c.clearRect(0,0,w,h);c.fillStyle='#123c43';c.fillRect(0,0,w,h);
+   const bg=assets[model.mode==='leisure'?'harbor':'reef'];if(bg?.naturalWidth){const scale=Math.max(w/bg.naturalWidth,h/bg.naturalHeight),bw=bg.naturalWidth*scale,bh=bg.naturalHeight*scale;c.drawImage(bg,(w-bw)/2,(h-bh)/2,bw,bh);}const clock=model.now();
    if(model.mode==='arcade'){
-    for(const f of entities){if(reduced.matches&&!f.main)continue;const p=position(f,t,w,h);fish(f.id,p.x,p.y,p.size,f.dir,Math.sin(t*2+f.seed)*.055);if(f.main){c.textAlign='center';c.font='600 11px system-ui';c.fillStyle='#f9e7b9';c.fillText(model.catalog.find(v=>v.id===f.id)?.multiplier+'×',p.x,p.y+p.size*.23);if(model.selected===f.id){c.strokeStyle='#f2d793';c.lineWidth=1.4;c.setLineDash([5,5]);c.beginPath();c.ellipse(p.x,p.y,p.size*.45,p.size*.25,0,0,Math.PI*2);c.stroke();c.setLineDash([]);}}}
-    // Slow bubbles; fixed count and no allocations or particle timers.
-    if(!reduced.matches){c.strokeStyle='#d0f3df50';c.lineWidth=1;for(let i=0;i<8;i++){c.beginPath();c.arc((i*.137+.08)*w,(1-(t*.035+i*.137)%1)*h,1.5+i%3,0,Math.PI*2);c.stroke();}}
-    const target=aim,angle=Math.atan2(target.y*h-h*.92,target.x*w-w*.5)+Math.PI/2;
-    const recoil=flight&&!reduced.matches?Math.max(0,1-(now-flight.at)/150)*7:0;
-    c.save();c.translate(w*.5,h*.92+recoil);c.rotate(angle);gear('cannon',model.cannon,0,0,Math.min(120,w*.25));c.restore();
-    if(flight){const elapsed=now-flight.at,p=Math.min(1,elapsed/360),sx=w*.5,sy=h*.84,tx=flight.x*w,ty=flight.y*h,x=sx+(tx-sx)*p,y=sy+(ty-sy)*p;
-     if(p<1&&!reduced.matches){c.strokeStyle='#efcd78';c.lineWidth=3;c.beginPath();c.moveTo(sx+(tx-sx)*Math.max(0,p-.14),sy+(ty-sy)*Math.max(0,p-.14));c.lineTo(x,y);c.stroke();c.fillStyle='#fff2b8';c.beginPath();c.arc(x,y,4,0,Math.PI*2);c.fill();}
-     if(p>=1&&(elapsed<1300||model.sending)){const radius=reduced.matches?23:Math.min(35,16+(elapsed-360)/25);c.save();c.translate(tx,ty);c.strokeStyle=model.sending?'#e8cd8d99':'#f1d58b';c.lineWidth=1;c.globalAlpha=model.sending?1:Math.max(0,1-(elapsed-650)/650);c.beginPath();c.arc(0,0,radius,0,Math.PI*2);for(let j=-2;j<=2;j++){const v=j*radius/3,extent=Math.sqrt(radius*radius-v*v);c.moveTo(-extent,v);c.lineTo(extent,v);c.moveTo(v,-extent);c.lineTo(v,extent);}c.stroke();c.restore();}
+    const world=model.world;c.save();c.scale(w/1000,h/600);
+    if(world){
+     for(const f of world.entities){if(clock<f.spawned_at||clock>=f.expires_at)continue;const p=worldPosition(f,clock,world.effects);fish(f.species,p.x,p.y,f.radius_x*2.65,f.vx<0?-1:1,reduced.matches?0:Math.sin(clock*2+f.phase)*.035);text((f.boss?'巨獸 ':'')+f.multiplier+'×',p.x,p.y+f.radius_y+14,f.boss?28:24);if(f.id===targetId){c.strokeStyle='#ffe4a4';c.lineWidth=2;c.setLineDash([7,6]);c.beginPath();c.ellipse(p.x,p.y,f.radius_x+10,f.radius_y+8,0,0,Math.PI*2);c.stroke();c.setLineDash([]);}}
+     for(const p of world.players){const x=80+p.seat*168,own=p.user_id===model.user;const angle=own?Math.atan2(aim.y-562,aim.x-x)+Math.PI/2:0;gear('cannon',own?model.cannon:p.cannon||0,x,562,own?110:74,angle);text((own?'你・':'')+p.nickname.slice(0,5),x,594,own?25:23,own?'#ffe4a4':'#d2e7de');}
+     for(const s of world.projectiles)projectile(s,clock,s.user_id===model.user);
+     if(world.effects.some(e=>e.starts_at<=clock&&e.ends_at>clock)){c.fillStyle='#a3dff525';c.fillRect(0,0,1000,600);text('魚場冰凍中',500,95,22,'#e2f6ff');}
     }
+    for(const [token,s] of localShots){if(world?.projectiles.some(p=>p.token===token&&p.user_id===model.user)||clock-s.born_at>1.5){localShots.delete(token);continue;}projectile(s,clock,true);}
+    if(!targetId){c.strokeStyle='#fff0b9cc';c.lineWidth=2;c.beginPath();c.arc(aim.x,aim.y,22,0,Math.PI*2);c.moveTo(aim.x-32,aim.y);c.lineTo(aim.x+32,aim.y);c.moveTo(aim.x,aim.y-32);c.lineTo(aim.x,aim.y+32);c.stroke();}
+    if(!model.connected)text('正在同步共享魚場…',500,290,22);
+    c.restore();
    }else{
-    const progress=model.reelProgress||0,active=!!model.pending,biting=active&&model.now()>=model.pending.ready_at;
-    const travel=castAt&&!reduced.matches?Math.min(1,(now-castAt)/600):1;
-    const floatX=w*(.61-progress*.18),floatY=h*(.57-progress*.12)+(reduced.matches?0:Math.sin(t*(biting?8:2))*(biting?4:1.4));
-    for(let i=0;i<3;i++){const x=((t*.008+i*.31)%1)*w;fish(ids[i+2],x,h*(.7+i*.08),65,i%2?1:-1,0,.17);}
-    const rodSize=Math.min(w*.52,280),rodX=w*.2,rodY=h*.9;
-    c.save();c.translate(rodX,rodY);c.rotate(-progress*.16);gear('rod',model.rod,0,0,rodSize);c.restore();
-    if(active||model.sending||travel<1){const x=w*.27+(floatX-w*.27)*travel,y=travel<1?h*.45+(floatY-h*.45)*travel-Math.sin(travel*Math.PI)*h*.28:floatY;
-     c.strokeStyle='#f8ecd1cc';c.lineWidth=.9;c.beginPath();c.moveTo(rodX+rodSize*.36,rodY-rodSize*.68);c.quadraticCurveTo(w*.5,h*.3,x,y);c.stroke();
-     c.strokeStyle='#f3e5be99';c.lineWidth=1;for(let i=0;i<2;i++){c.beginPath();const pulse=reduced.matches?i*5:(t*12+i*9)%24;c.ellipse(x,y+6,10+pulse,(10+pulse)*.28,0,0,Math.PI*2);c.stroke();}
-     c.fillStyle='#d96955';c.beginPath();c.ellipse(x,y,4,10,0,0,Math.PI*2);c.fill();c.fillStyle='#fff3d3';c.fillRect(x-3,y-5,6,4);
-     if(biting&&!model.reeling){c.textAlign='center';c.font='600 15px system-ui';c.fillStyle='#fff4d3';c.shadowColor='#142f38';c.shadowBlur=4;c.fillText('咬鉤了',x,y-23);c.shadowBlur=0;}
+    const active=model.pending,biting=active?.phase==='waiting'&&clock>=active.ready_at;
+    const t=reduced.matches?0:now/1000,progress=active?.phase==='playing'?active.progress:0;
+    const floatX=w*(.61-progress*.15),floatY=h*(.57-progress*.12)+(reduced.matches?0:Math.sin(t*(biting?8:2))*(biting?4:1.4));
+    const rodSize=Math.min(w*.52,280),rodX=w*.2,rodY=h*.9;gear('rod',model.rod,rodX,rodY,rodSize,-progress*.15);
+    if(active||model.sending){const travel=castAt&&!reduced.matches?Math.min(1,(now-castAt)/600):1,x=w*.27+(floatX-w*.27)*travel,y=floatY-Math.sin(travel*Math.PI)*h*.28;
+     c.strokeStyle='#f8ecd1cc';c.lineWidth=.9;c.beginPath();c.moveTo(rodX+rodSize*.36,rodY-rodSize*.68);c.quadraticCurveTo(w*.5,h*.3,x,y);c.stroke();c.strokeStyle='#f3e5be99';c.beginPath();c.ellipse(x,y+6,18,5,0,0,Math.PI*2);c.stroke();c.fillStyle='#d96955';c.beginPath();c.ellipse(x,y,4,10,0,0,Math.PI*2);c.fill();c.fillStyle='#fff3d3';c.fillRect(x-3,y-5,6,4);if(biting)text('提竿！',x,y-24,17);}
+    if(active?.phase==='playing'){
+     const d=skillProjection(active,clock,model.holding),fy=fishY(d,clock),panelX=w*.8,panelY=h*.22,panelH=h*.58,panelW=Math.max(32,w*.07);c.fillStyle='#082b31df';c.fillRect(panelX-panelW/2-6,panelY-7,panelW+12,panelH+14);c.fillStyle='#dfca7b88';c.fillRect(panelX-panelW/2,panelY+(d.zone_y-d.width/2)*panelH,panelW,d.width*panelH);fish(d.species,panelX,panelY+fy*panelH,panelW*1.8,1,0);text('收線區',panelX,panelY-15,12);text('逃脫 '+Math.round(d.escape*100)+'%',w*.48,h*.24,13,d.escape>.65?'#ffc0ad':'#fff0cd');if(now-lastHud>100){callbacks.skillFrame?.(d);lastHud=now;}
     }
    }
-   if(celebration&&now-celebration.at<1800){const age=(now-celebration.at)/1800;c.save();c.globalAlpha=reduced.matches?1:Math.min(1,(1-age)*4);fish(celebration.id,w*.64,h*.48,Math.min(230,w*.55),1,reduced.matches?0:-.08);c.restore();}
-   const failed=Object.values(assets).some(img=>img.complete&&!img.naturalWidth);canvas.dataset.artState=failed?'failed':'ready';
-   if(failed){c.fillStyle='#082b31ed';c.fillRect(8,h-39,w-16,30);c.fillStyle='#fff0c9';c.font='12px system-ui';c.textAlign='center';c.fillText('部分素材未載入，可使用魚種選單與操作按鈕',w/2,h-20);}
-   ready?.();
+   const failed=Object.values(assets).some(img=>img.complete&&!img.naturalWidth);canvas.dataset.artState=failed?'failed':'ready';if(failed)text('部分素材未載入，可使用操作按鈕',w/2,h-20,12);
   }
-  function tick(now){frame=0;if(!alive||document.hidden||!visible||reduced.matches)return;if(now-last>=33.3){draw(now);last=now;}frame=requestAnimationFrame(tick);}
-  function resume(){if(alive&&visible&&!document.hidden&&!reduced.matches&&!frame)frame=requestAnimationFrame(tick);}
+  function tick(now){frame=0;if(!alive||document.hidden||!visible)return;if(now-last>=(reduced.matches?50:33.3)){draw(now);last=now;}frame=requestAnimationFrame(tick);}
+  function resume(){if(alive&&visible&&!document.hidden&&!frame)frame=requestAnimationFrame(tick);}
   function visibility(){if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{draw();resume();}}
-  function motion(){cancelAnimationFrame(frame);frame=0;draw();resume();}
-  function pointer(event){if(model?.mode!=='arcade'||model.sending||model.blocked)return;const r=canvas.getBoundingClientRect(),x=event.clientX-r.left,y=event.clientY-r.top,t=reduced.matches?0:performance.now()/1000;let found=null,distance=Infinity;for(const f of entities){if(reduced.matches&&!f.main)continue;const p=position(f,t,r.width,r.height),d=Math.hypot((x-p.x),((y-p.y)*1.7));if(d<Math.max(36,p.size*.45)&&d<distance){found={id:f.id,x:p.x/r.width,y:p.y/r.height};distance=d;}}if(found){aim={x:found.x,y:found.y};pickedAim={...found,at:performance.now()};pick?.(found.id);}}
-  canvas.addEventListener('click',pointer);document.addEventListener('visibilitychange',visibility);reduced.addEventListener('change',motion);
-  const resize=new ResizeObserver(()=>draw());resize.observe(canvas);
-  const intersection=new IntersectionObserver(entries=>{visible=entries.at(-1).isIntersecting;if(visible){draw();resume();}else{cancelAnimationFrame(frame);frame=0;}});intersection.observe(canvas);
+  function point(event){if(model?.mode!=='arcade'||!model.world)return null;const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)/r.width*1000,y=(event.clientY-r.top)/r.height*600;let selected=null,dist=Infinity;for(const f of model.world.entities){if(model.now()<f.spawned_at||model.now()>=f.expires_at)continue;const p=worldPosition(f,model.now(),model.world.effects),d=((x-p.x)/f.radius_x)**2+((y-p.y)/f.radius_y)**2;if(d<=1.5&&d<dist){selected=f;dist=d;}}aim={x,y:Math.min(525,y)};targetId=selected?.id||null;callbacks.aim?.(aim.x,aim.y,targetId);return {x,y,id:targetId};}
+  function down(e){if(model?.mode!=='arcade')return;point(e);e.preventDefault();canvas.setPointerCapture(e.pointerId);callbacks.shootStart?.();}
+  function move(e){if(model?.mode==='arcade')point(e);}
+  function up(){callbacks.shootStop?.();}
+  canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);document.addEventListener('visibilitychange',visibility);
+  const resize=new ResizeObserver(()=>draw());resize.observe(canvas);const intersection=new IntersectionObserver(entries=>{visible=entries.at(-1).isIntersecting;if(visible){draw();resume();}else{cancelAnimationFrame(frame);frame=0;callbacks.shootStop?.();}});intersection.observe(canvas);
   for(const name of ['fish-atlas','gear-atlas','harbor','reef'])assets[name]=image(name,()=>{if(alive)draw();});
-  return {
-   update(next){if(mode!==next.mode){mode=next.mode;setup();flight=null;celebration=null;}model=next;const result=next.result;if(result?.operation_id!==resultKey){resultKey=result?.operation_id;if(result?.species&&(result.caught||result.action==='reel'))celebration={id:result.species,at:performance.now()};}draw();resume();},
-   fire(id){const r=canvas.getBoundingClientRect(),f=entities.find(v=>v.id===id&&v.main);if(pickedAim?.id===id&&performance.now()-pickedAim.at<1000){aim={x:pickedAim.x,y:pickedAim.y};pickedAim=null;}else if(f){const p=position(f,reduced.matches?0:performance.now()/1000,r.width,r.height);aim={x:p.x/r.width,y:p.y/r.height};}flight={...aim,at:performance.now()};draw();},
-   cast(){castAt=performance.now();draw();},
-   draw,
-   destroy(){alive=false;cancelAnimationFrame(frame);resize.disconnect();intersection.disconnect();canvas.removeEventListener('click',pointer);document.removeEventListener('visibilitychange',visibility);reduced.removeEventListener('change',motion);}
+  return {update(next){model=next;resume();},aim(id){targetId=id;},cast(){castAt=performance.now();draw();},
+   shotLocal(s,cannon){const player=model?.world?.players.find(p=>p.user_id===model.user);if(!player)return;const x0=80+player.seat*168,y0=562,d=Math.hypot(s.x-x0,s.y-y0);localShots.set(s.token,{token:s.token,born_at:s.fired_at,x0,y0,vx:(s.x-x0)/d*1150,vy:(s.y-y0)/d*1150,radius:model.cannons?.[cannon]?.radius||15});},
+   rejectShots(tokens){for(const token of tokens)localShots.delete(token);},draw,
+   destroy(){alive=false;cancelAnimationFrame(frame);resize.disconnect();intersection.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);document.removeEventListener('visibilitychange',visibility);}
   };
  }
- return {create,portrait,gearArt,gearNames,traits};
+ return {create,portrait,gearArt,gearNames,traits,worldPosition,fishY,skillProjection};
 })();

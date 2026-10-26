@@ -31,6 +31,7 @@ import club_admin
 import game_settings
 import transfers
 import fishing
+import fishing_gameplay
 import member_accounts
 from realtime import Hub, WriteQueue
 from dataclasses import dataclass
@@ -56,6 +57,11 @@ HTTP_SNAPSHOTS = threading.Semaphore(2)
 # Whitelisted text files: raw and gzip bytes with their ETags, rebuilt only when the file changes.
 STATIC_TEXT_CACHE: dict[Path, tuple] = {}
 STATIC_TEXT_LOCK = threading.Lock()
+FISH_WORLD_LOCK = threading.Lock()
+FISH_WORLD_CACHE = {}
+FISH_CLOCK_ACTIVE=threading.Event()
+FISH_CLOCK_ACTIVE.set()
+FISH_WALLET_DIRTY=threading.Event()
 
 
 def static_text(file: Path):
@@ -156,6 +162,8 @@ def initialize():
         online.initialize(db)
         transfers.initialize(db)
         fishing.initialize(db)
+        # Settle persisted paid shots against their stored fish before accepting joins.
+        fishing_gameplay.tick(db,time.time())
 
 
 class Problem(Exception):
@@ -287,7 +295,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?", 1)[0]
         try:
-            if path == "/api/online/events":
+            if path == "/api/fishing/events":
+                return self.fishing_stream()
+            elif path == "/api/online/events":
                 return self.event_stream()
             elif path == '/api/social/voice/socket':
                 query=parse_qs(urlsplit(self.path).query)
@@ -332,6 +342,17 @@ class Handler(BaseHTTPRequestHandler):
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
                     value=game_settings.admin_view(db,user)
+                self.reply(200,value)
+            elif path=='/api/fishing/world':
+                query=parse_qs(urlsplit(self.path).query);rid=int(query.get('room',['1'])[0])
+                with HTTP_SNAPSHOTS,connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');self.user(db)
+                    value=fishing_gameplay.room_view(db,rid,time.time())
+                self.reply(200,value)
+            elif path=='/api/fishing/skill-state':
+                with HTTP_SNAPSHOTS,connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    value=fishing_gameplay.skill_view(db,user['id'],time.time())
                 self.reply(200,value)
             elif path=='/api/fishing':
                 with HTTP_SNAPSHOTS, connect() as db:
@@ -418,7 +439,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/fishing-scene.js", "/fishing.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/fishing-play.js", "/fishing-scene.js", "/fishing.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
                 ext = name.rsplit(".",1)[-1]
@@ -445,6 +466,52 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as ex:
             print(type(ex).__name__, str(ex), flush=True)
             self.reply(500, {"error": "读取失败，请稍后重试。"})
+
+    def fishing_stream(self):
+        query=parse_qs(urlsplit(self.path).query)
+        try:rid=int(query.get('room',['1'])[0])
+        except ValueError:raise Problem('魚場編號無效。')
+        if not 1<=rid<=fishing_gameplay.ROOMS:raise Problem('魚場編號無效。')
+        client=query.get('client',[''])[0]
+        if not re.fullmatch(r'[A-Za-z0-9_-]{16,80}',client):raise Problem('魚場連線編號無效。')
+        with connect() as db:uid=self.user(db)['id']
+        try:subscription=EVENTS.subscribe(uid,client);lease=subscription.__enter__()
+        except ValueError as error:raise Problem(str(error),429)
+        try:
+            self.connection.settimeout(15);self.send_response(200)
+            self.send_header('Content-Type','text/event-stream; charset=utf-8')
+            self.send_header('Cache-Control','no-cache, no-store, no-transform')
+            self.send_header('X-Accel-Buffering','no');self.end_headers()
+            self.wfile.write(b'retry: 800\n\n');self.wfile.flush()
+            sent=None;last=0.;verified=0.;channel=-500-rid
+            while not EVENTS.stopped and not lease.is_set():
+                now_monotonic=time.monotonic();version=EVENTS.version_for(channel)
+                if now_monotonic-verified>=2:
+                    try:
+                        with connect() as db:self.user(db)
+                    except (Problem,member_accounts.AccountError):
+                        self.wfile.write(b'event: auth\ndata: {}\n\n');self.wfile.flush();break
+                    verified=now_monotonic
+                if version!=sent or now_monotonic-last>=2:
+                    gap=.2-(now_monotonic-last)
+                    if gap>0:lease.wait(gap)
+                    version=EVENTS.version_for(channel);clock=time.time();key=int(clock*5)
+                    with FISH_WORLD_LOCK:
+                        cached=FISH_WORLD_CACHE.get(rid)
+                        if not cached or cached[0]!=key:
+                            with connect() as db:
+                                db.execute('PRAGMA query_only=ON');db.execute('BEGIN')
+                                value=fishing_gameplay.room_view(db,rid,clock)
+                            payload=json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()
+                            FISH_WORLD_CACHE[rid]=(key,version,payload)
+                        else:version,payload=cached[1:]
+                    if lease.is_set():break
+                    self.wfile.write(b'event: world\ndata: '+payload+b'\n\n');self.wfile.flush()
+                    sent=version;last=time.monotonic()
+                EVENTS.wait(version,timeout=.5,room_id=channel,cancelled=lease)
+        except (OSError,ConnectionError):pass
+        finally:
+            subscription.__exit__(None,None,None);self.close_connection=True
 
     def event_stream(self):
         query = parse_qs(urlsplit(self.path).query)
@@ -749,9 +816,13 @@ class Handler(BaseHTTPRequestHandler):
             print(json.dumps({'event':'client_connection','kind':kind,'client':client,'user_id':user['id'],**fields,'at':now()}),flush=True)
             db.commit();return Reply(200,{'ok':True})
         if path.startswith('/api/fishing/'):
-            result=fishing.mutate(db,user,path.rsplit('/',1)[1],data,time.time())
+            result=fishing.mutate(db,user,path.rsplit('/',1)[1],data,getattr(self,'received_at',time.time()))
             db.commit()
-            if not result['replayed'] and result['result']['action'] in ('shot','sell'):EVENTS.publish(0,lobby=False)
+            if result['result']['action'] in ('cast','join','burst'):FISH_CLOCK_ACTIVE.set()
+            for rid in result.pop('changed_rooms',[]):EVENTS.publish(-500-rid,lobby=False)
+            changed=result.pop('wallet_changed',False)
+            if changed:FISH_WALLET_DIRTY.set()
+            elif not result['replayed'] and result['result']['action'] in ('shot','sell'):EVENTS.publish(0,lobby=False)
             return Reply(200,result)
         if path=='/api/wallet/transfers':
             role=club_admin.identity(db,user['id'])
@@ -964,6 +1035,25 @@ def main():
             except Exception as error:
                 print("Dealer clock:", type(error).__name__, str(error), flush=True)
     threading.Thread(target=dealer_clock, daemon=True).start()
+    def fishing_clock():
+        published=0.
+        while not stopping.wait(.12):
+            if not FISH_CLOCK_ACTIVE.is_set() and not FISH_WALLET_DIRTY.is_set():continue
+            try:
+                changed={'rooms':(),'wallet':False}
+                if FISH_CLOCK_ACTIVE.is_set():
+                    with WRITES.enter() as admission:
+                        with connect() as db:
+                            db.execute('BEGIN IMMEDIATE');changed=fishing_gameplay.tick(db,admission.received_at);db.commit()
+                            if not changed['active']:FISH_CLOCK_ACTIVE.clear()
+                for rid in changed['rooms']:EVENTS.publish(-500-rid,lobby=False)
+                if changed['wallet']:FISH_WALLET_DIRTY.set()
+                # Own wallet replies remain immediate; coalesce shared lobby work.
+                if FISH_WALLET_DIRTY.is_set() and time.monotonic()-published>=.75:
+                    FISH_WALLET_DIRTY.clear();EVENTS.publish(0,lobby=False);published=time.monotonic()
+            except Exception as error:print('Fishing clock:',type(error).__name__,str(error),flush=True)
+    threading.Thread(target=fishing_clock,daemon=True).start()
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:

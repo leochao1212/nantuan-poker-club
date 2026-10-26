@@ -41,9 +41,11 @@ def initialize(db):
       result TEXT NOT NULL,created_at REAL NOT NULL,PRIMARY KEY(user_id,operation_id));
     CREATE INDEX IF NOT EXISTS fishing_recent ON fishing_operations(user_id,created_at DESC);
     ''')
+    import fishing_gameplay
+    fishing_gameplay.initialize(db)
 
 
-def view(db, uid, clock):
+def _base_view(db, uid, clock):
     cfg = game_settings.current(db, 'fishing')
     pending = db.execute('SELECT id,ready_at FROM fishing_casts WHERE user_id=? AND collected_at IS NULL', (uid,)).fetchone()
     used = db.execute('SELECT count(*) FROM fishing_casts WHERE user_id=? AND day=?', (uid, wallet.day(clock))).fetchone()[0]
@@ -79,7 +81,7 @@ def _intent(action, data):
     return game_settings.encode({'action':action, **value})
 
 
-def mutate(db, user, action, data, clock):
+def _legacy_mutate(db, user, action, data, clock):
     uid=user['id'];member_accounts.require_active(db,uid)
     op=data.get('operation_id')
     if not isinstance(op,str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,80}',op): raise RuleError('釣魚操作編號無效。')
@@ -89,50 +91,19 @@ def mutate(db, user, action, data, clock):
         if old['fingerprint']!=fingerprint: raise RuleError('同一釣魚操作編號的內容不符，請先確認原操作。')
         return dict(ok=True,replayed=True,result=json.loads(old['result']),state=view(db,uid,clock))
     if not wallet.active(db): raise RuleError('點數制度更新中，請稍候。')
-    cfg=game_settings.current(db,'fishing')
-    if action in ('cast','shot') and (type(data.get('expected_revision')) is not int or data['expected_revision']!=cfg['revision']):
-        raise RuleError('釣魚規則已更新，請重新讀取漁港後操作。')
+    if action not in ('reel','sell'):raise RuleError('釣魚玩法已更新，請重新整理。')
     result={'action':action,'operation_id':op,'at':clock}
     db.execute('SAVEPOINT fishing_action')
     try:
-        if action=='cast':
-            if db.execute('SELECT 1 FROM fishing_casts WHERE user_id=? AND collected_at IS NULL',(uid,)).fetchone():
-                raise RuleError('已有一竿在海裡，請先收竿。')
-            used=db.execute('SELECT count(*) FROM fishing_casts WHERE user_id=? AND day=?',(uid,wallet.day(clock))).fetchone()[0]
-            if used>=cfg['params']['daily_casts']: raise RuleError('今天的免費竿數已用完，台灣時間午夜後再來。')
-            f=FISH[game_settings.weighted([f['weight'] for f in FISH])]
-            ident=secrets.token_hex(16);size=max(1,f['length']*(75+secrets.randbelow(76))//100);ready=clock+3+secrets.randbelow(4)
-            db.execute('INSERT INTO fishing_casts VALUES(?,?,?,?,?,?,NULL,?)',(ident,uid,wallet.day(clock),f['id'],size,ready,clock))
-            result.update(cast_id=ident,ready_at=ready)
-        elif action=='reel':
+        if action=='reel':
             ident=data.get('cast_id')
             if not isinstance(ident,str) or not re.fullmatch(r'[a-f0-9]{32}',ident): raise RuleError('魚竿編號無效。')
-            cast=db.execute('SELECT * FROM fishing_casts WHERE id=? AND user_id=? AND collected_at IS NULL',(ident,uid)).fetchone()
+            cast=db.execute('SELECT * FROM fishing_casts WHERE id=? AND user_id=? AND version=1 AND collected_at IS NULL',(ident,uid)).fetchone()
             if not cast: raise RuleError('找不到這一竿，請重新讀取漁港。')
             if clock<cast['ready_at']: raise RuleError('魚還沒咬鉤，再等一下。')
             _collect(db,uid,cast['species'],cast['size_cm'],'leisure')
             db.execute('UPDATE fishing_casts SET collected_at=? WHERE id=?',(clock,ident))
             result.update(species=cast['species'],size_cm=cast['size_cm'],value=BY_ID[cast['species']]['value'])
-        elif action=='shot':
-            species=data.get('species');stake=data.get('stake')
-            if not isinstance(species,str) or species not in BY_ID: raise RuleError('請選擇魚種。')
-            if type(stake) is not int or not 1<=stake<=min(100,game_settings.bet_limit(cfg)): raise RuleError('炮彈點數需在目前允許範圍內。')
-            if type(data.get('expected_limit_revision')) is not int or data['expected_limit_revision']!=cfg['bet_limit_revision']:
-                raise RuleError('炮彈上限已更新，請重新讀取漁港。')
-            last=db.execute('SELECT last_shot_at FROM fishing_stats WHERE user_id=?',(uid,)).fetchone()
-            if last and clock-last[0]<SHOT_INTERVAL: raise RuleError('魚炮冷卻中，請稍候再發射。')
-            balance=db.execute('SELECT balance FROM wallets WHERE user_id=?',(uid,)).fetchone()
-            if not balance or balance[0]<stake: raise RuleError('錢包點數不足，可先領補給或從牌桌取回籌碼。')
-            f=BY_ID[species];caught=secrets.randbelow(10000*f['multiplier'])<cfg['params']['target_bps']
-            gross=stake*f['multiplier'] if caught else 0
-            wallet.transfer(db,uid,-stake,'fishing_shot','fish:'+op+':cost',clock,game=True)
-            if gross:
-                wallet.transfer(db,uid,gross,'fishing_win','fish:'+op+':win',clock,game=True)
-                _collect(db,uid,species,f['length'],'arcade')
-            db.execute('''INSERT INTO fishing_stats(user_id,shots,spent,returned,last_shot_at) VALUES(?,1,?,?,?)
-                ON CONFLICT(user_id) DO UPDATE SET shots=shots+1,spent=spent+excluded.spent,
-                returned=returned+excluded.returned,last_shot_at=excluded.last_shot_at''',(uid,stake,gross,clock))
-            result.update(species=species,caught=caught,stake=stake,gross=gross,net=gross-stake,settings_revision=cfg['revision'])
         else:
             rows=db.execute('SELECT species,stored FROM fishing_collection WHERE user_id=? AND stored>0',(uid,)).fetchall()
             amount=sum(BY_ID[r['species']]['value']*r['stored'] for r in rows);count=sum(r['stored'] for r in rows)
@@ -145,3 +116,13 @@ def mutate(db, user, action, data, clock):
     except Exception:
         db.execute('ROLLBACK TO SAVEPOINT fishing_action');db.execute('RELEASE SAVEPOINT fishing_action');raise
     return dict(ok=True,replayed=False,result=result,state=view(db,uid,clock))
+
+
+def view(db,uid,clock):
+    import fishing_gameplay
+    return fishing_gameplay.view(db,uid,clock)
+
+
+def mutate(db,user,action,data,clock):
+    import fishing_gameplay
+    return fishing_gameplay.mutate(db,user,action,data,clock)

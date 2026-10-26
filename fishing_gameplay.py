@@ -13,9 +13,10 @@ import fishing as base
 import game_settings
 import member_accounts
 import wallet
+import fishing_tension
 from poker_engine import RuleError
 
-VERSION = 2
+VERSION = 3
 ROOMS = 4
 CAPACITY = 6
 LEASE = 40
@@ -93,6 +94,7 @@ def fish_y(data,at):
 
 
 def advance_skill(data,clock):
+    if data.get('mechanic')=='tension':return fishing_tension.advance(data,clock)
     if data.get('phase')!='playing':return
     # Fixed 50 ms steps make outcomes independent of browser frame rate and polling.
     target=min(clock,data['deadline'])
@@ -112,9 +114,15 @@ def advance_skill(data,clock):
 
 
 def _finish_cast(db,row,data,clock):
+    tension=data.get('mechanic')=='tension' and data['phase']=='caught'
+    if tension:fishing_tension.result(data,row['size_cm'],base.BY_ID[row['species']]['value'])
     closed=db.execute('UPDATE fishing_casts SET collected_at=?,data=? WHERE id=? AND collected_at IS NULL',(clock,encode(data),row['id'])).rowcount
     if not closed:return
-    if data['phase']=='caught':base._collect(db,row['user_id'],row['species'],row['size_cm'],'leisure')
+    if data['phase']=='caught':
+        base._collect(db,row['user_id'],row['species'],row['size_cm'],'leisure')
+        if tension:
+            db.execute('UPDATE fishing_collection SET stored=stored-1 WHERE user_id=? AND species=?',(row['user_id'],row['species']))
+            wallet.transfer(db,row['user_id'],data['reward'],'fishing_sale','fish:cast:'+row['id'],clock)
 
 
 def _tick_cast(db,row,clock):
@@ -133,7 +141,7 @@ def skill_view(db,uid,clock):
     if row['version']==1:
         pending={'id':row['id'],'version':1,'phase':'legacy','ready_at':row['ready_at']} if row['collected_at'] is None else None
         return {'pending':pending,'last_cast':None,'server_time':clock}
-    data=json.loads(row['data']);advance_skill(data,clock)
+    data=json.loads(row['data'])
     if data['phase']=='waiting' and clock>data['hook_deadline']:data.update(phase='escaped',reason='錯過提竿時機')
     public={k:v for k,v in data.items() if k not in ('private_species',)}
     public.update(id=row['id'],version=VERSION,ready_at=row['ready_at'])
@@ -143,22 +151,23 @@ def skill_view(db,uid,clock):
 
 
 def origin(seat):
-    return (80+seat*168,562)
+    return [(333,545),(667,545),(945,300),(667,55),(333,55),(55,300)][seat]
 
 
 def spawn(room,slot,clock,previous=None,boss=False,stagger=False):
     generation=previous.get('generation',0)+1 if previous else 1
-    ticket=hashlib.sha256((room['seed']+':'+str(slot)+':'+str(generation)).encode()).digest()
-    index=ticket[0]%len(base.FISH);f=base.FISH[index]
-    if boss:f=base.BY_ID['swordfish']
-    life=24+ticket[1]%13;born=clock-(slot/SLOTS*life*.85 if stagger else 0)
+    ticket=hashlib.sha256((room['seed']+':'+str(slot//4)+':'+str(generation)).encode()).digest()
+    index=ticket[0]%8
+    if boss:index=8+(int(clock//120)+room['id'])%4
+    f=base.FISH[index]
+    life=24+ticket[1]%13;born=clock-((slot//4)/(SLOTS/4)*life*.78 if stagger else 0)
     direction=1 if ticket[2]%2 else -1
     return dict(id=f"{room['id']}-{slot}-{generation}",slot=slot,generation=generation,species=f['id'],
-                spawned_at=born,expires_at=born+life,x0=-90 if direction==1 else 1090,
-                vx=direction*1180/life,y0=115+ticket[3]/255*300,amplitude=15+ticket[4]%24,
+                spawned_at=born,expires_at=born+life,x0=(-90-(slot%4)*(110 if index<4 else 145)) if direction==1 else (1090+(slot%4)*(110 if index<4 else 145)),
+                vx=direction*1180/life,y0=125+ticket[3]/255*250+(slot%4-1.5)*28,amplitude=15+ticket[4]%24,
                 frequency=.5+ticket[5]/255*.6,phase=ticket[6]/255*math.tau,
                 radius_x=(62 if index>=4 else 45)*(1.5 if boss else 1),radius_y=(31 if index>=4 else 23)*(1.5 if boss else 1),
-                multiplier=f['multiplier']*(2 if boss else 1),boss=boss)
+                multiplier=f['multiplier'],boss=boss,feature=f.get('feature'),school=slot//4)
 
 
 def position(fish,clock,effects=()):
@@ -188,6 +197,7 @@ def prepare_room(db,rid,clock):
 def room_view(db,rid,clock):
     integer(rid,'魚場',1,ROOMS)
     members=[dict(r) for r in db.execute('SELECT m.user_id,m.seat,m.skill_at,u.nickname,COALESCE(l.cannon,0) AS cannon FROM fishing_members m JOIN users u ON u.id=m.user_id LEFT JOIN fishing_loadouts l ON l.user_id=m.user_id WHERE m.room_id=? AND m.last_seen>? ORDER BY m.seat',(rid,clock-LEASE))]
+    for member in members:member.update(x=origin(member['seat'])[0],y=origin(member['seat'])[1])
     entities=[json.loads(r[0]) for r in db.execute('SELECT data FROM fishing_entities WHERE room_id=? AND expires_at>? ORDER BY slot',(rid,clock))]
     effects=[dict(r) for r in db.execute('SELECT user_id,starts_at,ends_at FROM fishing_effects WHERE room_id=? AND ends_at>?',(rid,clock-45))]
     shots=[]
@@ -209,6 +219,12 @@ def view(db,uid,clock):
     return value
 
 
+def burst_view(db,uid,clock):
+    stats=db.execute('SELECT shots,spent,returned FROM fishing_stats WHERE user_id=?',(uid,)).fetchone()
+    return {'partial':True,'wallet':wallet.view(db,uid,clock),'server_time':clock,
+            **(dict(stats) if stats else {'shots':0,'spent':0,'returned':0})}
+
+
 def _first_hit(shot,start,end,entities,effects,dead):
     # 20 ms authoritative sweep, bounded by the projectile's 1.1 s life.
     at=max(start,shot['born_at']);end=min(end,shot['expires_at'])
@@ -223,10 +239,24 @@ def _first_hit(shot,start,end,entities,effects,dead):
     return None
 
 
+def bonus_targets(fish,entities,at,effects,dead):
+    feature=fish.get('feature')
+    if not feature:return []
+    x,y=position(fish,at,effects);limits={'bomb':(330,8),'arms':(450,4),'lightning':(700,5),'dragon':(900,8)}
+    radius,count=limits[feature];candidates=[]
+    for other in entities:
+        if other['id']==fish['id'] or other['id'] in dead or other.get('feature') or not other['spawned_at']<=at<other['expires_at']:continue
+        ox,oy=position(other,at,effects);distance=math.hypot(x-ox,y-oy)
+        if distance<=radius:candidates.append((distance,other['id'],other))
+    return [f for _,_,f in sorted(candidates)[:count]]
+
+
 def tick(db,clock):
     rooms=set();wallet_changed=False
     casts=db.execute('SELECT * FROM fishing_casts WHERE version=2 AND collected_at IS NULL').fetchall()
-    for row in casts:_tick_cast(db,row,clock)
+    for row in casts:
+        finished=_tick_cast(db,row,clock)
+        if finished.get('mechanic')=='tension' and finished['phase']=='caught':wallet_changed=True
     flying=[dict(r) for r in db.execute("SELECT * FROM fishing_projectiles WHERE state='flying'")]
     by_room={}
     for row in flying:by_room.setdefault(row['room_id'],[]).append(row)
@@ -246,17 +276,30 @@ def tick(db,clock):
                 again=_first_hit(shot,at,clock,entities,effects,dead)
                 if again:heapq.heappush(heap,(again[0],ident,again,shot))
                 continue
-            caught=secrets.randbelow(10000*fish['multiplier'])<shot['target_bps']
+            targets=bonus_targets(fish,entities,at,effects,dead)
+            total_multiplier=fish['multiplier']+sum(f['multiplier'] for f in targets)
+            caught=secrets.randbelow(10000*total_multiplier)<shot['target_bps']
             gross=shot['stake']*fish['multiplier'] if caught else 0
-            shot.update(resolved_at=at,hit_x=x,hit_y=y,fish_id=fish['id'],species=fish['species'],caught=caught,gross=gross,multiplier=fish['multiplier'])
+            shot.update(resolved_at=at,hit_x=x,hit_y=y,fish_id=fish['id'],species=fish['species'],caught=caught,gross=gross,multiplier=fish['multiplier'],feature=fish.get('feature'))
             if caught:
-                db.execute('INSERT INTO fishing_captures VALUES(?,?,?,?,?)',(fish['id'],row['user_id'],ident,gross,at))
-                wallet.transfer(db,row['user_id'],gross,'fishing_win','fish:projectile:'+str(ident),at,game=True)
-                base._collect(db,row['user_id'],fish['species'],base.BY_ID[fish['species']]['length'],'arcade')
-                db.execute('UPDATE fishing_stats SET returned=returned+? WHERE user_id=?',(gross,row['user_id']))
-                dead.add(fish['id']);wallet_changed=True
-                room=db.execute('SELECT * FROM fishing_rooms WHERE id=?',(rid,)).fetchone()
-                _put_entity(db,rid,spawn(room,fish['slot'],at+1,fish))
+                awards=[fish,*targets];total=shot['stake']*total_multiplier
+                shot.update(total_gross=total,bonus_count=len(targets),bonus_fish=[f['id'] for f in targets])
+                for award in awards:
+                    payout=shot['stake']*award['multiplier'];award_id=ident
+                    if award['id']!=fish['id']:
+                        fx,fy=position(award,at,effects)
+                        detail=dict(x0=x,y0=y,vx=0,vy=0,radius=20,stake=0,base_stake=shot['stake'],source_id=ident,
+                                    caught=True,gross=payout,resolved_at=at,hit_x=fx,hit_y=fy,fish_id=award['id'],species=award['species'],multiplier=award['multiplier'],feature=fish['feature'])
+                        award_id=db.execute("INSERT INTO fishing_projectiles(token,user_id,room_id,operation_id,born_at,checked_at,expires_at,state,data) VALUES(?,?,?,?,?,?,?,'caught',?)",
+                            ('feature_'+str(ident).zfill(12)+'_'+str(award['slot']),row['user_id'],rid,row['operation_id'],at,at,at+1.1,encode(detail))).lastrowid
+                    db.execute('INSERT INTO fishing_captures VALUES(?,?,?,?,?)',(award['id'],row['user_id'],award_id,payout,at))
+                    base._collect(db,row['user_id'],award['species'],base.BY_ID[award['species']]['length'],'arcade')
+                    dead.add(award['id'])
+                    room=db.execute('SELECT * FROM fishing_rooms WHERE id=?',(rid,)).fetchone()
+                    _put_entity(db,rid,spawn(room,award['slot'],at+1,award))
+                wallet.transfer(db,row['user_id'],total,'fishing_win','fish:projectile:'+str(ident),at,game=True)
+                db.execute('UPDATE fishing_stats SET returned=returned+? WHERE user_id=?',(total,row['user_id']))
+                wallet_changed=True
             db.execute('UPDATE fishing_projectiles SET state=?,data=? WHERE id=?',('caught' if caught else 'hit',encode(shot),ident));settled.add(ident);rooms.add(rid)
         for row in rows.values():
             if row['id'] in settled:continue
@@ -272,9 +315,9 @@ def tick(db,clock):
     return {'rooms':rooms,'wallet':wallet_changed,'active':bool(casts or active or flying)}
 
 FIELDS={
-    'cast':{'gameplay_version','expected_revision','power','rod'},
+    'cast':{'gameplay_version','expected_revision','power','rod','mechanic','lure'},
     'hook':{'gameplay_version','cast_id'},
-    'input':{'gameplay_version','cast_id','sequence','holding'},
+    'input':{'gameplay_version','cast_id','sequence','holding','control'},
     'join':{'gameplay_version','room_id'},
     'leave':{'gameplay_version'},
     'heartbeat':{'gameplay_version','room_id'},
@@ -299,15 +342,15 @@ def mutate(db,user,action,data,clock):
         if action=='sell' or old or legacy and legacy[0]==1:return base._legacy_mutate(db,user,action,data,clock)
         raise RuleError('釣魚玩法已更新，請重新整理；新版必須提竿並完成搏魚。')
     if action not in FIELDS or set(data)-FIELDS[action]-{'operation_id'}:raise RuleError('釣魚操作包含未知欄位。')
-    if data.get('gameplay_version')!=VERSION or type(data.get('gameplay_version')) is not int:raise RuleError('釣魚玩法已更新，請重新整理。')
     op=data.get('operation_id')
     if not isinstance(op,str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,80}',op):raise RuleError('釣魚操作編號無效。')
-    fingerprint=encode({'action':action,**{k:data.get(k) for k in sorted(FIELDS[action])}})
+    fingerprint=encode({'action':action,**{k:data.get(k) for k in sorted(FIELDS[action]) if k not in ('mechanic','lure','control') or k in data}})
     old=db.execute('SELECT * FROM fishing_operations WHERE user_id=? AND operation_id=?',(uid,op)).fetchone()
     if old:
         if old['fingerprint']!=fingerprint:raise RuleError('同一操作編號的內容不符。')
         result=json.loads(old['result'])
         return {'ok':True,'replayed':True,'result':result,**({'skill':skill_view(db,uid,clock)} if action=='input' else {'state':view(db,uid,clock)})}
+    if data.get('gameplay_version')!=VERSION or type(data.get('gameplay_version')) is not int:raise RuleError('釣魚玩法已更新，請重新整理。')
     if not wallet.active(db):raise RuleError('點數制度更新中，請稍候。')
     cfg=game_settings.current(db,'fishing')
     if action in ('cast','burst') and (type(data.get('expected_revision')) is not int or data.get('expected_revision')!=cfg['revision']):raise RuleError('釣魚規則已更新，請重新讀取後操作。')
@@ -322,10 +365,19 @@ def mutate(db,user,action,data,clock):
                 if db.execute('SELECT 1 FROM fishing_casts WHERE user_id=? AND collected_at IS NULL',(uid,)).fetchone():raise RuleError('已有一竿在水中，請先完成或放棄。')
             used=db.execute('SELECT COALESCE(sum(quota_cost),0) FROM fishing_casts WHERE user_id=? AND day=?',(uid,wallet.day(clock))).fetchone()[0]
             if used+option['cost']>cfg['params']['daily_casts']:raise RuleError('今日精力不足，近岸／中距／遠投分別消耗 1／2／3 點。')
-            fish=base.FISH[game_settings.weighted(option['weights'])];ready=clock+2+secrets.randbelow(2500)/1000
+            mechanic=data.get('mechanic','classic')
+            if mechanic not in ('classic','tension'):raise RuleError('收線玩法無效。')
+            if mechanic=='tension':
+                lure=data.get('lure')
+                if lure not in base.BY_ID or not base.BY_ID[lure]['weight']:raise RuleError('請選擇可用魚餌。')
+                fish=base.BY_ID[lure];option['cost']=1+min(2,list(base.BY_ID).index(lure)//3)
+                if used+option['cost']>cfg['params']['daily_casts']:raise RuleError('今日精力不足以使用這款魚餌。')
+                ready=clock+.8
+            else:fish=base.FISH[game_settings.weighted(option['weights'])];ready=clock+2+secrets.randbelow(2500)/1000
             ident=secrets.token_hex(16);size=max(1,fish['length']*(75+secrets.randbelow(76))//100)
             game={'phase':'waiting','power':power,'tier':option['tier'],'cost':option['cost'],'rod':rod,
                   'hook_deadline':ready+3.2,'settings_revision':cfg['revision']}
+            if mechanic=='tension':game.update(mechanic='tension',lure=data['lure'],pull_phase=secrets.randbelow(6283)/1000)
             db.execute('INSERT INTO fishing_casts(id,user_id,day,species,size_cm,ready_at,collected_at,created_at,version,quota_cost,data) VALUES(?,?,?,?,?,?,NULL,?,2,?,?)',(ident,uid,wallet.day(clock),fish['id'],size,ready,clock,option['cost'],encode(game)))
             result.update(cast_id=ident,ready_at=ready,cost=option['cost'])
         elif action in ('hook','input'):
@@ -338,6 +390,7 @@ def mutate(db,user,action,data,clock):
                 rod=RODS[game['rod']];index=list(base.BY_ID).index(row['species'])
                 game.update(phase='playing',hooked_at=clock,sim_at=clock,deadline=clock+23,zone_y=.5,velocity=0.,progress=.12,escape=0.,holding=False,input_at=clock,sequence=0,
                             width=rod['width'],rate=rod['rate'],path={'a':.13+index*.019,'b':.035+index*.006,'speed':.65+index*.11,'phase':secrets.randbelow(6283)/1000})
+                if game.get('mechanic')=='tension':fishing_tension.start(game,clock,index,rod)
             else:
                 if game['phase']!='playing':raise RuleError('請先提竿再收線。')
                 sequence=integer(data.get('sequence'),'收線序號',1,10000)
@@ -345,7 +398,13 @@ def mutate(db,user,action,data,clock):
                 if clock-game['input_at']<.07:raise RuleError('收線操作過於頻繁。')
                 advance_skill(game,clock)
                 game.update(sequence=sequence,holding=data['holding'],input_at=clock)
-            if game['phase'] in ('caught','escaped'):_finish_cast(db,row,game,clock)
+                if 'control' in data:
+                    if game.get('mechanic')!='tension':raise RuleError('這一竿不支援收線滑桿。')
+                    game['control']=number(data['control'],'收線力道',0,1000)/1000
+                else:game['control']=None
+            if game['phase'] in ('caught','escaped'):
+                _finish_cast(db,row,game,clock)
+                wallet_changed=game['phase']=='caught' and game.get('mechanic')=='tension'
             else:db.execute('UPDATE fishing_casts SET data=? WHERE id=?',(encode(game),row['id']))
             result.update(cast_id=row['id'],phase=game['phase'],sequence=game.get('sequence',0))
         elif action=='gear':
@@ -401,7 +460,7 @@ def mutate(db,user,action,data,clock):
                 if db.execute('SELECT 1 FROM fishing_projectiles WHERE user_id=? AND token=?',(uid,token)).fetchone():raise RuleError('這發砲彈已送出，請確認原批次。')
                 tokens.add(token);fired=number(shot['fired_at'],'發射時間',clock-1.2,clock+.06)
                 if fired-last<max(previous_interval,weapon['interval'])-.01:raise RuleError('發射速度超過魚炮設定。')
-                last=fired;previous_interval=weapon['interval'];x=number(shot['x'],'瞄準位置',0,1000);y=number(shot['y'],'瞄準位置',0,525)
+                last=fired;previous_interval=weapon['interval'];x=number(shot['x'],'瞄準位置',0,1000);y=number(shot['y'],'瞄準位置',0,600)
                 ox,oy=origin(member['seat']);distance=math.hypot(x-ox,y-oy)
                 if distance<35:raise RuleError('請朝魚場內發射。')
                 born=min(clock,max(fired,clock-.2,room['last_tick']))
@@ -423,5 +482,6 @@ def mutate(db,user,action,data,clock):
     reply={'ok':True,'replayed':False,'result':result,'changed_rooms':sorted(changed_rooms),'wallet_changed':wallet_changed}
     if action=='input':reply['skill']=skill_view(db,uid,clock)
     elif action=='heartbeat':reply['member']={'room_id':data['room_id']}
+    elif action=='burst':reply['state']=burst_view(db,uid,clock)
     else:reply['state']=view(db,uid,clock)
     return reply

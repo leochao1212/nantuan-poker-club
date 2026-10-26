@@ -16,6 +16,10 @@ FISH = [
     dict(id='ray', name='月光魟魚', rarity='稀有', color='#b2a1e5', weight=4, value=25, multiplier=20, length=90),
     dict(id='swordfish', name='逐浪旗魚', rarity='稀有', color='#70ced6', weight=1, value=50, multiplier=35, length=180),
     dict(id='goldfish', name='曜金龍魚', rarity='傳說', color='#f1d178', weight=1, value=100, multiplier=60, length=80),
+    dict(id='crab',name='黃金帝王蟹',rarity='特殊',color='#f5c54c',weight=0,value=0,multiplier=80,length=140,feature='bomb'),
+    dict(id='octopus',name='深海章魚',rarity='特殊',color='#b17ee9',weight=0,value=0,multiplier=90,length=180,feature='arms'),
+    dict(id='eel',name='雷霆電鰻',rarity='特殊',color='#6bb8f2',weight=0,value=0,multiplier=100,length=220,feature='lightning'),
+    dict(id='dragon',name='翡翠海龍',rarity='特殊',color='#6be2b6',weight=0,value=0,multiplier=120,length=300,feature='dragon'),
 ]
 BY_ID = {f['id']: f for f in FISH}
 SHOT_INTERVAL = .6
@@ -51,7 +55,7 @@ def _base_view(db, uid, clock):
     used = db.execute('SELECT count(*) FROM fishing_casts WHERE user_id=? AND day=?', (uid, wallet.day(clock))).fetchone()[0]
     rows = {r['species']: dict(r) for r in db.execute('SELECT * FROM fishing_collection WHERE user_id=?', (uid,))}
     collection = [{**f, **{k: rows.get(f['id'], {}).get(k, 0) for k in ('stored','leisure','arcade','largest_cm')},
-                   'catch_percent': cfg['params']['target_bps'] / (100 * f['multiplier'])} for f in FISH]
+                   'catch_percent': cfg['params']['target_bps'] / (100 * f['multiplier']), 'chain':bool(f.get('feature'))} for f in FISH]
     stats = db.execute('SELECT * FROM fishing_stats WHERE user_id=?', (uid,)).fetchone()
     recent = [json.loads(r[0]) for r in db.execute('SELECT result FROM fishing_operations WHERE user_id=? ORDER BY created_at DESC,rowid DESC LIMIT 8', (uid,))]
     return dict(catalog=collection, pending=dict(pending) if pending else None, day=wallet.day(clock),

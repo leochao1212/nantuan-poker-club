@@ -17,7 +17,7 @@ try:
  people=[];invite=None
  for i in range(20):
   c=Client(Bench.base);s,r=c.call('/api/register',dict(username='load_'+str(i),nickname='Load'+str(i),password='SyntheticLoad123',invite_code=invite));assert s==200,(s,r);invite=invite or c.call('/api/state')[1]['invite_code'];people.append(c)
-  assert c.call('/api/fishing/join',dict(gameplay_version=2,operation_id='load_join_'+str(i).zfill(12),room_id=i//6+1))[0]==200
+  assert c.call('/api/fishing/join',dict(gameplay_version=3,operation_id='load_join_'+str(i).zfill(12),room_id=i//6+1))[0]==200
  def listen(c,path):
   try:
    req=urllib.request.Request(c.base+path,headers={'X-Requested-With':'PokerClub'});r=c.opener.open(req,timeout=15);streams.append(r)
@@ -36,7 +36,7 @@ try:
    wait=target-time.monotonic()
    if wait>0:time.sleep(wait)
    previous=time.monotonic();clock=time.time();shots=[dict(token='load_token_'+str(i).zfill(3)+'_'+str(j).zfill(6)+'_'+str(n),fired_at=clock-(1-n)*(.18 if FAST else .25),x=200+i*30,y=180+j%5*35) for n in range(2)]
-   body=dict(gameplay_version=2,operation_id='load_burst_'+str(i).zfill(3)+'_'+str(j).zfill(8),room_id=i//6+1,cannon=1 if FAST else 0,stake=1,shots=shots,expected_revision=1,expected_limit_revision=1)
+   body=dict(gameplay_version=3,operation_id='load_burst_'+str(i).zfill(3)+'_'+str(j).zfill(8),room_id=i//6+1,cannon=1 if FAST else 0,stake=1,shots=shots,expected_revision=1,expected_limit_revision=1)
    at=time.monotonic();status,result=c.call('/api/fishing/burst',body);latency.append((time.monotonic()-at)*1000)
    if status!=200:failed.append([i,j,status,result])
  with ThreadPoolExecutor(20) as pool:list(pool.map(play,enumerate(people)))

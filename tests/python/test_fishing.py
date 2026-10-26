@@ -15,7 +15,7 @@ class FishingRules(unittest.TestCase):
     def call(self,action,uid=1,clock=None,**fields):
         self.serial+=1;cfg=game_settings.current(self.db,'fishing')
         data=dict(operation_id='fishing_test_'+str(self.serial).zfill(8),**fields)
-        if action not in ('sell','reel','shot'):data.setdefault('gameplay_version',2)
+        if action not in ('sell','reel','shot'):data.setdefault('gameplay_version',3)
         if action in ('cast','burst'):data.setdefault('expected_revision',cfg['revision'])
         if action=='burst':data.setdefault('expected_limit_revision',cfg['bet_limit_revision'])
         if action=='cast':data.setdefault('power',100);data.setdefault('rod',0)
@@ -41,7 +41,7 @@ class FishingRules(unittest.TestCase):
         g.tick(self.db,pending['hook_deadline']+.1)
         state=f.view(self.db,1,pending['hook_deadline']+.1);self.assertIsNone(state['pending']);self.assertEqual(state['last_cast']['phase'],'escaped');self.assertEqual(state['bag_count'],0)
         self.assertEqual(sum(g.cast_option(100)['chances']),100)
-        self.assertGreater(g.cast_option(900)['chances'][-1],g.cast_option(100)['chances'][-1])
+        self.assertGreater(g.cast_option(900)['chances'][7],g.cast_option(100)['chances'][7])
         self.assertEqual(f.view(self.db,1,self.t+86400)['free_casts'],20)
     def test_real_control_can_catch_once_and_idle_escapes(self):
         game=self.hook(rod=1);clock=game['hooked_at'];ident=game['id'];last=None
@@ -53,7 +53,7 @@ class FishingRules(unittest.TestCase):
             game=last['skill']['pending']
         self.assertEqual(last['skill']['last_cast']['phase'],'caught');self.assertEqual(f.view(self.db,1,clock)['bag_count'],1)
         before=f.view(self.db,1,clock)['bag_value'];op=last['result']['operation_id']
-        replay=f.mutate(self.db,{'id':1},'input',dict(gameplay_version=2,operation_id=op,cast_id=ident,sequence=last['result']['sequence'],holding=holding),clock+1)
+        replay=f.mutate(self.db,{'id':1},'input',dict(gameplay_version=3,operation_id=op,cast_id=ident,sequence=last['result']['sequence'],holding=holding),clock+1)
         self.assertTrue(replay['replayed']);g.tick(self.db,clock+10);self.assertEqual(f.view(self.db,1,clock+10)['bag_count'],1)
         sale=self.call('sell',clock=clock+10);self.assertEqual(sale['state']['wallet']['balance'],3000+before);self.assertEqual(sale['state']['discovered'],1)
         cast=self.call('cast',clock=clock+11);at=cast['result']['ready_at'];self.call('hook',clock=at,cast_id=cast['result']['cast_id']);g.tick(self.db,at+24)
@@ -89,7 +89,8 @@ class FishingRules(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT state FROM fishing_projectiles ORDER BY id DESC LIMIT 1').fetchone()[0],'miss')
     def test_batch_idempotency_conflict_cadence_balance_and_validations(self):
         self.call('join',clock=self.t,room_id=1);first=self.burst();op=first['result']['operation_id']
-        data=dict(operation_id=op,gameplay_version=2,room_id=1,cannon=0,stake=5,expected_revision=1,expected_limit_revision=1,shots=[dict(token='projectile_0000000001',fired_at=self.t,x=500,y=240)])
+        self.assertTrue(first['state']['partial']);self.assertNotIn('catalog',first['state']);self.assertEqual(first['state']['wallet']['balance'],2995)
+        data=dict(operation_id=op,gameplay_version=3,room_id=1,cannon=0,stake=5,expected_revision=1,expected_limit_revision=1,shots=[dict(token='projectile_0000000001',fired_at=self.t,x=500,y=240)])
         self.assertTrue(f.mutate(self.db,{'id':1},'burst',data,self.t+20)['replayed'])
         with self.assertRaises(f.RuleError):f.mutate(self.db,{'id':1},'burst',{**data,'stake':6},self.t+20)
         with self.assertRaises(f.RuleError):self.burst(clock=self.t+.1)
@@ -140,34 +141,94 @@ class FishingRules(unittest.TestCase):
         self.assertEqual(f.view(self.db,1,self.t+120)['returned'],10)
         g.tick(self.db,self.t+121);self.assertEqual(f.view(self.db,1,self.t+121)['wallet']['balance'],3005)
 
+    def tension_hook(self):
+        cast=self.call('cast',clock=self.t,mechanic='tension',lure='sardine');at=cast['result']['ready_at']+.05
+        return self.call('hook',clock=at,cast_id=cast['result']['cast_id'])['state']['pending']
+    def test_tension_button_and_slider_catch_credit_once(self):
+        import fishing_tension
+        for slider in (False,True):
+            game=self.tension_hook();clock=game['hooked_at'];before=f.view(self.db,1,clock)['wallet']['balance']
+            for i in range(200):
+                clock+=.15;project=copy.deepcopy(game);g.advance_skill(project,clock)
+                holding=project['tension']<.5;fields={}
+                if slider:fields['control']=max(0,min(1000,round(1000*(fishing_tension.pull(game,clock)/.62+(.5-project['tension'])*2))))
+                result=self.call('input',clock=clock,cast_id=game['id'],sequence=game['sequence']+1,holding=holding,**fields)
+                if not result['skill']['pending']:break
+                game=result['skill']['pending']
+            final=result['skill']['last_cast'];self.assertEqual(final['phase'],'caught');self.assertGreater(final['score'],0);self.assertGreaterEqual(final['stars'],1)
+            state=f.view(self.db,1,clock);self.assertEqual(state['bag_count'],0);self.assertEqual(state['wallet']['balance'],before+2)
+            op=result['result']['operation_id'];data=dict(gameplay_version=3,operation_id=op,cast_id=game['id'],sequence=result['result']['sequence'],holding=holding,**fields)
+            self.assertTrue(f.mutate(self.db,{'id':1},'input',data,clock+1)['replayed']);g.tick(self.db,clock+1)
+            self.assertEqual(f.view(self.db,1,clock+1)['wallet']['balance'],before+2)
+            self.t=clock+2
+    def test_tension_too_loose_or_tight_fails_and_slider_is_validated(self):
+        game=self.tension_hook()
+        for value in (-1,1001,True,'500'):
+            with self.assertRaises(f.RuleError):self.call('input',clock=game['hooked_at']+.15,cast_id=game['id'],sequence=1,holding=True,control=value)
+        g.tick(self.db,game['hooked_at']+31);last=f.view(self.db,1,game['hooked_at']+31)['last_cast'];self.assertEqual(last['phase'],'escaped');self.assertEqual(f.view(self.db,1,self.t+40)['wallet']['balance'],3000)
+        self.t+=40;game=self.tension_hook();clock=game['hooked_at']
+        for i in range(60):
+            clock+=.3;result=self.call('input',clock=clock,cast_id=game['id'],sequence=game['sequence']+1,holding=True)
+            if not result['skill']['pending']:break
+            game=result['skill']['pending']
+        self.assertEqual(result['skill']['last_cast']['phase'],'escaped');self.assertIn('高',result['skill']['last_cast']['reason'])
+    def test_tension_lure_cost_and_read_only_snapshot_does_not_pretend_credit(self):
+        cast=self.call('cast',clock=self.t,mechanic='tension',lure='goldfish');self.assertEqual(cast['state']['free_casts'],17)
+        ready=cast['result']['ready_at'];game=self.call('hook',clock=ready,cast_id=cast['result']['cast_id'])['state']['pending']
+        self.assertEqual(f.view(self.db,1,ready+50)['pending']['phase'],'playing')
+        g.tick(self.db,ready+50);self.assertIsNone(f.view(self.db,1,ready+50)['pending'])
+        with self.assertRaises(f.RuleError):self.call('cast',clock=ready+51,mechanic='tension',lure='crab')
+    def test_bonus_chain_unique_capture_and_total_payout_odds(self):
+        self.call('join',clock=self.t,room_id=1);self.call('join',uid=2,clock=self.t,room_id=1);boss=self.single_fish(multiplier=80);boss.update(species='crab',feature='bomb',boss=True,radius_x=80,radius_y=60);g._put_entity(self.db,1,boss)
+        for slot,species,mult in ((1,'sardine',2),(2,'clownfish',3)):
+            other={**boss,'id':'bonus_target_'+str(slot),'slot':slot,'species':species,'multiplier':mult,'x0':500+slot*70,'feature':None,'boss':False};g._put_entity(self.db,1,other)
+        self.burst(uid=1);self.burst(uid=2)
+        with patch.object(g.secrets,'randbelow',return_value=0) as random:g.tick(self.db,self.t+1.5)
+        random.assert_called_once_with(850000)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM fishing_captures').fetchone()[0],3)
+        self.assertEqual(self.db.execute('SELECT sum(returned),sum(spent),sum(shots) FROM fishing_stats').fetchone()[:],(425,10,2))
+        self.assertEqual(self.db.execute("SELECT count(*) FROM wallet_ledger WHERE kind='fishing_win'").fetchone()[0],1)
+        self.assertEqual(self.db.execute('SELECT sum(gross) FROM fishing_captures').fetchone()[0],425)
+        g.tick(self.db,self.t+2);self.assertEqual(self.db.execute('SELECT count(*) FROM fishing_captures').fetchone()[0],3)
+
+    def test_completed_v2_receipt_replays_but_stale_new_shots_cannot_spend(self):
+        self.call('join',clock=self.t,room_id=1);result=self.burst();op=result['result']['operation_id']
+        row=self.db.execute('SELECT fingerprint FROM fishing_operations WHERE operation_id=?',(op,)).fetchone();fingerprint=json.loads(row[0]);fingerprint['gameplay_version']=2
+        self.db.execute('UPDATE fishing_operations SET fingerprint=? WHERE operation_id=?',(g.encode(fingerprint),op))
+        data={k:v for k,v in fingerprint.items() if k!='action'};data['operation_id']=op
+        self.assertTrue(f.mutate(self.db,{'id':1},'burst',data,self.t+5)['replayed'])
+        with self.assertRaises(f.RuleError):f.mutate(self.db,{'id':1},'burst',{**data,'operation_id':'stale_new_shot_000001'},self.t+5)
+        self.assertEqual(f.view(self.db,1,self.t+5)['wallet']['balance'],2995)
+
     def test_blocked_account_cannot_enter_or_shoot(self):
         self.db.execute("INSERT INTO account_states(user_id,status,revision,reason,changed_at) VALUES(1,'blocked',1,'test',0)")
         with self.assertRaises(member_accounts.AccountError):self.call('cast')
 
 class FishingAPI(ServerTestCase):
     def test_twenty_concurrent_players_replay_and_private_state(self):
-        a=self.clients[0];self.assertEqual(a.call('/api/fishing')[0],401)
+        a=self.clients[0];self.assertEqual(a.call('/api/fishing?version=3')[0],401)
         self.assertEqual(a.call('/api/register',dict(username='angler_0',nickname='Fishing',password='SyntheticFishing123'))[0],200)
+        self.assertEqual(a.call('/api/fishing')[0],426)
         invite=a.call('/api/state')[1]['invite_code'];people=[a]
         for i in range(1,20):
             client=Client(self.base);self.assertEqual(client.call('/api/register',dict(username='angler_'+str(i),nickname='Angler'+str(i),password='SyntheticFishing123',invite_code=invite))[0],200);people.append(client)
         def join(pair):
-            i,c=pair;return c.call('/api/fishing/join',dict(gameplay_version=2,operation_id='http_join_'+str(i).zfill(12),room_id=i//6+1))
+            i,c=pair;return c.call('/api/fishing/join',dict(gameplay_version=3,operation_id='http_join_'+str(i).zfill(12),room_id=i//6+1))
         with ThreadPoolExecutor(20) as pool:joined=list(pool.map(join,enumerate(people)))
         self.assertTrue(all(s==200 for s,r in joined),joined)
-        self.assertEqual(a.call('/api/fishing/join',dict(gameplay_version=2,operation_id='http_full_room_0001',room_id=2))[0],400)
+        self.assertEqual(a.call('/api/fishing/join',dict(gameplay_version=3,operation_id='http_full_room_0001',room_id=2))[0],400)
         def burst(pair):
-            i,c=pair;return c.call('/api/fishing/burst',dict(gameplay_version=2,operation_id='http_burst_00000001',room_id=i//6+1,cannon=0,stake=5,expected_revision=1,expected_limit_revision=1,shots=[dict(token='http_token_'+str(i).zfill(12),fired_at=time.time(),x=500,y=240)]))
+            i,c=pair;return c.call('/api/fishing/burst',dict(gameplay_version=3,operation_id='http_burst_00000001',room_id=i//6+1,cannon=0,stake=5,expected_revision=1,expected_limit_revision=1,shots=[dict(token='http_token_'+str(i).zfill(12),fired_at=time.time(),x=500,y=240)]))
         started=time.monotonic()
         with ThreadPoolExecutor(20) as pool:responses=list(pool.map(burst,enumerate(people)))
         self.assertTrue(all(s==200 for s,r in responses),responses);self.assertLess(time.monotonic()-started,8)
-        i=0;data=dict(gameplay_version=2,operation_id='http_burst_00000001',room_id=1,cannon=0,stake=5,expected_revision=1,expected_limit_revision=1,shots=[dict(token='http_token_'+str(i).zfill(12),fired_at=responses[0][1]['result']['shots'][0]['born_at'],x=500,y=240)])
+        i=0;data=dict(gameplay_version=3,operation_id='http_burst_00000001',room_id=1,cannon=0,stake=5,expected_revision=1,expected_limit_revision=1,shots=[dict(token='http_token_'+str(i).zfill(12),fired_at=responses[0][1]['result']['shots'][0]['born_at'],x=500,y=240)])
         with closing(sqlite3.connect(self.db_path)) as db:
             fingerprint=json.loads(db.execute("SELECT fingerprint FROM fishing_operations WHERE user_id=1 AND operation_id='http_burst_00000001'").fetchone()[0]);data.update({k:v for k,v in fingerprint.items() if k!='action'})
         self.assertEqual(a.call('/api/fishing/burst',data,origin='https://foreign.invalid')[0],403)
         with ThreadPoolExecutor(8) as pool:replays=list(pool.map(lambda _:a.call('/api/fishing/burst',data),range(8)))
         self.assertTrue(all(s==200 and r['replayed'] for s,r in replays),replays)
-        self.assertEqual(a.call('/api/fishing')[1]['shots'],1)
+        self.assertEqual(a.call('/api/fishing?version=3')[1]['shots'],1)
         world=a.call('/api/fishing/world?room=1')[1];self.assertEqual(len(world['players']),6);self.assertEqual(len(world['entities']),18)
         self.assertNotIn('wallet',world);self.assertNotIn('seed',json.dumps(world))
         # Public paths and already fired settings are public; no future capture tickets.

@@ -1,5 +1,7 @@
 # 楠團夜航漁港
 
+此提案已由[固定參考版](fishing-fixed-references.md)取代，僅保留設計紀錄；harbor／reef不再部署。
+
 ## 參考與取捨
 
 - [Fishing Frenzy 官方玩法](https://wiki.fishingfrenzy.co/game/fishing)：借用拋竿、浮標咬鉤、收線三段節奏與清楚的操作回饋。

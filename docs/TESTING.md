@@ -109,3 +109,6 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 捕魚v6增加旋轉碰撞／凍結、炮價彈速與網徑、雷射連鎖總期望及唯一派彩、動態Boss捕獲時倍率、分房場景驗證。`npm run test:fishing`先執行[fishing-stream](../tests/browser/fishing-stream.cjs)假時鐘測試，驗證無事件重建、舊generation隔離、背景停射／回來不續射與完整清理；再跑真瀏覽器，包含40秒座位租約到期後重入、主動觀戰後可入座、同一魚場更換炮台圖示。
 
 [二十一點公平性測試](../tests/python/test_blackjack_fairness.py)窮舉六副牌全部兩張組合，驗證4.74895%自然Blackjack基準；檢查安全亂數洗牌入口、依座位逐輪發牌、同牌靴延續、三張21點分類與籌碼守恆。
+
+
+射龍門v4由[test_gate_refund.py](../tests/python/test_gate_refund.py)枚舉所有小牌靴排列及0／50／100%保護，核對實際柱牌率不變、保護即零扣款、只耗一張牌、普通／對子扣款免除、既有命中倍率與命中率不變、籌碼守恆及公開觸發者。既有v3補牌測試保留以驗證局中／歷史相容；回執測試驗證v4重送不重抽且profit=0。`LAYOUT_ONLY=gate,admin,blackjack`可只跑相關手機／桌機版面，包含姓名與免除金額提示。二十一點另驗證六副牌十點牌密度、20點後取牌和五張21點不算Blackjack、玩家自然Blackjack優先。

@@ -38,7 +38,7 @@ class StaticImages(unittest.TestCase):
         status,_,body=self.get('/')
         self.assertEqual(status,200)
         html=body.decode('utf-8')
-        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=night-harbor-20261026'])
+        self.assertEqual(re.findall(r'<link rel="stylesheet" href="([^"]+)"',html),['/night.css?v=fishing-gameplay-20261026'])
         self.assertIn('/ui-art.js?v=night-harbor-20261026',html)
         self.assertIn('/round-presentation.js',html)
         for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):
@@ -91,6 +91,9 @@ class StaticImages(unittest.TestCase):
         for path in ('/assets/fishing/../../.env','/assets/fishing/FISH-ATLAS.webp','/assets/fishing/reef.png','/assets/fishing/nope.webp'):
             self.assertEqual(self.get(path)[0],404)
         self.assertEqual(self.get('/fishing-scene.js')[0],200)
+        self.assertEqual(self.get('/fishing-play.js')[0],200)
+        html=self.get('/')[2].decode()
+        self.assertLess(html.index('/fishing-play.js'),html.index('/fishing.js'))
 
     def test_every_cover_is_served(self):
         for name in COVERS:

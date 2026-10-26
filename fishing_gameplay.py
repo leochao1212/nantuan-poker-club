@@ -15,9 +15,10 @@ import member_accounts
 import wallet
 import fishing_tension
 import fishing_power
+import fishing_bonus
 from poker_engine import RuleError
 
-VERSION = 4
+VERSION = 5
 ROOMS = 6
 CAPACITY = 4
 LEASE = 40
@@ -55,6 +56,7 @@ def integer(value, label, low, high):
 
 
 def initialize(db):
+    fishing_bonus.initialize(db)
     columns={r[1] for r in db.execute('PRAGMA table_info(fishing_casts)')}
     for key,schema in [('version','INTEGER NOT NULL DEFAULT 1'),('quota_cost','INTEGER NOT NULL DEFAULT 1'),('data',"TEXT NOT NULL DEFAULT '{}' ")]:
         if key not in columns:db.execute('ALTER TABLE fishing_casts ADD COLUMN '+key+' '+schema)
@@ -170,6 +172,7 @@ def spawn(room,slot,clock,previous=None,boss=False,stagger=False):
     ticket=hashlib.sha256((room['seed']+':'+str(slot//4)+':'+str(generation)).encode()).digest()
     index=[0,1,2,3,4,5,6,7,12,13][ticket[0]%10]
     if boss:index=[8,9,10,11,14,15][(int(clock//120)+room['id'])%6]
+    if slot==SLOTS-2 and int(clock//90)%3==room['id']%3 and clock%90<25:index=16
     f=base.FISH[index]
     life=24+ticket[1]%13;born=clock-((slot//4)/(SLOTS/4)*life*.78 if stagger else 0)
     direction=1 if ticket[2]%2 else -1
@@ -213,7 +216,7 @@ def room_view(db,rid,clock):
     effects=[dict(r) for r in db.execute('SELECT user_id,starts_at,ends_at,kind FROM fishing_effects WHERE room_id=? AND ends_at>?',(rid,clock-45))]
     shots=[]
     for r in db.execute('SELECT * FROM fishing_projectiles WHERE room_id=? AND expires_at>? ORDER BY id DESC LIMIT 120',(rid,clock-2)):
-        shot=json.loads(r['data']);shot.update(id=r['id'],token=r['token'],user_id=r['user_id'],born_at=r['born_at'],state=r['state']);shots.append(shot)
+        shot=json.loads(r['data']);shot.pop('bonus_rules',None);shot.update(id=r['id'],token=r['token'],user_id=r['user_id'],born_at=r['born_at'],state=r['state']);shots.append(shot)
     return dict(gameplay_version=VERSION,room_id=rid,name=NAMES[rid-1],capacity=CAPACITY,players=members,
                 entities=entities,effects=effects,projectiles=shots,server_time=clock,width=WORLD_WIDTH,height=WORLD_HEIGHT,
                 event='巨獸來襲' if any(f['boss'] for f in entities) else '魚群巡游',next_boss_at=(int(clock//120)+1)*120)
@@ -223,6 +226,7 @@ def view(db,uid,clock):
     value=base._base_view(db,uid,clock)
     used=db.execute('SELECT COALESCE(sum(quota_cost),0) FROM fishing_casts WHERE user_id=? AND day=?',(uid,wallet.day(clock))).fetchone()[0]
     member=db.execute('SELECT room_id,seat FROM fishing_members WHERE user_id=? AND last_seen>?',(uid,clock-LEASE)).fetchone()
+    value.update(**fishing_bonus.view(db,uid))
     value.update(gameplay_version=VERSION,**skill_view(db,uid,clock),free_casts=max(0,value['daily_casts']-used),
                  loadout=loadout(db,uid),rods=RODS,cannons=CANNONS,ammo=[a for a in fishing_power.AMMO if a['stake']<=value['max_shot']],
                  cast_options=[cast_option(p) for p in (100,500,900)],member=dict(member) if member else None,
@@ -252,7 +256,7 @@ def _first_hit(shot,start,end,entities,effects,dead):
 
 def bonus_targets(fish,entities,at,effects,dead):
     feature=fish.get('feature')
-    if not feature:return []
+    if not feature or feature not in ('bomb','arms','lightning','dragon','treasure','whale'):return []
     x,y=position(fish,at,effects);limits={'bomb':(330,8),'arms':(450,4),'lightning':(700,5),'dragon':(900,8),'treasure':(650,6),'whale':(900,8)}
     radius,count=limits[feature];candidates=[]
     for other in entities:
@@ -287,9 +291,11 @@ def tick(db,clock):
                 again=_first_hit(shot,at,clock,entities,effects,dead)
                 if again:heapq.heappush(heap,(again[0],ident,again,shot))
                 continue
-            targets=bonus_targets(fish,entities,at,effects,dead)
+            budget=shot.get('bonus_rules',{});count=budget.get('rounds',{}).get(fish.get('feature'),0)
+            snapshot={**budget,'rounds':count} if count else None
+            targets=[] if snapshot else bonus_targets(fish,entities,at,effects,dead)
             total_multiplier=fish['multiplier']+sum(f['multiplier'] for f in targets)
-            hits,payout_unit=fishing_power.resolve(shot,total_multiplier)
+            hits,payout_unit=fishing_power.resolve(shot,total_multiplier,(snapshot['rounds']*snapshot['mean_hundredths']) if snapshot else 0)
             caught=hits>0;gross=payout_unit*fish['multiplier']
             shot.update(resolved_at=at,hit_x=x,hit_y=y,fish_id=fish['id'],species=fish['species'],caught=caught,gross=gross,multiplier=fish['multiplier'],feature=fish.get('feature'),critical=hits)
             if caught:
@@ -308,6 +314,7 @@ def tick(db,clock):
                     dead.add(award['id'])
                     room=db.execute('SELECT * FROM fishing_rooms WHERE id=?',(rid,)).fetchone()
                     _put_entity(db,rid,spawn(room,award['slot'],at+1,award))
+                if snapshot:shot['bonus_id']=fishing_bonus.create(db,row['user_id'],ident,shot['stake'],snapshot,at)
                 wallet.transfer(db,row['user_id'],total,'fishing_win','fish:projectile:'+str(ident),at,game=True)
                 db.execute('UPDATE fishing_stats SET returned=returned+? WHERE user_id=?',(total,row['user_id']))
                 wallet_changed=True
@@ -334,6 +341,7 @@ FIELDS={
     'heartbeat':{'gameplay_version','room_id'},
     'burst':{'gameplay_version','expected_revision','expected_limit_revision','room_id','cannon','stake','shots'},
     'skill':{'gameplay_version','room_id','kind'},
+    'bonus':{'gameplay_version','bonus_id'},
     'gear':{'gameplay_version','rod','cannon'},
 }
 
@@ -422,7 +430,10 @@ def mutate(db,user,action,data,clock):
             rod=integer(data.get('rod'),'釣竿',0,2);cannon=integer(data.get('cannon'),'魚炮',0,2)
             db.execute('INSERT INTO fishing_loadouts VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET rod=excluded.rod,cannon=excluded.cannon',(uid,rod,cannon))
             result.update(rod=rod,cannon=cannon)
+        elif action=='bonus':
+            result['bonus']=fishing_bonus.settle(db,uid,data.get('bonus_id'),clock);wallet_changed=True
         elif action=='join':
+            fishing_bonus.stock(db,uid)
             rid=integer(data.get('room_id'),'魚場',0,ROOMS)
             db.execute('DELETE FROM fishing_members WHERE last_seen<=?',(clock-LEASE,))
             own=db.execute('SELECT * FROM fishing_members WHERE user_id=?',(uid,)).fetchone()
@@ -451,6 +462,8 @@ def mutate(db,user,action,data,clock):
             column='ready_at' if kind=='freeze' else 'laser_at'
             if cooldown and clock<cooldown[column]:raise RuleError('技能尚在冷卻。')
             if kind=='freeze' and db.execute("SELECT 1 FROM fishing_effects WHERE room_id=? AND kind='freeze' AND ends_at>?",(rid,clock)).fetchone():raise RuleError('魚場已經處於冰凍中。')
+            fishing_bonus.stock(db,uid)
+            if not db.execute('UPDATE fishing_items SET '+kind+'='+kind+'-1 WHERE user_id=? AND '+kind+'>0',(uid,)).rowcount:raise RuleError('道具已用完，可從寶箱獲得。')
             duration,cool= (2,30) if kind=='freeze' else (6,45)
             db.execute('INSERT INTO fishing_effects(room_id,user_id,starts_at,ends_at,kind) VALUES(?,?,?,?,?)',(rid,uid,clock,clock+duration,kind))
             db.execute('INSERT OR IGNORE INTO fishing_cooldowns(user_id,ready_at,laser_at) VALUES(?,0,0)',(uid,))
@@ -459,6 +472,7 @@ def mutate(db,user,action,data,clock):
             changed_rooms.add(rid);result.update(kind=kind,ends_at=clock+duration,ready_at=clock+cool)
         elif action=='burst':
             rid=integer(data.get('room_id'),'魚場',1,ROOMS);member=_member(db,uid,rid,clock)
+            if db.execute("SELECT count(*) FROM fishing_bonus_events WHERE user_id=? AND status='ready'",(uid,)).fetchone()[0]>=10:raise RuleError('先開啟待領寶箱，再繼續捕魚。')
             cannon=integer(data.get('cannon'),'魚炮',0,2);weapon=CANNONS[cannon]
             stake=integer(data.get('stake'),'每發點數',10,min(1000,game_settings.bet_limit(cfg)))
             ammo=next((a for a in fishing_power.AMMO if a['stake']==stake),None)
@@ -484,14 +498,14 @@ def mutate(db,user,action,data,clock):
                 ox,oy=origin(member['seat']);distance=math.hypot(x-ox,y-oy)
                 if distance<35:raise RuleError('請朝魚場內發射。')
                 born=min(clock,max(fired,clock-.2,room['last_tick']))
-                body=dict(x0=ox,y0=oy,vx=(x-ox)/distance*speed,vy=(y-oy)/distance*speed,radius=weapon['radius']+(12 if laser else 0),stake=stake,power=ammo['power'],laser=laser,cannon=cannon,target_bps=cfg['params']['target_bps'],settings_revision=cfg['revision'],expires_at=born+FLIGHT)
+                body=dict(pricing='cannon-v1',bonus_rules={'version':1,'rounds':fishing_bonus.ROUNDS,'pool':fishing_bonus.POOL,'mean_hundredths':fishing_bonus.MEAN_HUNDREDTHS},x0=ox,y0=oy,vx=(x-ox)/distance*speed,vy=(y-oy)/distance*speed,radius=weapon['radius']+(12 if laser else 0),stake=stake,power=ammo['power'],laser=laser,cannon=cannon,target_bps=cfg['params']['target_bps'],settings_revision=cfg['revision'],expires_at=born+FLIGHT)
                 validated.append((token,born,body))
             total=stake*len(validated)
             wallet.transfer(db,uid,-total,'fishing_shot','fish:'+op+':cost',clock,game=True)
             accepted=[]
             for token,born,body in validated:
                 ident=db.execute("INSERT INTO fishing_projectiles(token,user_id,room_id,operation_id,born_at,checked_at,expires_at,state,data) VALUES(?,?,?,?,?,?,?,'flying',?)",(token,uid,rid,op,born,born,body['expires_at'],encode(body))).lastrowid
-                accepted.append({'id':ident,'token':token,'born_at':born,**body})
+                accepted.append({'id':ident,'token':token,'born_at':born,**{k:v for k,v in body.items() if k!='bonus_rules'}})
             db.execute('''INSERT INTO fishing_stats(user_id,shots,spent,returned,last_shot_at) VALUES(?,?,?,0,?) ON CONFLICT(user_id) DO UPDATE SET shots=shots+excluded.shots,spent=spent+excluded.spent,last_shot_at=excluded.last_shot_at''',(uid,len(accepted),total,last))
             db.execute('UPDATE fishing_members SET last_seen=? WHERE user_id=?',(clock,uid))
             result.update(room_id=rid,shots=accepted,cost=total,count=len(accepted));changed_rooms.add(rid);wallet_changed=True

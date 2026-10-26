@@ -525,6 +525,26 @@
     "sha256": "d308e65674072e14c5603c7b60b5fa7fbb844a6ea30c6951d5a127e4d1cd93bf"
   },
   {
+    "path": "static/assets/fishing/swim-boss.webp",
+    "bytes": 534114,
+    "sha256": "36957e7ca37468bc2d928156e13fe63246b92b5ae9b31dffa6ca5f33e148a46b"
+  },
+  {
+    "path": "static/assets/fishing/swim-coast.webp",
+    "bytes": 327922,
+    "sha256": "809e75ec4e12addc2c843cd9db1c7a7a023c6b9fcf4043b49b3756f2533cc178"
+  },
+  {
+    "path": "static/assets/fishing/swim-legend.webp",
+    "bytes": 426448,
+    "sha256": "c5497b0a622edb1f92ac425eeca93f2d2c18c73712e019a152adad02739baf55"
+  },
+  {
+    "path": "static/assets/fishing/swim-ocean.webp",
+    "bytes": 419952,
+    "sha256": "4261de8cde640c59966457c0ce0fc3c9a58030f98ea8d082d21f5e4405d19a29"
+  },
+  {
     "path": "static/assets/pieces/bet-chips.webp",
     "bytes": 1312,
     "sha256": "5b994124ec29ba377a5a1c600af52c854b1152ed4ce85a62a4cd22dbcf0411bc"

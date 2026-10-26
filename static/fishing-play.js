@@ -1,7 +1,7 @@
 /* Fishing command loops: one durable wallet request, separate skill input and world SSE. */
 'use strict';
 window.ClubFishingPlay=(()=>{
- const version=4;
+ const version=5;
  function create(ctx){
   let alive=true,stream=null,room=1,world=null,connected=false,lastWorld=0,streamId=ctx.id(),heartbeat=0,monitor=0,inputTimer=0,inputBusy=false,inputPending=null,held=false,shootTimer=0,shooting=false,auto=false,queue=[],flushTimer=0,flushing=false,flushAt=0,pendingCost=0,generation=0,lastInterval=0,lastFire=-1e10,aim={x:500,y:250},target=null,seen=new Set(),readTimer=0;
   const now=()=>ctx.now(),get=()=>ctx.state();
@@ -44,7 +44,7 @@ window.ClubFishingPlay=(()=>{
    inputBusy=true;const id=cast.id;
    if(!inputPending||inputPending.cast_id!==id){inputPending={gameplay_version:version,operation_id:ctx.id(),cast_id:id,sequence:cast.sequence+1,holding:held};const value=ctx.control?.();if(cast.mechanic==='tension'&&value!==null&&value!==undefined)inputPending.control=value;}
    try{const reply=await ctx.api('/api/fishing/input',inputPending);if(!alive)return;inputPending=null;ctx.skill(reply.skill);}
-   catch(e){if(!alive)return;if(!e.retryable){inputPending=null;try{const synced=await ctx.api('/api/fishing/skill-state?version=4');ctx.skill(synced);if(!synced.pending&&synced.last_cast?.id===id)return;notice('收線狀態已同步');return;}catch{}}notice(e.message,true);}
+   catch(e){if(!alive)return;if(!e.retryable){inputPending=null;try{const synced=await ctx.api('/api/fishing/skill-state?version=5');ctx.skill(synced);if(!synced.pending&&synced.last_cast?.id===id)return;notice('收線狀態已同步');return;}catch{}}notice(e.message,true);}
    finally{inputBusy=false;}
   }
   function watchSkill(){clearInterval(inputTimer);inputTimer=setInterval(input,300);}

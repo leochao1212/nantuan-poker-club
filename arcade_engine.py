@@ -268,6 +268,10 @@ def blackjack_total(cards):
     return total
 
 
+def blackjack_natural(cards):
+    return len(cards)==2 and blackjack_total(cards)==21
+
+
 def _next_blackjack(room,clock):
     hand=room['hand']
     for p in hand['players']:
@@ -408,14 +412,14 @@ def _finish_big2(room,winner,clock):
 
 
 def _finish_blackjack(room,clock):
-    hand=room['hand'];dealer=hand['dealer'];natural=len(dealer)==2 and blackjack_total(dealer)==21;cfg=game_settings.params(hand,'blackjack')
+    hand=room['hand'];dealer=hand['dealer'];natural=blackjack_natural(dealer);cfg=game_settings.params(hand,'blackjack')
     if not natural and any(h['status']!='bust' for p in hand['players'] for h in p['hands']):
         while blackjack_total(dealer)<17:dealer.append(_draw(hand))
-    score=blackjack_total(dealer);payouts={};labels={}
+    score=blackjack_total(dealer);hand['dealer_natural']=natural;payouts={};labels={}
     for p in hand['players']:
         payout=0;names=[]
         for h in p['hands']:
-            total=blackjack_total(h['cards']);bj=not h['split'] and len(h['cards'])==2 and total==21
+            total=blackjack_total(h['cards']);bj=not h['split'] and blackjack_natural(h['cards'])
             if total>21:gross=0;label='爆牌'
             elif natural:gross=h['bet'] if bj else 0;label='和局' if bj else '莊家 Blackjack'
             elif _five_card_win(hand,h):gross=game_settings.net_return(h['bet'],cfg['five_card_bp']);label=f"五張未爆 · 淨贏 {cfg['five_card_bp']/10000:g} 倍"

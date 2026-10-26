@@ -9,7 +9,7 @@ RUN groupadd --gid 10001 poker \
     && install -d -o poker -g poker -m 0700 /data
 
 WORKDIR /app
-COPY --chown=poker:poker mahjong_engine.py game_settings.py fishing.py fishing_gameplay.py fishing_tension.py fishing_power.py fishing_bonus.py server.py voice_transport.py backup.py poker_engine.py arcade_engine.py bonus_engine.py rewards.py result_stats.py online.py realtime.py wallet.py transfers.py social.py club_admin.py member_accounts.py club_features.py view_cache.py clubhouse.py manage_admin.py ./
+COPY --chown=poker:poker mahjong_engine.py game_settings.py fishing.py fishing_gameplay.py fishing_tension.py fishing_power.py fishing_bonus.py fishing_geometry.py server.py voice_transport.py backup.py poker_engine.py arcade_engine.py bonus_engine.py rewards.py result_stats.py online.py realtime.py wallet.py transfers.py social.py club_admin.py member_accounts.py club_features.py view_cache.py clubhouse.py manage_admin.py ./
 COPY --chown=poker:poker static/ ./static/
 
 USER poker:poker

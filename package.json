@@ -13,7 +13,7 @@
     "test:cards": "node tests/browser/cards.cjs",
     "test:journeys": "node tests/browser/table-journeys.cjs",
     "test:rewards": "node tests/browser/rewards.cjs",
-    "test:fishing": "node tests/browser/fishing.cjs"
+    "test:fishing": "node tests/browser/fishing-stream.cjs && node tests/browser/fishing.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

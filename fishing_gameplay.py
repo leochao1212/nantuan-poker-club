@@ -16,9 +16,10 @@ import wallet
 import fishing_tension
 import fishing_power
 import fishing_bonus
+import fishing_geometry
 from poker_engine import RuleError
 
-VERSION = 5
+VERSION = 6
 ROOMS = 6
 CAPACITY = 4
 LEASE = 40
@@ -170,23 +171,28 @@ def origin(seat):
 def spawn(room,slot,clock,previous=None,boss=False,stagger=False):
     generation=previous.get('generation',0)+1 if previous else 1
     ticket=hashlib.sha256((room['seed']+':'+str(slot//4)+':'+str(generation)).encode()).digest()
-    index=[0,1,2,3,4,5,6,7,12,13][ticket[0]%10]
-    if boss:index=[8,9,10,11,14,15][(int(clock//120)+room['id'])%6]
+    pool=[[0,0,1,1,2,2,3,3,4,5],[2,3,4,5,6,7,12,13],[0,1,2,3,4,5,12],[0,1,2,3,4,5],[4,5,6,12,13],[0,1,2,4,6,7,12,13]][room['id']-1]
+    index=pool[ticket[0]%len(pool)]
+    if boss:index=[8,11,14,9,10,15][(room['id']-1+int(clock//720))%6]
     if slot==SLOTS-2 and int(clock//90)%3==room['id']%3 and clock%90<25:index=16
     f=base.FISH[index]
     life=24+ticket[1]%13;born=clock-((slot//4)/(SLOTS/4)*life*.78 if stagger else 0)
     direction=1 if ticket[2]%2 else -1
-    return dict(id=f"{room['id']}-{slot}-{generation}",slot=slot,generation=generation,species=f['id'],
+    return dict(base_multiplier=f['multiplier'],growth_step=f.get('bonus_step',0) if boss else 0,id=f"{room['id']}-{slot}-{generation}",slot=slot,generation=generation,species=f['id'],
                 spawned_at=born,expires_at=born+life,x0=(-90-(slot%4)*(110 if index<4 else 145)) if direction==1 else (1090+(slot%4)*(110 if index<4 else 145)),
                 vx=direction*1180/life,y0=125+ticket[3]/255*250+(slot%4-1.5)*28,amplitude=15+ticket[4]%24,
                 frequency=.5+ticket[5]/255*.6,phase=ticket[6]/255*math.tau,
-                radius_x=(62 if index>=4 else 45)*(1.5 if boss else 1),radius_y=(31 if index>=4 else 23)*(1.5 if boss else 1),
-                multiplier=(f['multiplier']+(ticket[7]%5)*f.get('bonus_step',0)),boss=boss,feature=f.get('feature'),school=slot//4)
+                geometry_version=2,radius_x=(80 if index>=4 else 58)*(1.5 if boss else 1),radius_y=(80 if index>=4 else 58)*(1.5 if boss else 1)*fishing_geometry.ART.get(f['id'],{'aspect':.65})['aspect'],
+                multiplier=f['multiplier'],boss=boss,feature=f.get('feature'),school=slot//4)
+
+
+def fish_multiplier(fish,clock):
+    if not fish.get('growth_step'):return fish['multiplier']
+    return fish['base_multiplier']+fish['growth_step']*min(4,int(max(0,clock-fish['spawned_at'])//4))
 
 
 def position(fish,clock,effects=()):
-    t=max(0,clock-fish['spawned_at'])
-    t-=sum(max(0,min(clock,e['ends_at'])-max(fish['spawned_at'],e['starts_at'])) for e in effects if e.get('kind','freeze')=='freeze')
+    t=fishing_geometry.elapsed(fish,clock,effects)
     return fish['x0']+fish['vx']*t,fish['y0']+fish['amplitude']*math.sin(t*fish['frequency']+fish['phase'])
 
 
@@ -200,7 +206,7 @@ def prepare_room(db,rid,clock):
     for slot in range(SLOTS):
         old=rows.get(slot)
         if old is None or old['expires_at']<clock:
-            _put_entity(db,rid,spawn(room,slot,clock,json.loads(old['data']) if old else None,stagger=old is None))
+            _put_entity(db,rid,spawn(room,slot,clock,json.loads(old['data']) if old else None,stagger=old is None or old['expires_at']<clock-5))
     epoch=int(clock//120)
     if clock%120<25 and room['boss_epoch']!=epoch:
         old=db.execute('SELECT data FROM fishing_entities WHERE room_id=? AND slot=?',(rid,SLOTS-1)).fetchone()
@@ -213,13 +219,14 @@ def room_view(db,rid,clock):
     members=[dict(r) for r in db.execute('SELECT m.user_id,m.seat,m.skill_at,u.nickname,COALESCE(l.cannon,0) AS cannon,COALESCE(c.laser_at,0) AS laser_at FROM fishing_members m JOIN users u ON u.id=m.user_id LEFT JOIN fishing_loadouts l ON l.user_id=m.user_id LEFT JOIN fishing_cooldowns c ON c.user_id=m.user_id WHERE m.room_id=? AND m.last_seen>? ORDER BY m.seat',(rid,clock-LEASE))]
     for member in members:member.update(x=origin(member['seat'])[0],y=origin(member['seat'])[1])
     entities=[json.loads(r[0]) for r in db.execute('SELECT data FROM fishing_entities WHERE room_id=? AND expires_at>? ORDER BY slot',(rid,clock))]
+    for f in entities:f['multiplier']=fish_multiplier(f,clock)
     effects=[dict(r) for r in db.execute('SELECT user_id,starts_at,ends_at,kind FROM fishing_effects WHERE room_id=? AND ends_at>?',(rid,clock-45))]
     shots=[]
     for r in db.execute('SELECT * FROM fishing_projectiles WHERE room_id=? AND expires_at>? ORDER BY id DESC LIMIT 120',(rid,clock-2)):
         shot=json.loads(r['data']);shot.pop('bonus_rules',None);shot.update(id=r['id'],token=r['token'],user_id=r['user_id'],born_at=r['born_at'],state=r['state']);shots.append(shot)
     return dict(gameplay_version=VERSION,room_id=rid,name=NAMES[rid-1],capacity=CAPACITY,players=members,
                 entities=entities,effects=effects,projectiles=shots,server_time=clock,width=WORLD_WIDTH,height=WORLD_HEIGHT,
-                event='巨獸來襲' if any(f['boss'] for f in entities) else '魚群巡游',next_boss_at=(int(clock//120)+1)*120)
+                theme=['sea-board','sea-palace','sea-palace','sea-wreck','sea-wreck','sea-palace'][rid-1],event='巨獸來襲' if any(f['boss'] for f in entities) else '魚群巡游',next_boss_at=(int(clock//120)+1)*120)
 
 
 def view(db,uid,clock):
@@ -248,7 +255,7 @@ def _first_hit(shot,start,end,entities,effects,dead):
         for f in entities:
             if f['id'] in dead or not f['spawned_at']<=at<f['expires_at']:continue
             fx,fy=position(f,at,effects)
-            if ((x-fx)/(f['radius_x']+shot['radius']))**2+((y-fy)/(f['radius_y']+shot['radius']))**2<=1:
+            if fishing_geometry.collides(f,fx,fy,x,y,shot['radius'],at,effects):
                 return at,f,x,y
         at+=.02
     return None
@@ -291,9 +298,21 @@ def tick(db,clock):
                 again=_first_hit(shot,at,clock,entities,effects,dead)
                 if again:heapq.heappush(heap,(again[0],ident,again,shot))
                 continue
+            fish['multiplier']=fish_multiplier(fish,at)
             budget=shot.get('bonus_rules',{});count=budget.get('rounds',{}).get(fish.get('feature'),0)
             snapshot={**budget,'rounds':count} if count else None
             targets=[] if snapshot else bonus_targets(fish,entities,at,effects,dead)
+            if shot.get('geometry_version')==2 and shot.get('laser') and not snapshot:
+                # A paid laser captures up to three additional ordinary fish along its beam.
+                length=math.hypot(shot['vx'],shot['vy']);ux=shot['vx']/length;uy=shot['vy']/length
+                extra=[]
+                for other in entities:
+                    if other['id']==fish['id'] or other['id'] in dead or other.get('feature') or not other['spawned_at']<=at<other['expires_at']:continue
+                    ox,oy=position(other,at,effects);dx=ox-shot['x0'];dy=oy-shot['y0'];along=dx*ux+dy*uy
+                    if fishing_geometry.beam_hit(other,ox,oy,shot['x0'],shot['y0'],ux,uy,1500,shot['radius'],at,effects):extra.append((along,other['id'],other))
+                unique={f['id']:f for f in targets}
+                for _,_,other in sorted(extra)[:3]:unique.setdefault(other['id'],other)
+                targets=list(unique.values())
             total_multiplier=fish['multiplier']+sum(f['multiplier'] for f in targets)
             hits,payout_unit=fishing_power.resolve(shot,total_multiplier,(snapshot['rounds']*snapshot['mean_hundredths']) if snapshot else 0)
             caught=hits>0;gross=payout_unit*fish['multiplier']
@@ -478,7 +497,7 @@ def mutate(db,user,action,data,clock):
             ammo=next((a for a in fishing_power.AMMO if a['stake']==stake),None)
             if not ammo:raise RuleError('請選擇10、100或1,000點砲彈。')
             laser=bool(db.execute("SELECT 1 FROM fishing_effects WHERE room_id=? AND user_id=? AND kind='laser' AND starts_at<=? AND ends_at>?",(rid,uid,clock,clock)).fetchone())
-            speed=1800 if laser else SPEED
+            speed=max(1800,ammo['speed']+350) if laser else ammo['speed']
             if type(data.get('expected_limit_revision')) is not int or data.get('expected_limit_revision')!=cfg['bet_limit_revision']:raise RuleError('炮彈上限已更新，請重新讀取魚場。')
             shots=data.get('shots')
             if not isinstance(shots,list) or not 1<=len(shots)<=4:raise RuleError('每批限 1–4 發砲彈。')
@@ -498,7 +517,7 @@ def mutate(db,user,action,data,clock):
                 ox,oy=origin(member['seat']);distance=math.hypot(x-ox,y-oy)
                 if distance<35:raise RuleError('請朝魚場內發射。')
                 born=min(clock,max(fired,clock-.2,room['last_tick']))
-                body=dict(pricing='cannon-v1',bonus_rules={'version':1,'rounds':fishing_bonus.ROUNDS,'pool':fishing_bonus.POOL,'mean_hundredths':fishing_bonus.MEAN_HUNDREDTHS},x0=ox,y0=oy,vx=(x-ox)/distance*speed,vy=(y-oy)/distance*speed,radius=weapon['radius']+(12 if laser else 0),stake=stake,power=ammo['power'],laser=laser,cannon=cannon,target_bps=cfg['params']['target_bps'],settings_revision=cfg['revision'],expires_at=born+FLIGHT)
+                body=dict(geometry_version=2,pricing='cannon-v1',bonus_rules={'version':1,'rounds':fishing_bonus.ROUNDS,'pool':fishing_bonus.POOL,'mean_hundredths':fishing_bonus.MEAN_HUNDREDTHS},x0=ox,y0=oy,vx=(x-ox)/distance*speed,vy=(y-oy)/distance*speed,radius=weapon['radius']+ammo['radius_bonus']+(12 if laser else 0),stake=stake,power=ammo['power'],laser=laser,cannon=cannon,target_bps=cfg['params']['target_bps'],settings_revision=cfg['revision'],expires_at=born+FLIGHT)
                 validated.append((token,born,body))
             total=stake*len(validated)
             wallet.transfer(db,uid,-total,'fishing_shot','fish:'+op+':cost',clock,game=True)

@@ -352,11 +352,13 @@ class Handler(BaseHTTPRequestHandler):
             elif path=='/api/fishing/skill-state':
                 with HTTP_SNAPSHOTS,connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    if parse_qs(urlsplit(self.path).query).get('version')!=[str(fishing_gameplay.VERSION)]:raise Problem('釣魚畫面已更新，請重新整理後再玩。',426)
                     value=fishing_gameplay.skill_view(db,user['id'],time.time())
                 self.reply(200,value)
             elif path=='/api/fishing':
                 with HTTP_SNAPSHOTS, connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    if parse_qs(urlsplit(self.path).query).get('version')!=[str(fishing_gameplay.VERSION)]:raise Problem('釣魚畫面已更新，請重新整理後再玩。',426)
                     value=fishing.view(db,user['id'],time.time())
                 self.reply(200,value)
             elif path=='/api/clubhouse/staff':
@@ -431,7 +433,7 @@ class Handler(BaseHTTPRequestHandler):
                                         cell(people[e["user_id"]]["nickname"]), f'{e["buy_in"]/100:.2f}',
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
-            elif re.fullmatch(r'/assets/fishing/(?:fish-atlas|gear-atlas|reef|harbor)\.webp',path) or re.fullmatch(r'/assets/staff/(?:concierge|host|steward)\.webp',path) or path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/cards/[a2-9tjqk][shdc]\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-back-friends|roul-(?:frame|hub)|dealer-btn|bet-chips|bj-shoe|mj-bird|mj-f-(?:spring|summer|autumn|winter|plum|orchid|chrys|bamboo))\.webp',path) or re.fullmatch(r'/assets/buttons/(?:btn-(?:primary|secondary)(?:-sm)?-[lmr]|btn-danger-sm-[lmr]|tab-(?:on|off)-[lmr]|frame-(?:table|card)|coin|chip-(?:10|50|100|500))\.webp',path):
+            elif re.fullmatch(r'/assets/fishing/(?:fish-atlas|gear-atlas|boss-atlas|shore|sea-board)\.webp',path) or re.fullmatch(r'/assets/staff/(?:concierge|host|steward)\.webp',path) or path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/cards/[a2-9tjqk][shdc]\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-back-friends|roul-(?:frame|hub)|dealer-btn|bet-chips|bj-shoe|mj-bird|mj-f-(?:spring|summer|autumn|winter|plum|orchid|chrys|bamboo))\.webp',path) or re.fullmatch(r'/assets/buttons/(?:btn-(?:primary|secondary)(?:-sm)?-[lmr]|btn-danger-sm-[lmr]|tab-(?:on|off)-[lmr]|frame-(?:table|card)|coin|chip-(?:10|50|100|500))\.webp',path):
                 artwork=(ROOT/'static'/path[1:]).read_bytes()
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
                 versions=parse_qs(urlsplit(self.path).query,keep_blank_values=True).get('v')

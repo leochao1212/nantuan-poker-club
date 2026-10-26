@@ -79,4 +79,4 @@ round-presentation.js 只管理演出，game.js 仍立即處理伺服器回執�
 [Flutter Android App](../mobile/nantuan_app/README.md) 共用本網站與後端。APK 建置使用獨立 Android workflow，不加入網站 Docker 映像；App 的帳號、遊戲規則與點數仍由相同服務管理。
 
 
-釣魚頁由 `fishing.js` 管理收據、模式、魚簍與操作；`fishing-scene.js` 只做圖集裁切、場景、魚群與特效，不參與機率或點數結算。裝備外觀依帳號存於本機，頁面離開時停止 RAF、收線計時器與場景觀察器；背景及畫面外不跑動畫。單發與漁獲結算仍由 `fishing.py` 負責。
+釣魚頁由 `fishing.js`管理全畫面舞台、面板、回執與魚獲結果；`fishing-play.js`分開控魚、射擊背壓與共享SSE，`fishing-scene.js`使用圖集與事件動畫，不決定機率。張力／Combo由 `fishing_tension.py`固定步長模擬；唯一魚隻與連鎖由 `fishing_gameplay.py`原子結算。按鍵／滑桿偏好存在本機，裝備存在帳號；離頁恢復主站導航，保留全站語音。詳見[固定參考設計](design-proposals/fishing-fixed-references.md)。

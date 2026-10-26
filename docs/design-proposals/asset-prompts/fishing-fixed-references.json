@@ -1,0 +1,21 @@
+{
+  "generator": "built-in image_gen",
+  "assets": [
+    {
+      "file": "static/assets/fishing/shore.webp",
+      "prompt": "Production environment background for a first-person casual sport-fishing mobile game. Original high quality realistic 3D game render, calm tropical coastal inlet in clear afternoon light. Wide landscape 16:9. Distant low mangrove and palm coastline upper 24%, atmospheric blue sky upper 14%, reflective blue-green OPEN water fills center and lower 70% with natural small waves and turquoise gradient, subtle leaves at extreme left edge only. Camera at angler eye height, water horizon at 30%, believable depth and sparkles in foreground. Premium realistic game graphics. NO rod, line, people, foreground boats, bobber, fish, UI, text, logos, vignette or frames; these will be animated separately. Full bleed scene; calm central open water.",
+      "transparent_background": false
+    },
+    {
+      "file": "static/assets/fishing/sea-board.webp",
+      "prompt": "Production texture for a classic six-player fish-hunting arcade board. Original polished colorful 3D game art. Landscape 16:9 full bleed TOP-DOWN underwater view, bright clear blue and aquamarine water, very spacious clean playable center 80%, coral caves, purple anemones, turquoise rocks and gold sand ONLY along extreme rim, subtle whirlpool light pattern, saturated blue arcade palette and gentle caustics. Flat overhead view for fish swimming in all directions. Luminous readable water with theatrical depth. NO fish, cannons, weapons, creatures, coins, people, text, logos, menus, HUD, borders or frames. Original lightweight game background; center stays uncluttered.",
+      "transparent_background": false
+    },
+    {
+      "file": "static/assets/fishing/boss-atlas.webp",
+      "prompt": "ONE transparent sprite atlas for an original premium 3D fish-hunting arcade. Exactly 2 equal columns and 2 equal rows, SQUARE output, all four creatures fully isolated on genuine transparent background with 13% empty margins INSIDE EACH QUADRANT, no overlap, no grid. Bright polished richly detailed 3D arcade marine creatures viewed from above at slight angle, all facing RIGHT. TOP LEFT: regal GOLDEN EMPEROR CRAB with broad segmented shell, emerald highlights and large claws. TOP RIGHT: deep VIOLET OCTOPUS with eight curled tentacles and glowing magenta suckers. BOTTOM LEFT: long SAPPHIRE ELECTRIC EEL with gold fins and luminous scales, no surrounding lightning. BOTTOM RIGHT: legendary EMERALD AND GOLD SEA DRAGON, serpentine body, red coral fins, expressive head, fully original. Standalone game sprites with clean true alpha, tactile shells and scales. NO text, numbers, scenery, ground shadows or logos. All sprites centered inside own quadrant.",
+      "transparent_background": true
+    }
+  ],
+  "delivery": "Original generated PNGs converted to WebP at quality 83, method 6; alpha preserved. No downloaded game art is shipped."
+}

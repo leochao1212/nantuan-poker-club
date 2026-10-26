@@ -21,7 +21,7 @@
 
 建築、遊戲封面與員工插畫的生成提示詞放在 [asset-prompts](design-proposals/asset-prompts/)。其他新增素材的用途與來源依 [設計交接](design-proposals/cream-theme/HANDOFF.md) 記錄；未隨程式庫提供的原始美術稿不宣稱可完整重現。本清單不推定生成工具的授權條款。
 
-麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。138 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
+麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。139 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
 
 | 素材 | 檔案 | 生成方式 |
 | --- | --- | --- |
@@ -73,6 +73,6 @@
 
 ## 楠團漁港
 
-釣魚專用原創素材放在 `static/assets/fishing/`：`harbor.webp` 為暮色碼頭、`reef.webp` 為俯視珊瑚海床；`fish-atlas.webp` 是八魚種透明圖集，`gear-atlas.webp` 是三款釣竿與三款魚炮透明圖集。由內建 ImageGen 生成，WebP 轉碼保留 alpha；四個檔案合計約 1.21 MiB，僅釣魚頁載入。圖集以明確區域與 SVG 裁切框／Canvas 來源矩形顯示，不顯示相鄰格；失敗時使用載入提示而非舊 SVG 魚。
+釣魚原創素材在 `static/assets/fishing/`：`shore.webp` 第一人稱海灣、`sea-board.webp` 俯視海底、`fish-atlas.webp` 八種一般魚、`boss-atlas.webp` 四種特殊魚，以及三套釣竿／魚炮的 `gear-atlas.webp`。五檔約1.66MiB；首進休閒只載入必要三檔，街機才補背景與特殊魚，全部使用SHA指紋快取。舊harbor／reef圖已移除，沒有舊場景回退。
 
-參考與設計取捨見 [夜航漁港](design-proposals/fishing-night-harbor.md)，提示詞見 [釣魚素材提示詞](design-proposals/asset-prompts/fishing-night-harbor.json)。砲彈、捕網、浮標、漣漪及釣線由 Canvas 繪製，裝備外觀不改變任何派彩機率。
+場景與特殊魚由內建ImageGen生成、WebP保留alpha；提示詞和檔案對照見[固定參考素材](design-proposals/asset-prompts/fishing-fixed-references.json)。一般魚與釣具沿用原創圖集；魚尾、釣竿、浮標、釣線、捕網和連鎖由Canvas按事件動畫。美術不自行決定派彩，特殊魚結算由伺服器完成。固定對照來源見[設計規格](design-proposals/fishing-fixed-references.md)。

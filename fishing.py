@@ -20,6 +20,10 @@ FISH = [
     dict(id='octopus',name='深海章魚',rarity='特殊',color='#b17ee9',weight=0,value=0,multiplier=90,length=180,feature='arms'),
     dict(id='eel',name='雷霆電鰻',rarity='特殊',color='#6bb8f2',weight=0,value=0,multiplier=100,length=220,feature='lightning'),
     dict(id='dragon',name='翡翠海龍',rarity='特殊',color='#6be2b6',weight=0,value=0,multiplier=120,length=300,feature='dragon'),
+    dict(id='turtle',name='翡翠金甲龜',rarity='稀有',color='#80dfad',weight=0,value=0,multiplier=25,length=130),
+    dict(id='shark',name='深藍獵鯊',rarity='稀有',color='#80c9ff',weight=0,value=0,multiplier=80,length=250),
+    dict(id='mermaid',name='珍珠人魚',rarity='重獎',color='#e6b2ff',weight=0,value=0,multiplier=200,bonus_step=100,length=190,feature='treasure'),
+    dict(id='whale',name='黃金鯨王',rarity='重獎',color='#ffda79',weight=0,value=0,multiplier=300,bonus_step=175,length=400,feature='whale'),
 ]
 BY_ID = {f['id']: f for f in FISH}
 SHOT_INTERVAL = .6
@@ -64,7 +68,7 @@ def _base_view(db, uid, clock):
                 bag_count=sum(f['stored'] for f in collection), discovered=sum(f['leisure']+f['arcade']>0 for f in collection),
                 shots=stats['shots'] if stats else 0, spent=stats['spent'] if stats else 0,
                 returned=stats['returned'] if stats else 0, next_shot_at=(stats['last_shot_at']+SHOT_INTERVAL) if stats else 0,
-                max_shot=min(100, game_settings.bet_limit(cfg)), settings=cfg, recent=recent,
+                max_shot=min(1000, game_settings.bet_limit(cfg)), settings=cfg, recent=recent,
                 wallet=wallet.view(db, uid, clock), server_time=clock)
 
 

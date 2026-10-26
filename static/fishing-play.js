@@ -1,7 +1,7 @@
 /* Fishing command loops: one durable wallet request, separate skill input and world SSE. */
 'use strict';
 window.ClubFishingPlay=(()=>{
- const version=3;
+ const version=4;
  function create(ctx){
   let alive=true,stream=null,room=1,world=null,connected=false,lastWorld=0,streamId=ctx.id(),heartbeat=0,monitor=0,inputTimer=0,inputBusy=false,inputPending=null,held=false,shootTimer=0,shooting=false,auto=false,queue=[],flushTimer=0,flushing=false,flushAt=0,pendingCost=0,generation=0,lastInterval=0,lastFire=-1e10,aim={x:500,y:250},target=null,seen=new Set(),readTimer=0;
   const now=()=>ctx.now(),get=()=>ctx.state();
@@ -22,7 +22,7 @@ window.ClubFishingPlay=(()=>{
    heartbeat=setInterval(async()=>{if(!alive||document.hidden||get()?.member?.room_id!==room)return;try{await ctx.api('/api/fishing/heartbeat',{gameplay_version:version,room_id:room,operation_id:ctx.id()});}catch(e){stop();notice(e.message,true);}},12000);
    monitor=setInterval(()=>{if(connected&&Date.now()-lastWorld>6000){connected=false;discard();stop();ctx.world(world,false);notice('魚場同步較慢，已停止發射。');}},1000);
   }
-  function point(id){const f=world?.entities.find(v=>v.id===id&&v.spawned_at<=now()&&v.expires_at>now());if(!f)return null;const me=world.players.find(p=>p.user_id===ctx.user),origin=window.ClubFishingScene.origin(me?.seat||0);let position=window.ClubFishingScene.worldPosition(f,now(),world.effects);for(let i=0;i<2;i++){const lead=Math.hypot(position.x-origin.x,position.y-origin.y)/1150+.14;position=window.ClubFishingScene.worldPosition(f,now()+lead,world.effects);}return {x:Math.max(0,Math.min(1000,position.x)),y:Math.max(0,Math.min(600,position.y))};}
+  function point(id){const f=world?.entities.find(v=>v.id===id&&v.spawned_at<=now()&&v.expires_at>now());if(!f)return null;const me=world.players.find(p=>p.user_id===ctx.user),origin=window.ClubFishingScene.origin(me?.seat||0);const laser=world.effects.some(e=>e.kind==='laser'&&e.user_id===ctx.user&&e.starts_at<=now()&&e.ends_at>now()),speed=laser?1800:1150;let position=window.ClubFishingScene.worldPosition(f,now(),world.effects);for(let i=0;i<2;i++){const lead=Math.hypot(position.x-origin.x,position.y-origin.y)/speed+.14;position=window.ClubFishingScene.worldPosition(f,now()+lead,world.effects);}return {x:Math.max(0,Math.min(1000,position.x)),y:Math.max(0,Math.min(600,position.y))};}
   function emit(){
    const state=get();if(!alive||!state||!connected||!state.member||state.member.room_id!==room||ctx.blocked()||document.hidden)return stop();
    if(flushing&&Date.now()-flushAt>900){queue.splice(0).forEach(s=>ctx.rejectShots?.([s.token]));stop();notice('網路確認較慢，已停止連發，請先確認原操作。');return;}if(queue.length>=4)return;
@@ -44,14 +44,14 @@ window.ClubFishingPlay=(()=>{
    inputBusy=true;const id=cast.id;
    if(!inputPending||inputPending.cast_id!==id){inputPending={gameplay_version:version,operation_id:ctx.id(),cast_id:id,sequence:cast.sequence+1,holding:held};const value=ctx.control?.();if(cast.mechanic==='tension'&&value!==null&&value!==undefined)inputPending.control=value;}
    try{const reply=await ctx.api('/api/fishing/input',inputPending);if(!alive)return;inputPending=null;ctx.skill(reply.skill);}
-   catch(e){if(!alive)return;if(!e.retryable){inputPending=null;try{const synced=await ctx.api('/api/fishing/skill-state?version=3');ctx.skill(synced);if(!synced.pending&&synced.last_cast?.id===id)return;notice('收線狀態已同步');return;}catch{}}notice(e.message,true);}
+   catch(e){if(!alive)return;if(!e.retryable){inputPending=null;try{const synced=await ctx.api('/api/fishing/skill-state?version=4');ctx.skill(synced);if(!synced.pending&&synced.last_cast?.id===id)return;notice('收線狀態已同步');return;}catch{}}notice(e.message,true);}
    finally{inputBusy=false;}
   }
   function watchSkill(){clearInterval(inputTimer);inputTimer=setInterval(input,300);}
   function visibility(){if(document.hidden){closeWorld();held=false;if(get()?.pending?.phase==='playing')void input();closeWorld();}else if(alive){ctx.refresh();if(ctx.mode()==='arcade'&&get()?.member)open(get().member.room_id);}}
   document.addEventListener('visibilitychange',visibility);watchSkill();
   return {
-   open,close:closeWorld,pause(){discard();stop();},world:()=>world,connected:()=>connected,
+   open,nextFireAt:()=>lastFire+lastInterval,close:closeWorld,pause(){discard();stop();},world:()=>world,connected:()=>connected,
    aim(x,y,id=null){aim={x:Math.max(0,Math.min(1000,x)),y:Math.max(0,Math.min(600,y))};target=ctx.locked?.()?id||target:null;},
    target(id){target=id;const p=point(id);if(p)aim=p;},
    tap(){emit();},start,stop,release(){if(!auto)stop();},toggle(){shooting?stop():start(true);},

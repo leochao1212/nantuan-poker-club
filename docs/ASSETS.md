@@ -73,6 +73,8 @@
 
 ## 楠團漁港
 
-釣魚原創素材在 `static/assets/fishing/`：`shore.webp` 第一人稱海灣、`sea-board.webp` 俯視海底、`fish-atlas.webp` 八種一般魚、`boss-atlas.webp` 四種特殊魚，以及三套釣竿／魚炮的 `gear-atlas.webp`。五檔約1.66MiB；首進休閒只載入必要三檔，街機才補背景與特殊魚，全部使用SHA指紋快取。舊harbor／reef圖已移除，沒有舊場景回退。
+釣魚原創素材在 `static/assets/fishing/`：`shore.webp` 第一人稱海灣、`sea-board.webp` 深海遺跡魚場、`fish-atlas.webp` 八種一般魚、`boss-atlas.webp` 四種特殊魚，以及三套釣竿／魚炮的 `gear-atlas.webp`。新增`arcade-atlas.webp`，4×4圖集包含12種街機魚／人魚／鯨王及三種砲台；休閒一般魚與釣竿繼續用原圖集。六檔約2.14MiB；首進休閒只載入必要三檔，街機才補背景與特殊魚，全部使用SHA指紋快取。舊harbor／reef圖已移除，沒有舊場景回退。
 
 場景與特殊魚由內建ImageGen生成、WebP保留alpha；提示詞和檔案對照見[固定參考素材](design-proposals/asset-prompts/fishing-fixed-references.json)。一般魚與釣具沿用原創圖集；魚尾、釣竿、浮標、釣線、捕網和連鎖由Canvas按事件動畫。美術不自行決定派彩，特殊魚結算由伺服器完成。固定對照來源見[設計規格](design-proposals/fishing-fixed-references.md)。
+
+黃金魚場原創背景與街機圖集的完整提示詞見[素材紀錄](design-proposals/asset-prompts/fishing-golden.json)。圖集已重新生成留白，避免鄰格裁切；格式轉WebP保留alpha。

@@ -4579,35 +4579,58 @@ html[data-ui=current] :is(#app,#modal,#social-root) .playing-card[data-photo-car
 :is(#app,#modal,#social-root) .history-holes .playing-card{--card-w:40px;}
 :is(#app,#modal,#social-root) :is(.replay-player,.replay-board) .playing-card{--card-w:64px;}
 /* Blackjack keeps large cards at 2, 3, 4 and 5 cards; split hands get their own row/grid. */
-:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-hand{--bj-card-w:96px;--card-count:2;container-type:inline-size;padding:8px;min-width:0;}
-:is(#app,#modal,#social-root) .arcade-blackjack .split-hands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;overflow:visible;}
+:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-hand{--bj-card-w:var(--bj-own-w,96px);--card-count:2;container-type:inline-size;padding:8px;min-width:0;}
+:is(#app,#modal,#social-root) .arcade-blackjack .split-hands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--bj-hand-min,220px)),1fr));gap:12px;overflow:visible;}
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-cards{display:flex;flex-wrap:nowrap;gap:6px;padding-block:4px;}
 .blackjack-cards[data-card-count="3"]{--card-count:3;}
 .blackjack-cards[data-card-count="4"]{--card-count:4;}
 .blackjack-cards[data-card-count="5"]{--card-count:5;}
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-cards>.playing-card{--card-w:var(--bj-card-w);}
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-cards>.playing-card+.playing-card{margin-left:clamp(calc(24px - var(--bj-card-w)),calc((100cqw - var(--bj-card-w)*var(--card-count))/(var(--card-count) - 1) - 6px),0px);}
-:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-other-grid .blackjack-hand{--bj-card-w:76px;}
+:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-other-grid .blackjack-hand{--bj-card-w:var(--bj-other-w,76px);}
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-dealer>div{justify-content:flex-start;width:max-content;max-width:100%;margin-inline:auto;overflow-x:auto;padding:6px 2px;}
-:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-dealer .playing-card{--card-w:84px;}
-:is(#app,#modal,#social-root) .arcade-big2 .hand-card{flex:0 0 76px;width:76px;min-width:76px;min-height:128px;}
-:is(#app,#modal,#social-root) .arcade-big2 .hand-card .playing-card{--card-w:76px;}
+:is(#app,#modal,#social-root) .arcade-blackjack .blackjack-dealer .playing-card{--card-w:var(--bj-dealer-w,84px);}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-card{flex:0 0 var(--big2-hand-w,76px);width:var(--big2-hand-w,76px);min-width:var(--big2-hand-w,76px);min-height:var(--big2-hand-h,128px);}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-card .playing-card{--card-w:var(--big2-hand-w,76px);}
 :is(#app,#modal,#social-root) .arcade-big2 .big2-current{gap:6px;}
-:is(#app,#modal,#social-root) .arcade-big2 .big2-current .playing-card{--card-w:clamp(44px,5vw,64px);}
+:is(#app,#modal,#social-root) .arcade-big2 .big2-current .playing-card{--card-w:var(--big2-trick-w,clamp(44px,5vw,64px));}
 :is(#app,#modal,#social-root) .baccarat-cards{container-type:inline-size;width:100%;min-width:0;}
-:is(#app,#modal,#social-root) .baccarat-cards .playing-card{--card-w:clamp(52px,40cqw,96px);}
+:is(#app,#modal,#social-root) .baccarat-cards .playing-card{--card-w:var(--baccarat-card-w,clamp(52px,40cqw,96px));}
 :is(#app,#modal,#social-root) .gate-cards{container-type:inline-size;}
-:is(#app,#modal,#social-root) .gate-cards .playing-card{--card-w:clamp(60px,23cqw,96px);}
+:is(#app,#modal,#social-root) .gate-cards .playing-card{--card-w:var(--gate-card-w,clamp(60px,23cqw,96px));}
 /* Hold'em reserves enough felt for readable community cards and the two-card fan. */
-:is(#app,#modal,#social-root) .holdem-layout>.table-arena{container-type:inline-size;height:clamp(520px,calc(100svh - 240px),620px);min-height:520px;}
-:is(#app,#modal,#social-root) .holdem-room .board-area{top:160px;width:min(90%,320px);transform:translateX(-50%);}
+:is(#app,#modal,#social-root) .holdem-layout>.table-arena{container-type:inline-size;height:var(--holdem-arena-h,clamp(520px,calc(100svh - 240px),620px));min-height:var(--holdem-arena-min,520px);}
+:is(#app,#modal,#social-root) .holdem-room .board-area{top:var(--holdem-board-top,160px);width:min(90%,var(--holdem-board-w,320px));transform:translateX(-50%);}
 :is(#app,#modal,#social-root) .holdem-room .community-cards{gap:4px;}
-:is(#app,#modal,#social-root) .holdem-room .community-cards .playing-card{--card-w:clamp(36px,8cqw,56px);}
-:is(#app,#modal,#social-root) .holdem-room .board-placeholder{width:clamp(36px,8cqw,56px);height:calc(clamp(36px,8cqw,56px)*1.5);}
-:is(#app,#modal,#social-root) .holdem-room .seat-cards{height:60px;min-height:60px;}
-:is(#app,#modal,#social-root) .holdem-room .seat-cards .playing-card{--card-w:38px;}
-:is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards{height:144px;min-height:144px;margin-bottom:6px;}
-:is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards .playing-card{--card-w:90px;flex:0 0 90px;}
+:is(#app,#modal,#social-root) .holdem-room .community-cards .playing-card{--card-w:var(--holdem-community-w,clamp(36px,8cqw,56px));}
+:is(#app,#modal,#social-root) .holdem-room .board-placeholder{width:var(--holdem-community-w,clamp(36px,8cqw,56px));height:calc(var(--holdem-community-w,clamp(36px,8cqw,56px))*1.5);}
+:is(#app,#modal,#social-root) .holdem-room .seat-cards{height:var(--holdem-other-hand-h,60px);min-height:var(--holdem-other-hand-h,60px);}
+:is(#app,#modal,#social-root) .holdem-room .seat-cards .playing-card{--card-w:var(--holdem-other-w,38px);}
+:is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards{height:var(--holdem-own-hand-h,144px);min-height:var(--holdem-own-hand-h,144px);margin-bottom:6px;}
+:is(#app,#modal,#social-root) .holdem-room .is-me .seat-cards .playing-card{--card-w:var(--holdem-own-w,90px);flex:0 0 var(--holdem-own-w,90px);}
+/* Desktop card sizes share the existing components; phones keep their own overrides. */
+@media (min-width:1024px){
+.live-room{--bj-own-w:124px;--bj-other-w:96px;--bj-dealer-w:112px;--bj-hand-min:300px;--big2-hand-w:104px;--big2-hand-h:180px;--big2-trick-w:84px;--baccarat-card-w:120px;--gate-card-w:clamp(80px,22cqw,128px);--holdem-community-w:clamp(60px,10cqw,84px);--holdem-own-w:120px;--holdem-own-hand-h:192px;--holdem-other-w:48px;--holdem-other-hand-h:80px;--holdem-arena-h:clamp(660px,calc(100svh - 240px),760px);--holdem-arena-min:660px;--holdem-board-top:190px;--holdem-board-w:480px;}
+:is(#app,#modal,#social-root) .holdem-room .community-cards{gap:8px;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll{container-type:inline-size;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="2"]{--hand-count:2;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="3"]{--hand-count:3;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="4"]{--hand-count:4;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="5"]{--hand-count:5;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="6"]{--hand-count:6;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="7"]{--hand-count:7;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="8"]{--hand-count:8;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="9"]{--hand-count:9;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="10"]{--hand-count:10;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="11"]{--hand-count:11;}
+:is(#app,#modal,#social-root) .arcade-big2 .hand-scroll[data-card-count="12"]{--hand-count:12;}
+
+:is(#app,#modal,#social-root) .arcade-big2 .hand-card+.hand-card{margin-left:clamp(calc(32px - var(--big2-hand-w)),calc((100cqw - var(--big2-hand-w)*var(--hand-count,13))/(var(--hand-count,13) - 1) - 8px),0px);}
+:is(#app,#modal,#social-root) .baccarat-cards{--card-count:2;flex-wrap:nowrap;}
+:is(#app,#modal,#social-root) .baccarat-cards:has(>.playing-card:nth-child(3)){--card-count:3;}
+:is(#app,#modal,#social-root) .baccarat-cards>.playing-card+.playing-card{margin-left:clamp(calc(32px - var(--baccarat-card-w)),calc((100cqw - var(--baccarat-card-w)*var(--card-count))/(var(--card-count) - 1) - 8px),0px);}
+:is(#app,#modal,#social-root) .gate-cards .gate-no-shot{width:var(--gate-card-w);height:calc(var(--gate-card-w)*1.5);}
+}
 @media (max-width:760px){
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-hand{--bj-card-w:clamp(64px,19vw,78px);}
 :is(#app,#modal,#social-root) .arcade-blackjack .blackjack-other-grid .blackjack-hand{--bj-card-w:64px;}

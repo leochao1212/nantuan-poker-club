@@ -37,7 +37,7 @@ window.ClubBank=(()=>{
   q('[data-bank-more]').hidden=!state.next_before;status();
  }
  async function read(more=false){
-  if(!host||reading)return;reading=true;const token=epoch,owner=uid;
+  if(!host||reading||sending)return;reading=true;const token=epoch,owner=uid;
   try{const r=await ctx.api('/api/bank'+(more&&state?.next_before?'?before='+state.next_before:''));if(token!==epoch||uid!==owner||!host)return;
    if(state&&r.bank.server_time<state.server_time)return;
    if(more)r.bank.history=[...state.history,...r.bank.history.filter(n=>!state.history.some(o=>o.id===n.id))];
@@ -47,7 +47,7 @@ window.ClubBank=(()=>{
  async function perform(kind,payload){
   if(sending||!host||!state)return;
   if(!operation){operation={action:kind,data:{...payload,operation_id:crypto.randomUUID()}};try{save();}catch{operation=null;message('無法保存操作回執，請允許網站儲存資料後再試。',true);return;}}
-  const request=operation,owner=uid;sending=true;status();message('正在確認'+labels[request.action]+'…');
+  const request=operation,owner=uid;epoch++;reading=false;sending=true;status();message('正在確認'+labels[request.action]+'…');
   try{const result=await ctx.api('/api/bank/'+request.action,request.data);if(uid!==owner)return;clear();reviewing=false;repayAll=false;state=result.bank;ctx.wallet=result.wallet;lastBalance=result.wallet.balance;paint();message((result.replayed?'原操作已確認：':'已完成：')+labels[result.action]+' '+num(result.amount)+' 點');ctx.updated?.(result,owner);
   }catch(e){if(uid!==owner)return;if(!e.retryable){clear();reviewing=false;}message(e.retryable?'結果尚未確認。請按「確認原操作」，不會重複扣點或重複借款。':e.message,true);
   }finally{if(uid===owner){sending=false;status();}}

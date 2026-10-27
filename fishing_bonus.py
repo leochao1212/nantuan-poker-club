@@ -2,18 +2,21 @@
 import json
 import secrets
 import re
+from datetime import datetime,timedelta
 import wallet
 from poker_engine import RuleError
 
 POOL=[dict(multiplier=m,weight=w) for m,w in zip((2,3,5,8,10,20,50,100),(30,25,20,12,7,4,1,1))]
 MEAN_HUNDREDTHS=631
 ROUNDS={'chest':3,'treasure':3,'whale':5}
+SUPPLY={'freeze':3,'laser':1}
 
 def initialize(db):
     db.executescript("""
     CREATE TABLE IF NOT EXISTS fishing_bonus_events(id TEXT PRIMARY KEY,user_id INTEGER NOT NULL,source_id TEXT NOT NULL UNIQUE,created_at REAL NOT NULL,status TEXT NOT NULL,data TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS fishing_bonus_owner ON fishing_bonus_events(user_id,status,created_at);
     CREATE TABLE IF NOT EXISTS fishing_items(user_id INTEGER PRIMARY KEY,freeze INTEGER NOT NULL DEFAULT 5 CHECK(freeze>=0),laser INTEGER NOT NULL DEFAULT 2 CHECK(laser>=0));
+    CREATE TABLE IF NOT EXISTS fishing_supplies(user_id INTEGER NOT NULL,day TEXT NOT NULL,created_at REAL NOT NULL,PRIMARY KEY(user_id,day));
     """)
 
 def items(db,uid):
@@ -22,6 +25,20 @@ def items(db,uid):
 
 def stock(db,uid):
     db.execute('INSERT OR IGNORE INTO fishing_items(user_id) VALUES(?)',(uid,))
+
+def supply_view(db,uid,clock):
+    today=wallet.day(clock)
+    claimed=bool(db.execute('SELECT 1 FROM fishing_supplies WHERE user_id=? AND day=?',(uid,today)).fetchone())
+    next_at=(datetime.fromisoformat(today).replace(tzinfo=wallet.TAIPEI)+timedelta(days=1)).timestamp()
+    return dict(day=today,claimed=claimed,next_at=next_at,rewards=SUPPLY.copy())
+
+def claim_supply(db,uid,clock):
+    today=wallet.day(clock)
+    claimed=bool(db.execute('INSERT OR IGNORE INTO fishing_supplies VALUES(?,?,?)',(uid,today,clock)).rowcount)
+    if claimed:
+        stock(db,uid)
+        db.execute('UPDATE fishing_items SET freeze=freeze+?,laser=laser+? WHERE user_id=?',(SUPPLY['freeze'],SUPPLY['laser'],uid))
+    return dict(claimed=claimed,day=today,rewards=SUPPLY.copy() if claimed else dict(freeze=0,laser=0))
 
 def rules(feature):
     count=ROUNDS.get(feature,0)

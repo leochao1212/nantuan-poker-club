@@ -29,6 +29,58 @@ class FishingRules(unittest.TestCase):
         fish=g.spawn(room,0,self.t,{'generation':self.serial});fish.update(x0=500,vx=0,y0=240,amplitude=0,phase=0,expires_at=self.t+100,species='sardine',multiplier=multiplier,base_multiplier=multiplier,growth_step=0)
         g._put_entity(self.db,1,fish);return fish
 
+    def test_daily_skill_supply_taipei_boundary_and_immutable_replay(self):
+        before=f.view(self.db,1,self.t);midnight=before['supply']['next_at']
+        first=self.call('supply',clock=midnight-.1)
+        self.assertTrue(first['result']['supply']['claimed'])
+        self.assertEqual(first['state']['items'],dict(freeze=8,laser=3))
+        self.assertEqual(first['state']['wallet']['balance'],before['wallet']['balance'])
+        again=self.call('supply',clock=midnight-.01)
+        self.assertFalse(again['result']['supply']['claimed'])
+        self.assertEqual(again['state']['items'],first['state']['items'])
+        op=first['result']['operation_id']
+        replay=f.mutate(self.db,{'id':1},'supply',dict(gameplay_version=6,operation_id=op),midnight+.1)
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(replay['state']['items'],first['state']['items'])
+        self.assertFalse(replay['state']['supply']['claimed'])
+        tomorrow=self.call('supply',clock=midnight+.1)
+        self.assertEqual(tomorrow['state']['items'],dict(freeze=11,laser=4))
+        self.assertEqual(self.db.execute('SELECT count(*) FROM fishing_supplies').fetchone()[0],2)
+        self.assertEqual(f.view(self.db,2,midnight+.1)['items'],dict(freeze=5,laser=2))
+        self.assertFalse(f.view(self.db,2,midnight+.1)['supply']['claimed'])
+
+    def test_supply_failure_rolls_back_claim_and_blocked_account_cannot_claim(self):
+        import fishing_bonus
+        with patch.object(fishing_bonus,'stock',side_effect=RuntimeError('synthetic failure')):
+            with self.assertRaises(RuntimeError):self.call('supply',clock=self.t)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM fishing_supplies').fetchone()[0],0)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM fishing_operations').fetchone()[0],0)
+        with self.assertRaises(f.RuleError):self.call('supply',clock=self.t,amount=999)
+        self.db.execute("INSERT INTO account_states(user_id,status,revision,reason,changed_at) VALUES(1,'blocked',1,'test',0)")
+        with self.assertRaises(member_accounts.AccountError):self.call('supply',clock=self.t)
+
+    def test_private_shot_report_bounded_excludes_chain_and_unsettled_results(self):
+        def add(uid,state,body):
+            ident=self.db.execute('SELECT COALESCE(max(id),0)+1 FROM fishing_projectiles').fetchone()[0]
+            return self.db.execute('INSERT INTO fishing_projectiles VALUES(?,?,?,?,?,?,?,?,?,?)',
+                (ident,'report_'+str(ident),uid,1,'report_operation',self.t,self.t,self.t+1,state,g.encode(body))).lastrowid
+        body=dict(stake=100,species='sardine',caught=True,gross=200,total_gross=500,multiplier=2,bonus_count=2)
+        for _ in range(20):add(1,'caught',body)
+        add(2,'caught',{**body,'total_gross':99999})
+        add(1,'flying',{**body,'caught_ticket':'must_not_leak'})
+        add(1,'caught',{**body,'source_id':1,'stake':0})
+        hit=add(1,'hit',{**body,'caught':False,'gross':200,'total_gross':500})
+        report=g.shot_history(self.db,1)
+        self.assertEqual(len(report),12)
+        self.assertEqual(report[0]['id'],hit)
+        self.assertEqual((report[0]['gross'],report[0]['net']),(0,-100))
+        self.assertEqual((report[1]['gross'],report[1]['net'],report[1]['chain']),(500,400,2))
+        self.assertNotIn('caught_ticket',json.dumps(report))
+        self.assertNotIn('99999',json.dumps(report))
+        self.assertNotIn('recent_shots',g.room_view(self.db,1,self.t))
+        plan=self.db.execute('EXPLAIN QUERY PLAN SELECT id FROM fishing_projectiles WHERE user_id=? ORDER BY id DESC LIMIT 48',(1,)).fetchall()
+        self.assertIn('fishing_projectile_owner',str([tuple(r) for r in plan]))
+
     def test_oriented_geometry_and_frozen_motion_share_sprite_aspect(self):
         import fishing_geometry as geometry
         self.call('join',clock=self.t,room_id=1)
@@ -421,6 +473,11 @@ class FishingAPI(ServerTestCase):
         self.assertEqual(a.call('/api/fishing/join',dict(gameplay_version=6,operation_id='http_full_room_0001',room_id=2))[0],400)
         def burst(pair):
             i,c=pair;return c.call('/api/fishing/burst',dict(gameplay_version=6,operation_id='http_burst_00000001',room_id=i//4+1,cannon=0,stake=10,expected_revision=1,expected_limit_revision=1,shots=[dict(token='http_token_'+str(i).zfill(12),fired_at=time.time(),x=500,y=240)]))
+        with ThreadPoolExecutor(8) as pool:
+            supplies=list(pool.map(lambda i:a.call('/api/fishing/supply',dict(gameplay_version=6,operation_id='supply_parallel_'+str(i).zfill(8))),range(8)))
+        self.assertTrue(all(status==200 for status,_ in supplies),supplies)
+        self.assertEqual(sum(reply['result']['supply']['claimed'] for _,reply in supplies),1)
+        self.assertEqual(a.call('/api/fishing?version=6')[1]['items'],dict(freeze=8,laser=3))
         started=time.monotonic()
         with ThreadPoolExecutor(20) as pool:responses=list(pool.map(burst,enumerate(people)))
         self.assertTrue(all(s==200 for s,r in responses),responses);self.assertLess(time.monotonic()-started,8)

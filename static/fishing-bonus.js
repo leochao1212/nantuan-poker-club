@@ -33,7 +33,7 @@ window.ClubFishingBonus=(()=>{
   async function claim(){
    if(busy||!event)return;busy=true;draw();const id=event.id;
    const reply=await command('bonus',{bonus_id:id});busy=false;
-   if(reply?.result?.bonus){event=reply.result.bonus;if(active&&event.id===id)void reveal();}
+   if(reply?.result?.bonus){if(event?.id!==id){if(active)draw(event?.status==='settled');return;}event=reply.result.bonus;if(active)void reveal();}
    else if(active){draw();const b=dialog.querySelector('[data-bonus-start]');b.textContent='確認原次開箱';b.onclick=claim;}
   }
   function open(next){pause();stop();event=next||state?.bonuses?.[0]||state?.last_bonus;if(!event)return;active=true;seen.add(event.id);draw(event.status==='settled');if(!dialog.open)dialog.showModal();}

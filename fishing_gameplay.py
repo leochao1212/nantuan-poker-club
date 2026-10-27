@@ -72,6 +72,7 @@ def initialize(db):
     CREATE INDEX IF NOT EXISTS fishing_flying ON fishing_projectiles(state,expires_at);
     CREATE INDEX IF NOT EXISTS fishing_projectile_room ON fishing_projectiles(room_id,born_at);
     CREATE INDEX IF NOT EXISTS fishing_projectile_expiry ON fishing_projectiles(room_id,expires_at);
+    CREATE INDEX IF NOT EXISTS fishing_projectile_owner ON fishing_projectiles(user_id,id DESC);
     CREATE TABLE IF NOT EXISTS fishing_captures(fish_id TEXT PRIMARY KEY,user_id INTEGER NOT NULL,projectile_id INTEGER NOT NULL UNIQUE,gross INTEGER NOT NULL,created_at REAL NOT NULL);
     CREATE TABLE IF NOT EXISTS fishing_effects(id INTEGER PRIMARY KEY,room_id INTEGER NOT NULL,user_id INTEGER NOT NULL,starts_at REAL NOT NULL,ends_at REAL NOT NULL);
     CREATE INDEX IF NOT EXISTS fishing_effect_room ON fishing_effects(room_id,ends_at);
@@ -234,11 +235,26 @@ def view(db,uid,clock):
     used=db.execute('SELECT COALESCE(sum(quota_cost),0) FROM fishing_casts WHERE user_id=? AND day=?',(uid,wallet.day(clock))).fetchone()[0]
     member=db.execute('SELECT room_id,seat FROM fishing_members WHERE user_id=? AND last_seen>?',(uid,clock-LEASE)).fetchone()
     value.update(**fishing_bonus.view(db,uid))
+    value.update(supply=fishing_bonus.supply_view(db,uid,clock),recent_shots=shot_history(db,uid))
     value.update(gameplay_version=VERSION,**skill_view(db,uid,clock),free_casts=max(0,value['daily_casts']-used),
                  loadout=loadout(db,uid),rods=RODS,cannons=CANNONS,ammo=[a for a in fishing_power.AMMO if a['stake']<=value['max_shot']],
                  cast_options=[cast_option(p) for p in (100,500,900)],member=dict(member) if member else None,
                  rooms=[dict(id=rid,name=NAMES[rid-1],capacity=CAPACITY,players=db.execute('SELECT count(*) FROM fishing_members WHERE room_id=? AND last_seen>?',(rid,clock-LEASE)).fetchone()[0]) for rid in range(1,ROOMS+1)])
     return value
+
+
+def shot_history(db,uid):
+    # Bounded owner-index lookup; never expose another player's wallet or pending result.
+    history=[]
+    for row in db.execute('SELECT id,room_id,born_at,state,data FROM fishing_projectiles WHERE user_id=? ORDER BY id DESC LIMIT 48',(uid,)):
+        data=json.loads(row['data'])
+        if data.get('source_id') or row['state']=='flying':continue
+        gross=data.get('total_gross',data.get('gross',0)) if data.get('caught') else 0
+        history.append(dict(id=row['id'],room_id=row['room_id'],at=data.get('resolved_at',row['born_at']),state=row['state'],
+                            species=data.get('species'),stake=data['stake'],gross=gross,net=gross-data['stake'],
+                            multiplier=data.get('multiplier'),chain=data.get('bonus_count',0),bonus_id=data.get('bonus_id')))
+        if len(history)==12:break
+    return history
 
 
 def burst_view(db,uid,clock):
@@ -361,6 +377,7 @@ FIELDS={
     'burst':{'gameplay_version','expected_revision','expected_limit_revision','room_id','cannon','stake','shots'},
     'skill':{'gameplay_version','room_id','kind'},
     'bonus':{'gameplay_version','bonus_id'},
+    'supply':{'gameplay_version'},
     'gear':{'gameplay_version','rod','cannon'},
 }
 
@@ -451,6 +468,8 @@ def mutate(db,user,action,data,clock):
             result.update(rod=rod,cannon=cannon)
         elif action=='bonus':
             result['bonus']=fishing_bonus.settle(db,uid,data.get('bonus_id'),clock);wallet_changed=True
+        elif action=='supply':
+            result['supply']=fishing_bonus.claim_supply(db,uid,clock)
         elif action=='join':
             fishing_bonus.stock(db,uid)
             rid=integer(data.get('room_id'),'魚場',0,ROOMS)
@@ -482,7 +501,7 @@ def mutate(db,user,action,data,clock):
             if cooldown and clock<cooldown[column]:raise RuleError('技能尚在冷卻。')
             if kind=='freeze' and db.execute("SELECT 1 FROM fishing_effects WHERE room_id=? AND kind='freeze' AND ends_at>?",(rid,clock)).fetchone():raise RuleError('魚場已經處於冰凍中。')
             fishing_bonus.stock(db,uid)
-            if not db.execute('UPDATE fishing_items SET '+kind+'='+kind+'-1 WHERE user_id=? AND '+kind+'>0',(uid,)).rowcount:raise RuleError('道具已用完，可從寶箱獲得。')
+            if not db.execute('UPDATE fishing_items SET '+kind+'='+kind+'-1 WHERE user_id=? AND '+kind+'>0',(uid,)).rowcount:raise RuleError('道具已用完，可領每日技能補給，或從寶箱獲得。')
             duration,cool= (2,30) if kind=='freeze' else (6,45)
             db.execute('INSERT INTO fishing_effects(room_id,user_id,starts_at,ends_at,kind) VALUES(?,?,?,?,?)',(rid,uid,clock,clock+duration,kind))
             db.execute('INSERT OR IGNORE INTO fishing_cooldowns(user_id,ready_at,laser_at) VALUES(?,0,0)',(uid,))

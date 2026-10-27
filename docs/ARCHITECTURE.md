@@ -118,11 +118,13 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 
 `#fishing` 採全畫面舞台，`fishing.js`管理回執、面板與結果；`fishing-play.js`分開處理錢包請求、控魚輸入與魚場SSE；`fishing-scene.js`繪製第一人稱釣魚和共享魚場。釣具與一般魚沿用圖集，場景與特殊魚改為固定參考版，移除舊場景檔。
 
-`fishing_gameplay.py`處理入場、實際砲彈碰撞與唯一捕獲；`fishing_tension.py`以50ms固定步長處理張力、Combo、斷線與脫鉤。新魚獲原子地記錄圖鑑／結果並直接入帳；舊經典竿與魚簍保留原規則。通訊v5與DB竿version=2分開，舊操作回執仍可重送，舊畫面新操作會被版本檢查阻擋。
+`fishing_gameplay.py`處理入場、實際砲彈碰撞與唯一捕獲；`fishing_tension.py`以50ms固定步長處理張力、Combo、斷線與脫鉤。新魚獲原子地記錄圖鑑／結果並直接入帳；舊經典竿與魚簍保留原規則。通訊v6與DB竿version=2分開，舊操作回執仍可重送，舊畫面新操作會被版本檢查阻擋。
 
-共享房間六間×四席、每場18隻魚，座標1000×600；畫面不再旋轉90度，魚體保持比例，點按與伺服器座標互為反函數。新`pricing=cannon-v1`炮彈以stake×倍率派彩，捕獲率分母含連鎖與寶藏期望，舊v3／v4已扣點炮彈保留各自算法。成功捕獲同一交易插入唯一capture、替換魚並記總派彩；零成本連鎖事件附source_id。`fishing_bonus.py`管理獨立寶藏及技能庫存兩表，bonus事件與wallet／operation共同提交；`fishing-bonus.js`只負責16格獎勵盤的結果演出。
+共享房間六間×四席、每場18隻魚，座標1000×600；畫面不再旋轉90度，魚體保持比例，點按與伺服器座標互為反函數。新`pricing=cannon-v1`炮彈以stake×倍率派彩，捕獲率分母含連鎖與寶藏期望，舊v3／v4已扣點炮彈保留各自算法。成功捕獲同一交易插入唯一capture、替換魚並記總派彩；零成本連鎖事件附source_id。`fishing_bonus.py`管理獨立寶藏、技能庫存與每日補給三表，bonus事件與wallet／operation共同提交；`fishing-bonus.js`只負責16格獎勵盤的結果演出。
 
 魚場SSE頻道`-500-room`與牌桌／大廳分流，最多5Hz共用JSON快照，閒時2秒心跳，客戶端軌跡補間。120ms時鐘僅在有竿、魚場或砲彈活動時加入FIFO；本人錢包立即回應，共享大廳每750ms合併喚醒。發射回應只回錢包與發射統計的partial快照，前端合併原狀態，避免每批重算／重送圖鑑、房間列表與規則；近期砲彈依room／expires_at索引，Canvas30fps、減少動態20fps、手機DPR1.5。背景、斷線、慢確認停止連發，保存原回執，不追補未送砲彈。
+
+漁港補給使用`fishing_supplies`帳號／台灣日期唯一鍵，不操作錢包；領取、技能庫存與不可變回執原子提交。`fishing_projectile_owner`讓個人戰報使用有界48筆索引查詢，最多輸出12筆已結算付費炮彈，零成本連鎖合併在原付費炮彈；完整規則與派彩分界見[漁港規格](FISHING.md)。
 
 完整玩法、公開機率、相容與端點見[漁港規格](FISHING.md)，固定參考見[對照設計](design-proposals/fishing-fixed-references.md)。
 

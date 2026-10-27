@@ -11,6 +11,8 @@
 
 !wallet.py
 !bank.py
+!market.py
+!market_data.py
 !transfers.py
 !social.py
 !club_admin.py

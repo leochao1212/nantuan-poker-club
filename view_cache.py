@@ -9,7 +9,7 @@ import secrets
 import threading
 
 TABLES=('users','poker_rooms','poker_results','poker_hands','wallets','member_profiles',
-        'account_states','cosmetic_items','cosmetic_equipped','room_chat','voice_members')
+        'market_positions','market_orders','market_quotes','account_states','cosmetic_items','cosmetic_equipped','room_chat','voice_members')
 
 
 def initialize(db):

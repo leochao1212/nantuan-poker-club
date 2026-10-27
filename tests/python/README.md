@@ -106,3 +106,5 @@ python -m unittest tests.python.test_transfers.TransferRules.test_conservation_r
 | [test_deployment.py](test_deployment.py) | 部署授權、封裝驗證、安全排空、資料保留與回復邊界。 |
 
 - `test_fishing.py`：雙模式釣魚、公開機率、私人漁獲、帳本原子性與20人並行；瀏覽器配套為 `npm run test:fishing`。
+
+- `test_market.py`：點數現貨委託、下一筆報價成交、小數份額、資產守恆、取消／到期退款、私有資料與並行回執。

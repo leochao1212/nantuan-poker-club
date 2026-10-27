@@ -73,3 +73,5 @@ npm run test:ui
 ~~~
 
 瀏覽器測試只用臨時 SQLite 與合成帳號。PR 自動檢查，main 通過後建置版本化 Docker 封裝；正式更新由 Actions 的 Deploy production 手動觸發，主機設定完成後啟用。詳見 [CI/CD](docs/CI-CD.md)。
+
+金融功能：[楠團銀行與點數現貨交易所](docs/MARKET.md)。免費股票採每日收盤委託，加密貨幣約十秒更新；美股需在伺服器設定免費行情 Key。所有交易僅使用遊戲點數。

@@ -50,7 +50,7 @@ class ServerTestCase(unittest.TestCase):
             port = sock.getsockname()[1]
         cls.base = f"http://127.0.0.1:{port}"
         cls.db_path = Path(cls.tmp.name)/"test.sqlite3"
-        env = dict(os.environ, POKER_DB=str(cls.db_path), PYTHONIOENCODING="utf-8", POKER_SECURE_COOKIE="0", POKER_REQUIRE_INVITE="0", POKER_PUBLIC_ORIGIN="")
+        env = dict(os.environ, POKER_DB=str(cls.db_path), POKER_MARKET_DATA="0", PYTHONIOENCODING="utf-8", POKER_SECURE_COOKIE="0", POKER_REQUIRE_INVITE="0", POKER_PUBLIC_ORIGIN="")
         env.update(cls.server_env)
         cls.proc = subprocess.Popen([sys.executable, str(ROOT/"server.py"), "--host", "127.0.0.1", "--port", str(port)],
                                     env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

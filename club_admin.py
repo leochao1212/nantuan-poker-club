@@ -95,6 +95,8 @@ def accounts(db,actor,clock,search='',page=1):
     totals=wallet.in_play(db)
     import bank
     banking=bank.assets(db,clock)
+    import market
+    for uid,value in market.assets(db).items():banking[uid]=banking.get(uid,0)+value
     seats={}
     for row in db.execute("SELECT id,name,status,state FROM poker_rooms WHERE status!='closed'"):
         for seat in json.loads(row['state'])['seats']:

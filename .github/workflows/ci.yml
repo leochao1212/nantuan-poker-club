@@ -4,6 +4,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+env:
+  POKER_MARKET_DATA: "0"
 permissions:
   contents: read
 concurrency:
@@ -47,6 +49,7 @@ jobs:
       - run: npm run test:ui
       - run: npm run test:journeys
       - run: npm run test:rewards
+      - run: npm run test:market
       - run: npm run test:bank
       - run: npm run test:fishing
       - run: npm run test:cards
@@ -62,6 +65,7 @@ jobs:
             artifacts/browser
             artifacts/table-ux
             artifacts/rewards
+            artifacts/market/browser
             artifacts/bank/browser
             artifacts/fishing/browser
             artifacts/bet-limit-browser

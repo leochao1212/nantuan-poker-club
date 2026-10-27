@@ -20,7 +20,7 @@ UPGRADES = {
     'production':dict(name='營運團隊',levels=RATES,costs=(2000,5000,12000)),
     'storage':dict(name='收益金庫',levels=HOURS,costs=(1000,2500,5000)),
     'decor':dict(name='會所裝潢',levels=DECOR,costs=(800,2000,5000))}
-MOVES = {'initial', 'buy_in', 'rebuy', 'leave', 'bank_deposit', 'bank_withdraw', 'bank_loan', 'bank_repay_principal'}
+MOVES = {'initial', 'buy_in', 'rebuy', 'leave', 'bank_deposit', 'bank_withdraw', 'bank_loan', 'bank_repay_principal', 'market_reserve', 'market_refund', 'market_sale'}
 
 
 def schema(db,clock=None):

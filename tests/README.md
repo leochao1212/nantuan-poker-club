@@ -17,5 +17,3 @@ npm run test:motion
 完整驗證策略見 [docs/TESTING.md](../docs/TESTING.md)。
 
 - `npm run test:reveal`：輪盤與拉霸的真實開局、慢回應確認、延後揭曉、收據重送、快速／略過。
-
-- `test_fishing.py`：雙模式釣魚、公開機率、私人漁獲、帳本原子性與20人並行；瀏覽器配套為 `npm run test:fishing`。

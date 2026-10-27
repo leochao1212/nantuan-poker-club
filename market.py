@@ -1,4 +1,4 @@
-"""Paper spot orders in TWD points. No network I/O; caller owns the transaction.
+"""Paper spot and capped 1x short orders in TWD points. No network I/O; caller owns the transaction.
 
 Cash buys reserve an integer budget; sells reserve existing fractional units.
 Both execute only on a source observation newer than submission. Displayed old
@@ -47,7 +47,14 @@ def initialize(db):
       PRIMARY KEY(user_id,operation_id));
     CREATE TABLE IF NOT EXISTS market_prices(symbol TEXT NOT NULL,asof REAL NOT NULL,price TEXT NOT NULL,
       PRIMARY KEY(symbol,asof));
+    CREATE TABLE IF NOT EXISTS market_shorts(id INTEGER PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id),
+      symbol TEXT NOT NULL,units INTEGER NOT NULL,margin INTEGER NOT NULL,entry_points INTEGER NOT NULL,
+      entry_price TEXT NOT NULL,opened_at REAL NOT NULL,entry_asof REAL NOT NULL,status TEXT NOT NULL,
+      closed_at REAL,exit_price TEXT,profit INTEGER,returned INTEGER);
+    CREATE INDEX IF NOT EXISTS market_short_owner ON market_shorts(user_id,status);
     ''')
+    if 'position_id' not in {r[1] for r in db.execute('PRAGMA table_info(market_orders)')}:
+        db.execute('ALTER TABLE market_orders ADD COLUMN position_id INTEGER REFERENCES market_shorts(id)')
 
 
 def decimal(value):
@@ -72,31 +79,41 @@ def quote_ready(q,clock):
 
 
 def _assets(db):
-    values={r[0]:r[1] for r in db.execute("SELECT user_id,sum(budget) FROM market_orders WHERE status='pending' AND side='buy' GROUP BY user_id")}
+    values={r[0]:r[1] for r in db.execute("SELECT user_id,sum(budget) FROM market_orders WHERE status='pending' AND side IN ('buy','short') GROUP BY user_id")}
     # Last known marks remain in net assets when a feed goes stale. Orders stop.
     for r in db.execute('SELECT p.user_id,p.units,p.cost,q.price FROM market_positions p LEFT JOIN market_quotes q USING(symbol) WHERE p.units>0'):
         mark=int(Decimal(r['price'])*r['units']/SCALE) if r['price'] else r['cost']
         values[r['user_id']]=values.get(r['user_id'],0)+mark
+    for r in db.execute("SELECT s.*,q.ask FROM market_shorts s LEFT JOIN market_quotes q USING(symbol) WHERE s.status='open'"):
+        values[r['user_id']]=values.get(r['user_id'],0)+short_value(r,r['ask'])
     return values
 
 
 def assets(db):
     import view_cache
-    return view_cache.shared(db,'market_assets',('market_positions','market_orders','market_quotes'),lambda:_assets(db))
+    return view_cache.shared(db,'market_assets',('market_positions','market_orders','market_quotes','market_shorts'),lambda:_assets(db))
 
-def view(db,uid,clock):
+def view(db,uid,clock,symbol=None,period=None):
     quotes={r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')}
     instruments=[]
-    for symbol,item in INSTRUMENTS.items():
-        q=quotes.get(symbol)
-        instruments.append(dict(item,quote=q,available=quote_ready(q,clock),mode='約 10 秒更新' if item['market']=='CC' else '每日收盤',
-          history=[dict(at=r[0],price=r[1]) for r in reversed(db.execute('SELECT asof,price FROM market_prices WHERE symbol=? ORDER BY asof DESC LIMIT 40',(symbol,)).fetchall())]))
+    for code,item in INSTRUMENTS.items():
+        q=quotes.get(code)
+        instruments.append(dict(item,quote=q,available=quote_ready(q,clock),mode='約 10 秒更新' if item['market']=='CC' else '每日收盤'))
     positions=[]
     for r in db.execute('SELECT * FROM market_positions WHERE user_id=? AND units>0',(uid,)):
         item=dict(r);reserved=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,r['symbol'])).fetchone()[0]
         q=quotes.get(r['symbol']);mark=int(Decimal(q['price'])*r['units']/SCALE) if q else r['cost']
         positions.append(dict(item,quantity=quantity(r['units']),available_quantity=quantity(r['units']-reserved),value=mark,profit=mark-r['cost'],stale=not quote_ready(q,clock)))
-    return dict(instruments=instruments,positions=positions,
+    shorts=[]
+    for r in db.execute("SELECT * FROM market_shorts WHERE user_id=? AND status='open' ORDER BY id",(uid,)):
+        item=dict(r);q=quotes.get(r['symbol']);value=short_value(r,q['ask'] if q else None)
+        closing=bool(db.execute("SELECT 1 FROM market_orders WHERE position_id=? AND status='pending' AND side='cover'",(r['id'],)).fetchone())
+        shorts.append(dict(item,quantity=quantity(r['units']),value=value,profit=value-r['margin'],
+            liquidation_price=format(Decimal(r['margin']+r['entry_points'])*SCALE/r['units'],'f'),
+            closing=closing,stale=not quote_ready(q,clock)))
+    return dict(instruments=instruments,positions=positions,shorts=shorts,
+        short_history=[dict(r,quantity=quantity(r['units'])) for r in db.execute("SELECT * FROM market_shorts WHERE user_id=? AND status!='open' ORDER BY id DESC LIMIT 20",(uid,))],
+        chart=chart(db,symbol,period,clock) if symbol else None,
         orders=[dict(r,quantity=quantity(r['filled_units'] if r['status']=='filled' else r['units'])) for r in db.execute('SELECT * FROM market_orders WHERE user_id=? ORDER BY id DESC LIMIT 50',(uid,))],
         providers=[dict(r) for r in db.execute('SELECT * FROM market_providers ORDER BY name')],
         value=assets(db).get(uid,0),server_time=clock)
@@ -109,17 +126,25 @@ def mutate(db,user,action,data,clock):
     if not wallet.active(db):raise RuleError('點數制度尚未啟用。')
     op=data.get('operation_id')
     if not isinstance(op,str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,80}',op):raise RuleError('交易回執編號無效。')
+    position_id=None
     if action=='order':
         symbol=data.get('symbol');side=data.get('side')
-        if not isinstance(symbol,str) or symbol not in INSTRUMENTS or side not in ('buy','sell'):raise RuleError('請選擇交易標的與買賣方向。')
-        budget=data.get('amount') if side=='buy' else 0
-        if side=='buy' and (type(budget) is not int or not 1<=budget<=1_000_000):raise RuleError('買入點數須為 1–1,000,000 的整數。')
+        if not isinstance(symbol,str) or symbol not in INSTRUMENTS or side not in ('buy','sell','short','cover'):raise RuleError('請選擇交易標的與買賣方向。')
+        budget=data.get('amount') if side in ('buy','short') else 0
+        minimum=10 if side=='short' else 1
+        if side in ('buy','short') and (type(budget) is not int or not minimum<=budget<=1_000_000):raise RuleError(f'點數須為 {minimum}–1,000,000 的整數。')
         units=0
         if side=='sell':
             raw=data.get('quantity')
             if not isinstance(raw,str) or not re.fullmatch(r'\d{1,12}(?:\.\d{1,8})?',raw):raise RuleError('賣出份額最多八位小數。')
             units=int(decimal(raw)*SCALE)
-        fingerprint=json.dumps([action,symbol,side,budget,units],separators=(',',':'))
+        if side=='cover':
+            position_id=data.get('position_id')
+            if type(position_id) is not int or position_id<1:raise RuleError('做空倉位編號無效。')
+        # Keep original spot fingerprints compatible with already saved receipts.
+        intent=[action,symbol,side,budget,units]
+        if side=='cover':intent.append(position_id)
+        fingerprint=json.dumps(intent,separators=(',',':'))
     elif action=='cancel':
         oid=data.get('order_id')
         if type(oid) is not int or oid<1:raise RuleError('委託編號無效。')
@@ -144,10 +169,17 @@ def mutate(db,user,action,data,clock):
                 held=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,symbol)).fetchone()[0]
                 if not p or units>p[0]-held:raise RuleError('可賣出份額不足，部分份額可能已有委託。')
                 if Decimal(units)*Decimal(q['bid'])/SCALE<1:raise RuleError('賣出市值至少需要 1 點。')
+            elif side=='cover':
+                position=db.execute("SELECT * FROM market_shorts WHERE id=? AND user_id=? AND symbol=? AND status='open'",(position_id,uid,symbol)).fetchone()
+                if not position:raise RuleError('找不到可買回的做空倉位。')
+                if db.execute("SELECT 1 FROM market_orders WHERE position_id=? AND side='cover' AND status='pending'",(position_id,)).fetchone():raise RuleError('這筆做空已在等待買回，不可重複平倉。')
+                units=position['units']
+            elif side=='short':
+                if db.execute("SELECT count(*) FROM market_shorts WHERE user_id=? AND status='open'",(uid,)).fetchone()[0]+db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND side='short' AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆做空倉位。')
             elif int(Decimal(budget)*SCALE/Decimal(q['ask']))<1:raise RuleError('買入點數不足最小份額。')
             if db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆委託，請先取消部分委託。')
-            oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at) VALUES(?,?,?,?,?,'pending',?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[INSTRUMENTS[symbol]['market']])).lastrowid
-            if side=='buy':wallet.transfer(db,uid,-budget,'market_reserve','market:reserve:'+str(oid),clock)
+            oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[INSTRUMENTS[symbol]['market']],position_id)).lastrowid
+            if side in ('buy','short'):wallet.transfer(db,uid,-budget,'market_reserve','market:reserve:'+str(oid),clock)
         result=dict(ok=True,order_id=oid,action=action,replayed=False)
         db.execute('INSERT INTO market_operations VALUES(?,?,?,?)',(uid,op,fingerprint,json.dumps(result)))
         db.execute('RELEASE SAVEPOINT market_operation');return result
@@ -166,7 +198,7 @@ def wealth_delta(db,uid,amount,clock):
 
 def cancel(db,order,clock,status,reason):
     import wallet
-    if order['side']=='buy':wallet.transfer(db,order['user_id'],order['budget'],'market_refund','market:refund:'+str(order['id']),clock)
+    if order['side'] in ('buy','short'):wallet.transfer(db,order['user_id'],order['budget'],'market_refund','market:refund:'+str(order['id']),clock)
     db.execute('UPDATE market_orders SET status=?,reason=? WHERE id=?',(status,reason,order['id']))
 
 
@@ -174,6 +206,10 @@ def settle(db,clock):
     import wallet
     changed=False
     quotes={r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')}
+    for position in db.execute("SELECT * FROM market_shorts WHERE status='open'").fetchall():
+        q=quotes.get(position['symbol'])
+        if quote_ready(q,clock) and short_value(position,q['ask'])==0:
+            close_short(db,position,q,clock,liquidated=True);changed=True
     for o in db.execute("SELECT * FROM market_orders WHERE status='pending' ORDER BY id").fetchall():
         if clock>=o['expires_at']:
             cancel(db,o,clock,'expired','等候新報價逾時，已解除保留');changed=True;continue
@@ -183,6 +219,23 @@ def settle(db,clock):
             cancel(db,o,clock,'cancelled','帳號已停用');changed=True;continue
         q=quotes.get(o['symbol'])
         if not quote_ready(q,clock) or q['asof']<=o['submitted_at']:continue
+        if o['side']=='short':
+            price=Decimal(q['bid']);units=int(Decimal(o['budget'])*SCALE/price)
+            proceeds=int(Decimal(units)*price/SCALE)
+            if units<1 or units>10**14 or proceeds<1:
+                cancel(db,o,clock,'cancelled','新報價無法建立允許範圍內的做空倉位');changed=True;continue
+            pid=db.execute("INSERT INTO market_shorts(user_id,symbol,units,margin,entry_points,entry_price,opened_at,entry_asof,status) VALUES(?,?,?,?,?,?,?,?,'open')",(o['user_id'],o['symbol'],units,o['budget'],proceeds,str(price),clock,q['asof'])).lastrowid
+            position=db.execute('SELECT * FROM market_shorts WHERE id=?',(pid,)).fetchone()
+            wealth_delta(db,o['user_id'],short_value(position,q['ask'])-o['budget'],clock)
+            db.execute("UPDATE market_orders SET status='filled',filled_at=?,fill_asof=?,fill_price=?,filled_units=?,points=?,profit=0,position_id=? WHERE id=?",(clock,q['asof'],str(price),units,proceeds,pid,o['id']))
+            if short_value(position,q['ask'])==0:close_short(db,position,q,clock,liquidated=True)
+            changed=True;continue
+        if o['side']=='cover':
+            position=db.execute("SELECT * FROM market_shorts WHERE id=? AND user_id=? AND status='open'",(o['position_id'],o['user_id'])).fetchone()
+            if not position:cancel(db,o,clock,'cancelled','倉位已平倉或已強制平倉');changed=True;continue
+            returned=close_short(db,position,q,clock)
+            db.execute("UPDATE market_orders SET status='filled',filled_at=?,fill_asof=?,fill_price=?,filled_units=?,points=?,profit=? WHERE id=?",(clock,q['asof'],q['ask'],position['units'],returned,returned-position['margin'],o['id']))
+            changed=True;continue
         price=Decimal(q['ask'] if o['side']=='buy' else q['bid'])
         p=db.execute('SELECT units,cost FROM market_positions WHERE user_id=? AND symbol=?',(o['user_id'],o['symbol'])).fetchone()
         old_units,old_cost=(p[0],p[1]) if p else (0,0)
@@ -238,6 +291,41 @@ def apply_quotes(db,rows,clock):
                 after=int(price*p['units']/SCALE)
                 wealth_delta(db,p['user_id'],after-before,clock)
             db.execute('INSERT OR REPLACE INTO market_prices VALUES(?,?,?)',(symbol,r['asof'],str(price)))
-            db.execute('DELETE FROM market_prices WHERE symbol=? AND asof NOT IN (SELECT asof FROM market_prices WHERE symbol=? ORDER BY asof DESC LIMIT 80)',(symbol,symbol))
+            for position in db.execute("SELECT * FROM market_shorts WHERE symbol=? AND status='open'",(symbol,)).fetchall():
+                before=short_value(position,old['ask'] if old else None)
+                after=short_value(position,str(ask))
+                wealth_delta(db,position['user_id'],after-before,clock)
+            keep=7*86400 if INSTRUMENTS[symbol]['market']=='CC' else 180*86400
+            db.execute('DELETE FROM market_prices WHERE symbol=? AND asof<?',(symbol,clock-keep))
         changed=True
     return changed
+
+
+
+def short_value(position,ask):
+    if ask is None:return position['margin']
+    cover=int((Decimal(ask)*position['units']/SCALE).to_integral_value(rounding=ROUND_CEILING))
+    return max(0,position['margin']+position['entry_points']-cover)
+
+
+def close_short(db,position,q,clock,*,liquidated=False):
+    import wallet
+    value=0 if liquidated else short_value(position,q['ask'])
+    wallet.transfer(db,position['user_id'],value,'market_sale','market:cover:'+str(position['id']),clock)
+    db.execute("UPDATE market_shorts SET status=?,closed_at=?,exit_price=?,profit=?,returned=? WHERE id=? AND status='open'",('liquidated' if liquidated else 'closed',clock,q['ask'],value-position['margin'],value,position['id']))
+    if liquidated:
+        db.execute("UPDATE market_orders SET status='cancelled',reason='倉位已強制平倉，免補繳額外點數' WHERE position_id=? AND side='cover' AND status='pending'",(position['id'],))
+    return value
+
+
+PERIODS={'15m':900,'1h':3600,'1d':86400,'7d':7*86400,'30d':30*86400,'180d':180*86400}
+
+
+def chart(db,symbol,period,clock):
+    if symbol not in INSTRUMENTS or period not in PERIODS:raise RuleError('價格圖標的或時間範圍無效。')
+    seconds=PERIODS[period];start=clock-seconds;bucket=max(1,seconds/240)
+    rows=db.execute('SELECT p.asof,p.price FROM market_prices p JOIN (\n      SELECT max(asof) AS asof FROM market_prices WHERE symbol=? AND asof>=? AND asof<=?\n      GROUP BY CAST((asof-?)/? AS INTEGER)) b ON p.asof=b.asof\n      WHERE p.symbol=? ORDER BY p.asof',(symbol,start,clock,start,bucket,symbol)).fetchall()
+    # Preserve source timestamps and observed prices; never synthesize tick/K data.
+    return dict(symbol=symbol,period=period,from_at=start,to_at=clock,
+      points=[dict(at=r[0],price=r[1]) for r in rows],currency='TWD',max_points=241,gap_seconds=max(90,bucket*2.5),
+      retention_days=7 if INSTRUMENTS[symbol]['market']=='CC' else 180)

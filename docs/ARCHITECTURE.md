@@ -37,9 +37,6 @@ mahjong_engine.py         台灣 16 張麻將與底／台結算
 game_settings.py          設定驗證、版本快照、派彩／理論指標
 wallet.py                 虛擬錢包、補給、入離桌移轉
 transfers.py              帳號間點數轉帳
-fishing.py                魚簍／圖鑑、歷史回執及舊竿遷移
-fishing_gameplay.py       共享魚場、碰撞與單一／連鎖捕獲結算
-fishing_tension.py        按鍵／滑桿張力收線、Combo與魚獲分數
 clubhouse.py              被動收益、升級、員工、資金水位
 rewards.py                任務、商品、裝備
 member_accounts.py        暱稱、頭像、密碼／帳號狀態
@@ -116,17 +113,12 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 
 ### 漁港
 
-`#fishing` 採全畫面舞台，`fishing.js`管理回執、面板與結果；`fishing-play.js`分開處理錢包請求、控魚輸入與魚場SSE；`fishing-scene.js`繪製第一人稱釣魚和共享魚場。釣具與一般魚沿用圖集，場景與特殊魚改為固定參考版，移除舊場景檔。
 
-`fishing_gameplay.py`處理入場、實際砲彈碰撞與唯一捕獲；`fishing_tension.py`以50ms固定步長處理張力、Combo、斷線與脫鉤。新魚獲原子地記錄圖鑑／結果並直接入帳；舊經典竿與魚簍保留原規則。通訊v6與DB竿version=2分開，舊操作回執仍可重送，舊畫面新操作會被版本檢查阻擋。
 
-共享房間六間×四席、每場18隻魚，座標1000×600；畫面不再旋轉90度，魚體保持比例，點按與伺服器座標互為反函數。新`pricing=cannon-v1`炮彈以stake×倍率派彩，捕獲率分母含連鎖與寶藏期望，舊v3／v4已扣點炮彈保留各自算法。成功捕獲同一交易插入唯一capture、替換魚並記總派彩；零成本連鎖事件附source_id。`fishing_bonus.py`管理獨立寶藏、技能庫存與每日補給三表，bonus事件與wallet／operation共同提交；`fishing-bonus.js`只負責16格獎勵盤的結果演出。
 
 魚場SSE頻道`-500-room`與牌桌／大廳分流，最多5Hz共用JSON快照，閒時2秒心跳，客戶端軌跡補間。120ms時鐘僅在有竿、魚場或砲彈活動時加入FIFO；本人錢包立即回應，共享大廳每750ms合併喚醒。發射回應只回錢包與發射統計的partial快照，前端合併原狀態，避免每批重算／重送圖鑑、房間列表與規則；近期砲彈依room／expires_at索引，Canvas30fps、減少動態20fps、手機DPR1.5。背景、斷線、慢確認停止連發，保存原回執，不追補未送砲彈。
 
-漁港補給使用`fishing_supplies`帳號／台灣日期唯一鍵，不操作錢包；領取、技能庫存與不可變回執原子提交。`fishing_projectile_owner`讓個人戰報使用有界48筆索引查詢，最多輸出12筆已結算付費炮彈，零成本連鎖合併在原付費炮彈；完整規則與派彩分界見[漁港規格](FISHING.md)。
 
-完整玩法、公開機率、相容與端點見[漁港規格](FISHING.md)，固定參考見[對照設計](design-proposals/fishing-fixed-references.md)。
 
 ### 射龍門撞柱保護（規則 v4）
 
@@ -146,3 +138,5 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 ## 虛擬點數銀行
 
 `bank.py` 共用既有 SQLite 與交易序列，`static/bank.js` 提供玩家與管理員介面。存款單利、新貸款條件快照、私人分頁明細及回執皆有界／可重送。查詢只投影利息、不增加背景寫入。銀行資產納入錢包、排行、個人資金圖及後台；本金移轉不記成獲利，全部還清以送達時計算並固定回執。完整規則見 [銀行規格](BANK.md)。
+
+點數交易由 `market.py` 負責現貨／一倍做空原子記帳、`market_data.py` 背景抓價、`static/market.js` 控制委託介面、`static/market-chart.js` 顯示真實時間軸。完整規則與資料限制見 [點數交易所](MARKET.md)。`schema_migrations.py` 只做一次性舊資料結清，不含已移除的遊戲引擎或 API；歷史帳本保留供核帳與部署回滾。

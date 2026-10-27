@@ -51,7 +51,6 @@ jobs:
       - run: npm run test:rewards
       - run: npm run test:market
       - run: npm run test:bank
-      - run: npm run test:fishing
       - run: npm run test:cards
       - run: npm run test:limits
       - run: npm run test:reveal
@@ -67,7 +66,6 @@ jobs:
             artifacts/rewards
             artifacts/market/browser
             artifacts/bank/browser
-            artifacts/fishing/browser
             artifacts/bet-limit-browser
             artifacts/cards
             artifacts/layout

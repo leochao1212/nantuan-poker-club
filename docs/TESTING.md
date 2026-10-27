@@ -90,13 +90,9 @@ GitHub Actions 執行程式庫內的檢查。正式部署前還需在部署目�
 
 Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，檢查五種顯示尺寸、手勢／三鍵導覽、鍵盤關閉後視口恢復、大字體與整頁水平捲動，保存原生與 WebView 截圖、底部白帶像素量測及尺寸 JSON。清理失敗不覆蓋原始錯誤；模擬器結果不代表每個手機品牌。
 
-### 釣魚雙模式
 
-可選負載量測：從根目錄執行 `python scripts/bench-fishing.py`，`FISH_FAST=1` 切快炮。程式啟隔離loopback服務、限制單核心，建立20個合成帳號與40條SSE，送400批／800發後核對扣款流水及未結算數，結果存忽略的artifacts目錄；不碰正式服務。數值代表本機測試條件，不包含Cloudflare或行動網路。
 
-`python -m unittest tests.python.test_fishing -v` 包含新張力按鍵／滑桿成功、過緊／過鬆失敗、即時入帳且重送不重複、魚餌精力與非法魚種、v2回執相容及舊畫面不扣點、特殊魚總倍率條件派彩與多人搶同魚／連鎖只結算一次，並保留原經典竿／舊可領竿、FIFO、批次、餘額、停權及20人並行驗證。
 
-`npm run test:fishing` 在Chromium／WebKit手機／桌機，以實際按住放開、原生滑桿拖曳完成魚獲；檢查重載、即時點數、魚獲展示不多拋一竿、共享魚群與砲台座標、連發停止、遺失回應原回執核對、慢回應不補射、背景恢復不續射。另驗證八種尺寸的全畫面、無遮擋／溢出、主按鈕尺寸，透過瀏覽器performance時間戳核對30／20fps上限。輸出在 `artifacts/fishing/browser`，不使用正式帳號。結果不代表所有廠牌實體手機。
 
 `test_gate_protection.py` 獨立枚舉小牌靴的所有排列與保護結果，核對命中率、撞柱率、派彩及點數守恆，並涵蓋 0／50／100% 與門檻邊界、連續柱牌消耗、歷史局相容、設定遷移、局中快照及重送不重扣。`test:layout` 的 `gate-protection-checks.cjs` 在隔離服務測試管理員欄位與預覽，以及手機／桌面 Chromium、WebKit 的保護資訊、作廋牌與機率顯示。
 
@@ -106,7 +102,6 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 黃金魚場測試：有理數核對各炮價、倍率及3／5次寶藏的條件期望；檢查亂數邊界、連鎖唯一、技能庫存／重送／回滾、寶藏擁有人與不可變池快照、v3／v4已付款炮彈及v2–v4完成回執。瀏覽器測試三檔炮價、雷射幾何、丟失回覆重送、背景停射、8種視窗的可點區、30／20fps預算；以隔離資料庫插入ready寶藏，再走真實HTTP開箱，核對斷線恢復與唯一入帳。負載腳本`FISH_FAST=1 FISH_STAKE=1000`以20人／40SSE／800發量測，不連正式資料庫。
 
 
-捕魚v6增加旋轉碰撞／凍結、炮價彈速與網徑、雷射連鎖總期望及唯一派彩、動態Boss捕獲時倍率、分房場景驗證。`npm run test:fishing`先執行[fishing-stream](../tests/browser/fishing-stream.cjs)假時鐘測試，驗證無事件重建、舊generation隔離、背景停射／回來不續射與完整清理；再跑真瀏覽器，包含40秒座位租約到期後重入、主動觀戰後可入座、同一魚場更換炮台圖示。
 
 [二十一點公平性測試](../tests/python/test_blackjack_fairness.py)窮舉六副牌全部兩張組合，驗證4.74895%自然Blackjack基準；檢查安全亂數洗牌入口、依座位逐輪發牌、同牌靴延續、三張21點分類與籌碼守恆。
 
@@ -116,14 +111,11 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 
 [test_blackjack_benefits.py](../tests/python/test_blackjack_benefits.py)驗證0／邊界／100%優待、同牌序與守恆、自然Blackjack例外、加倍／分牌逐手退注、舊快照、移轉只啟用一次、後台記錄及回執重送／離桌入帳。瀏覽器layout的admin／blackjack檢查覆蓋三個快捷設定、自訂、預覽取消、填預設後事件重綁、牌桌優待與逐手返還。可從根目錄執行[配對模擬](../scripts/bench-blackjack-benefits.py)，僅使用固定種子的合成牌局與虛擬點數，無資料庫或網路，結果存忽略的artifacts。
 
-捕魚完整循環回歸另驗證每日補給的台灣午夜界線、同編號跨日重播／新編號領新一天、多人並發只發一份、故障回滾、停權與未知欄位拒絕、戰報所有權／連鎖去重／索引有界查詢。`npm run test:fishing`新增[fishing-bonus](../tests/browser/fishing-bonus.cjs)真瀏覽器延遲回應測試；手機／電腦實測補給已提交後回應遺失，再以原回執確認、不再增庫存，並檢查戰報在320px／橫向／桌機不溢出且按鈕可操作。測試均用合成資料。
 
-張力動畫回歸：[fishing-tension](../tests/browser/fishing-tension.cjs)使用實際呈現模組與假時鐘，檢查50ms內插值、過期預演上限、伺服器校正不瞬移、60／20Hz HUD與30／20fps Canvas預算、背景取消RAF、換竿重設和網路未回時立即反映按住／放開。真瀏覽器以MutationObserver量測實際按鍵／滑桿釣獲期間的指針transform更新，要求達到瀏覽器實際可用幀率（上限60Hz）的72%以上且不超過66Hz，避免將瀏覽器背景／省電節流誤判為動畫缺陷；不把合成環境幀率當作所有實體手機的保證。
 
 桌機放大牌面回歸另檢查1024／1366／1920px的大老二5張與13張手牌（兩引擎共12個版面）、13張在正常桌機寬度完整展開、至少40px牌角曝光、最後一張可選、五張桌面牌不溢出，以及實際牌數樣式符合CSP。牌桌版面測試驗證桌機德州公共牌／手牌放大而不與底池／其他座位重疊、手機仍為原尺寸。`CARDS_ENGINE=chromium|webkit`及`CARDS_DEVICE=phone|desktop`可縮小本機卡牌驗證範圍，CI預設全跑。
 
 銀行：`python -m unittest tests.python.test_bank -v` 與 `npm run test:bank`。測試整數單利／零頭、調息分段、貸款快照、並行重送、失敗回滾、取整利息上限，以及手機／桌機存提借還、遺失回應後重載、輸入焦點與管理員條件版本鎖。參見 [銀行規格](BANK.md)。
 
-釣魚效能：30／20fps Canvas 採相位累積，抖動 RAF 回歸避免漏幀；獨立魚場圖層維持原裁切與座標。原生瀏覽器測試換場景時驗證圖片解碼，允許瀏覽器從快取載入。量測環境、數字及限制見 [順暢度紀錄](design-proposals/fishing-performance-bank-20261027.md)。
 
 容器打包回歸：CI 的 core 也執行 `python scripts/check-container.py`，以正式 Dockerfile／忽略清單建映像，非 root、唯讀檔案系統與記憶體資料庫啟動，再檢查 HTTP、銀行模組／前端、資料庫完整性與未登入 API。只建立自己的暫時容器，不掛載正式資料、不開放主機連接埠；確保新模組不會只在原始碼測試存在、映像卻漏包。

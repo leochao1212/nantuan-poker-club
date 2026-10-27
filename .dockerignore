@@ -33,12 +33,7 @@
 !mahjong_engine.py
 !voice_transport.py
 
-!fishing.py
 
-!fishing_gameplay.py
 
-!fishing_tension.py
 
-!fishing_power.py
-!fishing_bonus.py
-!fishing_geometry.py
+!schema_migrations.py

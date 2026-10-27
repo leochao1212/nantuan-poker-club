@@ -27,6 +27,7 @@ jobs:
       - run: node scripts/check-js.cjs
       - run: node scripts/check-docs.cjs
       - run: python scripts/check-ui-assets.py
+      - run: python scripts/check-container.py
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

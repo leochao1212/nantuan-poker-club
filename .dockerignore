@@ -10,6 +10,7 @@
 !static/**
 
 !wallet.py
+!bank.py
 !transfers.py
 !social.py
 !club_admin.py

@@ -125,3 +125,5 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 銀行：`python -m unittest tests.python.test_bank -v` 與 `npm run test:bank`。測試整數單利／零頭、調息分段、貸款快照、並行重送、失敗回滾、取整利息上限，以及手機／桌機存提借還、遺失回應後重載、輸入焦點與管理員條件版本鎖。參見 [銀行規格](BANK.md)。
 
 釣魚效能：30／20fps Canvas 採相位累積，抖動 RAF 回歸避免漏幀；獨立魚場圖層維持原裁切與座標。原生瀏覽器測試換場景時驗證圖片解碼，允許瀏覽器從快取載入。量測環境、數字及限制見 [順暢度紀錄](design-proposals/fishing-performance-bank-20261027.md)。
+
+容器打包回歸：CI 的 core 也執行 `python scripts/check-container.py`，以正式 Dockerfile／忽略清單建映像，非 root、唯讀檔案系統與記憶體資料庫啟動，再檢查 HTTP、銀行模組／前端、資料庫完整性與未登入 API。只建立自己的暫時容器，不掛載正式資料、不開放主機連接埠；確保新模組不會只在原始碼測試存在、映像卻漏包。

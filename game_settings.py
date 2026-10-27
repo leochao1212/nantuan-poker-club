@@ -22,8 +22,6 @@ DEFAULTS={
 NAMES=dict(zip(DEFAULTS,['德州撲克','台灣麻將','大老二','21 點','輪盤','百家樂','拉霸','礦區','爬塔','骰寶','射龍門']))
 DEFAULTS['limits']={'max_bet':10000}
 NAMES['limits']='共用下注上限'
-DEFAULTS['fishing']={'target_bps':9500,'daily_casts':20}
-NAMES['fishing']='楠團漁港'
 def field(key,label,minimum,maximum,labels=None,unit='integer'):
  return {'key':key,'label':label,'min':minimum,'max':maximum,'labels':labels,'unit':unit}
 SCHEMAS={
@@ -53,8 +51,6 @@ NOTES={
  'mines':'地雷等機率分布，最多翻 5 格。派彩含本金、向下取整，小額下注實際返還率較低。',
  'tower':'每層四選一，地雷等機率分布。遞增難度的地雷數須逐層不減。派彩向下取整。',
 }
-SCHEMAS['fishing']=[field('target_bps','命中魚體後派彩基準（%）',100,10000,unit='percent_bp'),field('daily_casts','休閒每日精力',1,100)]
-NOTES['fishing']='休閒精力於台灣午夜重置，魚餌消耗1／2／3精力。街機每發10／100／1,000點，受共用上限限制；普通捕獲返還＝炮價×魚種倍率。命中後成功率＝派彩基準÷本次總返還倍率期望值，連鎖與寶藏均計入，落空仍扣點。寶箱／人魚3次寶藏、鯨王5次，單次2／3／5／8／10／20／50／100倍、權重30／25／20／12／7／4／1／1，另贈1個技能道具。此為本站設定，非原廠未公開機率。新設定於下次發射生效，舊已扣點炮彈保留原快照。'
 SCHEMAS['limits']=[field('max_bet','每人每局下注上限（點）',20,1000000)]
 
 def initialize(db):
@@ -182,7 +178,6 @@ def _metrics(game,encoded):
     multiplier=bonus_engine.dice_multiplier(d,key,p);returned+=w*multiplier;hits+=w*(multiplier>0)
    rates[key]={'win_percent':100*hits/total**3,'rtp_percent':100*returned/total**3}
   return {'bets':rates}
- if game=='fishing':return {'hit_return_basis_percent':p['target_bps']/100}
  if game=='blackjack':return {'tie_win_percent':p.get('tie_win_bps',0)/100,'bust_refund_percent':p.get('bust_refund_bps',0)/100,'note':'優待只改結算，不改取牌；整體返還率依玩家決策與牌靴而異。'}
  if game=='inbetween':return {'target_percent':p['target_bps']/100,'post_protection_percent':p.get('post_protection_bps',0)/100}
  if game in ('tower','mines'):return {'target_percent':p['target_bps']/100}

@@ -33,8 +33,6 @@ import transfers
 import bank
 import market
 import market_data
-import fishing
-import fishing_gameplay
 import member_accounts
 from realtime import Hub, WriteQueue
 from dataclasses import dataclass
@@ -60,11 +58,6 @@ HTTP_SNAPSHOTS = threading.Semaphore(2)
 # Whitelisted text files: raw and gzip bytes with their ETags, rebuilt only when the file changes.
 STATIC_TEXT_CACHE: dict[Path, tuple] = {}
 STATIC_TEXT_LOCK = threading.Lock()
-FISH_WORLD_LOCK = threading.Lock()
-FISH_WORLD_CACHE = {}
-FISH_CLOCK_ACTIVE=threading.Event()
-FISH_CLOCK_ACTIVE.set()
-FISH_WALLET_DIRTY=threading.Event()
 
 
 def static_text(file: Path):
@@ -164,9 +157,8 @@ def initialize():
         db.execute("INSERT OR IGNORE INTO settings VALUES ('invite_code',?)", (secrets.token_hex(4).upper(),))
         online.initialize(db)
         transfers.initialize(db)
-        fishing.initialize(db)
-        # Settle persisted paid shots against their stored fish before accepting joins.
-        fishing_gameplay.tick(db,time.time())
+        import schema_migrations
+        schema_migrations.apply(db,time.time())
 
 
 class Problem(Exception):
@@ -298,9 +290,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?", 1)[0]
         try:
-            if path == "/api/fishing/events":
-                return self.fishing_stream()
-            elif path == "/api/online/events":
+            if path == "/api/online/events":
                 return self.event_stream()
             elif path == '/api/social/voice/socket':
                 query=parse_qs(urlsplit(self.path).query)
@@ -346,24 +336,6 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
                     value=game_settings.admin_view(db,user)
                 self.reply(200,value)
-            elif path=='/api/fishing/world':
-                query=parse_qs(urlsplit(self.path).query);rid=int(query.get('room',['1'])[0])
-                with HTTP_SNAPSHOTS,connect() as db:
-                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');self.user(db)
-                    value=fishing_gameplay.room_view(db,rid,time.time())
-                self.reply(200,value)
-            elif path=='/api/fishing/skill-state':
-                with HTTP_SNAPSHOTS,connect() as db:
-                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
-                    if parse_qs(urlsplit(self.path).query).get('version')!=[str(fishing_gameplay.VERSION)]:raise Problem('釣魚畫面已更新，請重新整理後再玩。',426)
-                    value=fishing_gameplay.skill_view(db,user['id'],time.time())
-                self.reply(200,value)
-            elif path=='/api/fishing':
-                with HTTP_SNAPSHOTS, connect() as db:
-                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
-                    if parse_qs(urlsplit(self.path).query).get('version')!=[str(fishing_gameplay.VERSION)]:raise Problem('釣魚畫面已更新，請重新整理後再玩。',426)
-                    value=fishing.view(db,user['id'],time.time())
-                self.reply(200,value)
             elif path=='/api/clubhouse/staff':
                 with HTTP_SNAPSHOTS, connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
@@ -379,9 +351,10 @@ class Handler(BaseHTTPRequestHandler):
                     if not picture or not picture[0]:raise Problem('找不到頭像。',404)
                     self.reply(200,picture[0],content_type='image/png')
             elif path=='/api/market':
+                query=parse_qs(urlsplit(self.path).query)
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);clock=time.time()
-                    value=dict(market=market.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+                    value=dict(market=market.view(db,user['id'],clock,query.get('symbol',[None])[0],query.get('period',[None])[0]),wallet=wallet.view(db,user['id'],clock))
                 self.reply(200,value)
             elif path in ('/api/bank','/api/admin/bank-settings'):
                 query=parse_qs(urlsplit(self.path).query)
@@ -447,7 +420,7 @@ class Handler(BaseHTTPRequestHandler):
                                         cell(people[e["user_id"]]["nickname"]), f'{e["buy_in"]/100:.2f}',
                                         f'{e["cash_out"]/100:.2f}', f'{(e["cash_out"]-e["buy_in"])/100:.2f}'])
                         self.reply(200, out.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8", attachment="poker-records.csv")
-            elif re.fullmatch(r'/assets/fishing/(?:fish-atlas|gear-atlas|boss-atlas|arcade-atlas|shore|sea-board|sea-palace|sea-wreck|swim-(?:sardine|clownfish|mackerel|snapper|tuna|ray|swordfish|goldfish|crab|octopus|eel|dragon|turtle|shark|mermaid|whale))\.webp',path) or re.fullmatch(r'/assets/staff/(?:concierge|host|steward)\.webp',path) or path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/cards/[a2-9tjqk][shdc]\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-back-friends|roul-(?:frame|hub)|dealer-btn|bet-chips|bj-shoe|mj-bird|mj-f-(?:spring|summer|autumn|winter|plum|orchid|chrys|bamboo))\.webp',path) or re.fullmatch(r'/assets/buttons/(?:btn-(?:primary|secondary)(?:-sm)?-[lmr]|btn-danger-sm-[lmr]|tab-(?:on|off)-[lmr]|frame-(?:table|card)|coin|chip-(?:10|50|100|500))\.webp',path):
+            elif re.fullmatch(r'/assets/staff/(?:concierge|host|steward)\.webp',path) or path=='/assets/poker-night.webp' or re.fullmatch(r'/assets/clubhouse/tier-[1-4](?:-small)?\.webp',path) or re.fullmatch(r'/assets/covers/(?:holdem|big2|blackjack|roulette|baccarat|slot|mines|dice|tower|inbetween|mahjong)\.webp',path) or re.fullmatch(r'/assets/cards/[a2-9tjqk][shdc]\.webp',path) or re.fullmatch(r'/assets/pieces/(?:slot-(?:777|crown|diamond|bell|cherry|bar)|dice-[q1-6]|mine-(?:gem|bomb)|card-back-friends|roul-(?:frame|hub)|dealer-btn|bet-chips|bj-shoe|mj-bird|mj-f-(?:spring|summer|autumn|winter|plum|orchid|chrys|bamboo))\.webp',path) or re.fullmatch(r'/assets/buttons/(?:btn-(?:primary|secondary)(?:-sm)?-[lmr]|btn-danger-sm-[lmr]|tab-(?:on|off)-[lmr]|frame-(?:table|card)|coin|chip-(?:10|50|100|500))\.webp',path):
                 artwork=(ROOT/'static'/path[1:]).read_bytes()
                 etag='"'+hashlib.sha256(artwork).hexdigest()+'"'
                 versions=parse_qs(urlsplit(self.path).query,keep_blank_values=True).get('v')
@@ -455,7 +428,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/market.js", "/bank.js", "/fishing-art.js", "/fishing-bonus.js", "/fishing-play.js", "/fishing-scene.js", "/fishing.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
                 ext = name.rsplit(".",1)[-1]
@@ -482,52 +455,6 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as ex:
             print(type(ex).__name__, str(ex), flush=True)
             self.reply(500, {"error": "读取失败，请稍后重试。"})
-
-    def fishing_stream(self):
-        query=parse_qs(urlsplit(self.path).query)
-        try:rid=int(query.get('room',['1'])[0])
-        except ValueError:raise Problem('魚場編號無效。')
-        if not 1<=rid<=fishing_gameplay.ROOMS:raise Problem('魚場編號無效。')
-        client=query.get('client',[''])[0]
-        if not re.fullmatch(r'[A-Za-z0-9_-]{16,80}',client):raise Problem('魚場連線編號無效。')
-        with connect() as db:uid=self.user(db)['id']
-        try:subscription=EVENTS.subscribe(uid,client);lease=subscription.__enter__()
-        except ValueError as error:raise Problem(str(error),429)
-        try:
-            self.connection.settimeout(15);self.send_response(200)
-            self.send_header('Content-Type','text/event-stream; charset=utf-8')
-            self.send_header('Cache-Control','no-cache, no-store, no-transform')
-            self.send_header('X-Accel-Buffering','no');self.end_headers()
-            self.wfile.write(b'retry: 800\n\n');self.wfile.flush()
-            sent=None;last=0.;verified=0.;channel=-500-rid
-            while not EVENTS.stopped and not lease.is_set():
-                now_monotonic=time.monotonic();version=EVENTS.version_for(channel)
-                if now_monotonic-verified>=2:
-                    try:
-                        with connect() as db:self.user(db)
-                    except (Problem,member_accounts.AccountError):
-                        self.wfile.write(b'event: auth\ndata: {}\n\n');self.wfile.flush();break
-                    verified=now_monotonic
-                if version!=sent or now_monotonic-last>=2:
-                    gap=.2-(now_monotonic-last)
-                    if gap>0:lease.wait(gap)
-                    version=EVENTS.version_for(channel);clock=time.time();key=int(clock*5)
-                    with FISH_WORLD_LOCK:
-                        cached=FISH_WORLD_CACHE.get(rid)
-                        if not cached or cached[0]!=key:
-                            with connect() as db:
-                                db.execute('PRAGMA query_only=ON');db.execute('BEGIN')
-                                value=fishing_gameplay.room_view(db,rid,clock)
-                            payload=json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()
-                            FISH_WORLD_CACHE[rid]=(key,version,payload)
-                        else:version,payload=cached[1:]
-                    if lease.is_set():break
-                    self.wfile.write(b'event: world\ndata: '+payload+b'\n\n');self.wfile.flush()
-                    sent=version;last=time.monotonic()
-                EVENTS.wait(version,timeout=.5,room_id=channel,cancelled=lease)
-        except (OSError,ConnectionError):pass
-        finally:
-            subscription.__exit__(None,None,None);self.close_connection=True
 
     def event_stream(self):
         query = parse_qs(urlsplit(self.path).query)
@@ -831,15 +758,6 @@ class Handler(BaseHTTPRequestHandler):
                 CLIENT_EVENT_BUDGET[user['id']]=[*budget,clock];CLIENT_EVENT_AT[key]=clock
             print(json.dumps({'event':'client_connection','kind':kind,'client':client,'user_id':user['id'],**fields,'at':now()}),flush=True)
             db.commit();return Reply(200,{'ok':True})
-        if path.startswith('/api/fishing/'):
-            result=fishing.mutate(db,user,path.rsplit('/',1)[1],data,getattr(self,'received_at',time.time()))
-            db.commit()
-            if result['result']['action'] in ('cast','join','burst'):FISH_CLOCK_ACTIVE.set()
-            for rid in result.pop('changed_rooms',[]):EVENTS.publish(-500-rid,lobby=False)
-            changed=result.pop('wallet_changed',False)
-            if changed:FISH_WALLET_DIRTY.set()
-            elif not result['replayed'] and result['result']['action'] in ('shot','sell'):EVENTS.publish(0,lobby=False)
-            return Reply(200,result)
         if path in ('/api/market/order','/api/market/cancel'):
             clock=time.time();result=market.mutate(db,user,path.rsplit('/',1)[1],data,clock)
             result.update(market=market.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
@@ -1065,25 +983,6 @@ def main():
             except Exception as error:
                 print("Dealer clock:", type(error).__name__, str(error), flush=True)
     threading.Thread(target=dealer_clock, daemon=True).start()
-    def fishing_clock():
-        published=0.
-        while not stopping.wait(.12):
-            if not FISH_CLOCK_ACTIVE.is_set() and not FISH_WALLET_DIRTY.is_set():continue
-            try:
-                changed={'rooms':(),'wallet':False}
-                if FISH_CLOCK_ACTIVE.is_set():
-                    with WRITES.enter() as admission:
-                        with connect() as db:
-                            db.execute('BEGIN IMMEDIATE');changed=fishing_gameplay.tick(db,admission.received_at);db.commit()
-                            if not changed['active']:FISH_CLOCK_ACTIVE.clear()
-                for rid in changed['rooms']:EVENTS.publish(-500-rid,lobby=False)
-                if changed['wallet']:FISH_WALLET_DIRTY.set()
-                # Own wallet replies remain immediate; coalesce shared lobby work.
-                if FISH_WALLET_DIRTY.is_set() and time.monotonic()-published>=.75:
-                    FISH_WALLET_DIRTY.clear();EVENTS.publish(0,lobby=False);published=time.monotonic()
-            except Exception as error:print('Fishing clock:',type(error).__name__,str(error),flush=True)
-    threading.Thread(target=fishing_clock,daemon=True).start()
-
     def market_clock():
         # Fetch on a single background worker; no HTTP request, write queue or
         # open SQLite transaction waits for an external market service.

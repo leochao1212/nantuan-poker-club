@@ -1,6 +1,7 @@
 """Fixed-point paper orders, new-observation fills, conservation and private receipts."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timezone
+from decimal import Decimal
 import json
 from contextlib import closing
 import sqlite3
@@ -117,6 +118,111 @@ class MarketRules(unittest.TestCase):
         q=self.db.execute("SELECT price FROM market_quotes WHERE symbol='CC:BTC'").fetchone()[0]
         self.assertEqual(q,'100')
 
+    def test_short_margin_profit_cover_and_wealth_conservation(self):
+        self.order('short',clock=101,amount=1000)
+        self.assertEqual(wallet.view(self.db,1,101)['balance'],2000)
+        self.assertEqual(wallet.view(self.db,1,101)['total'],3000)
+        self.quote(100,102);market.settle(self.db,102)
+        short=market.view(self.db,1,102)['shorts'][0]
+        self.assertEqual(short['quantity'],'10');self.assertEqual(short['margin'],1000)
+        self.assertEqual(Decimal(short['liquidation_price']),200)
+        self.assertEqual(wallet.view(self.db,1,102)['total'],3000)
+        self.quote(80,103);market.settle(self.db,103)
+        self.assertEqual(market.view(self.db,1,103)['shorts'][0]['profit'],200)
+        self.assertEqual(wallet.view(self.db,1,103)['balance'],2000,'short proceeds never enter the wallet')
+        self.assertEqual(wallet.view(self.db,1,103)['total'],3200)
+        request=dict(symbol='CC:BTC',side='cover',position_id=short['id'],operation_id='short_cover_receipt_123456')
+        market.mutate(self.db,self.user,'order',request,104)
+        with self.assertRaises(RuleError):self.order('cover',clock=104,position_id=short['id'])
+        self.quote(80,105);market.settle(self.db,105)
+        self.assertFalse(market.view(self.db,1,105)['shorts'])
+        self.assertEqual(wallet.view(self.db,1,105)['balance'],3200)
+        self.assertTrue(market.mutate(self.db,self.user,'order',request,999)['replayed'])
+        self.assertEqual(wallet.view(self.db,1,105)['balance'],3200)
+        row=self.db.execute("SELECT sum(amount),sum(game_delta),sum(flow_delta) FROM wealth_events WHERE kind='market_value'").fetchone()
+        self.assertEqual(tuple(row),(200,0,0))
+
+    def test_short_gap_liquidation_caps_loss_and_cancels_cover(self):
+        self.order('short',clock=101,amount=1000);self.quote(100,102);market.settle(self.db,102)
+        short=market.view(self.db,1,102)['shorts'][0]
+        self.order('cover',clock=103,position_id=short['id'])
+        self.quote(500,104);market.settle(self.db,104);market.settle(self.db,105)
+        v=market.view(self.db,1,105)
+        self.assertEqual(v['shorts'],[]);self.assertEqual(v['short_history'][0]['status'],'liquidated')
+        self.assertEqual(v['short_history'][0]['profit'],-1000)
+        self.assertEqual(v['short_history'][0]['returned'],0)
+        self.assertEqual(v['orders'][0]['status'],'cancelled')
+        self.assertEqual(wallet.view(self.db,1,105)['balance'],2000)
+        self.assertEqual(wallet.view(self.db,1,105)['total'],2000)
+        e=self.db.execute("SELECT sum(amount) FROM wealth_events WHERE kind='market_value'").fetchone()[0]
+        self.assertEqual(e,-1000)
+        with self.assertRaises(RuleError):self.order('cover',clock=105,position_id=short['id'])
+
+    def test_short_cancel_expiry_spread_and_sell_are_distinct(self):
+        request=self.order('short',clock=101,amount=1000)
+        market.mutate(self.db,self.user,'cancel',dict(order_id=request['order_id'],operation_id='short_cancel_receipt_1234'),102)
+        self.assertEqual(wallet.view(self.db,1,102)['balance'],3000)
+        self.order('short',clock=103,amount=1000);market.settle(self.db,224)
+        self.assertEqual(wallet.view(self.db,1,224)['balance'],3000)
+        self.quote(100,225,bid='99',ask='101');self.order('short',clock=226,amount=1000)
+        self.quote(100,227,bid='99',ask='101');market.settle(self.db,227)
+        p=market.view(self.db,1,227)['shorts'][0]
+        self.assertLess(p['profit'],0);self.assertGreaterEqual(p['profit'],-p['margin'])
+        with self.assertRaises(RuleError):self.order('sell',clock=228,quantity='1')
+        self.order('cover',clock=228,position_id=p['id'])
+        market.settle(self.db,349)
+        self.assertEqual(market.view(self.db,1,349)['shorts'][0]['id'],p['id'],'expired cover does not release the open margin')
+
+    def test_short_account_isolation_and_position_limit(self):
+        for n in range(20):
+            at=101+n*3;self.order('short',clock=at,amount=10);self.quote(100,at+1);market.settle(self.db,at+1)
+        self.assertEqual(len(market.view(self.db,1,161)['shorts']),20)
+        with self.assertRaises(RuleError):self.order('short',clock=162,amount=10)
+        pid=market.view(self.db,1,162)['shorts'][0]['id']
+        with self.assertRaises(RuleError):market.mutate(self.db,{'id':2},'order',dict(symbol='CC:BTC',side='cover',position_id=pid,operation_id='other_cover_not_owner_1234'),162)
+        self.assertFalse(market.view(self.db,2,162)['shorts'])
+
+    def test_chart_real_time_coordinates_bounded_points_and_no_future(self):
+        self.db.execute('DELETE FROM market_prices')
+        rows=[('CC:BTC',n*3,str(100+n/100)) for n in range(1200)]
+        self.db.executemany('INSERT INTO market_prices VALUES(?,?,?)',rows)
+        self.db.execute("INSERT INTO market_prices VALUES('CC:BTC',9999,'123')")
+        value=market.chart(self.db,'CC:BTC','1h',3600)
+        actual={(at,price) for _,at,price in rows}
+        self.assertLessEqual(len(value['points']),241)
+        self.assertTrue(all((p['at'],p['price']) in actual for p in value['points']))
+        self.assertTrue(all(p['at']<=3600 for p in value['points']))
+        self.assertEqual(value['from_at'],0);self.assertEqual(value['to_at'],3600)
+        self.assertEqual(value['points'],sorted(value['points'],key=lambda p:p['at']))
+        for code,period in [('unknown','1h'),('CC:BTC','bad')]:
+            with self.assertRaises(RuleError):market.chart(self.db,code,period,3600)
+        self.assertEqual(market.view(self.db,1,3600,'CC:BTC','1h')['chart']['points'],value['points'])
+
+
+    def test_high_precision_quotes_use_exact_integer_ratio_not_decimal_context(self):
+        high='100.000000000000000000000000000001'
+        low='99.999999999999999999999999999999'
+        self.assertEqual(market.units_for_budget(1000,high),999999999)
+        self.assertEqual(market.value_points(1000000000,high,up=True),1001)
+        self.assertEqual(market.value_points(1000000000,low),999)
+        self.quote(high,100);self.order(clock=101,amount=1000);self.quote(high,102);market.settle(self.db,102)
+        p=market.view(self.db,1,102)['positions'][0]
+        self.assertEqual(p['units'],999999999);self.assertEqual(p['cost'],1000)
+        self.assertEqual(wallet.view(self.db,1,102)['balance'],2000,'cannot take a point beyond the reserved budget')
+
+    def test_deployment_gate_blocks_new_margin_but_allows_known_receipts(self):
+        request=dict(symbol='CC:BTC',side='short',amount=1000,operation_id='deploy_margin_receipt_1234')
+        first=market.mutate(self.db,self.user,'order',request,101)
+        self.db.execute("INSERT INTO settings VALUES('deploy_pause_until','1000')")
+        self.assertTrue(market.mutate(self.db,self.user,'order',request,102)['replayed'])
+        before=wallet.view(self.db,1,102)['balance']
+        with self.assertRaises(member_accounts.AccountError) as e:self.order('short',clock=103,amount=1000)
+        self.assertEqual(e.exception.status,503);self.assertEqual(wallet.view(self.db,1,103)['balance'],before)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM market_orders').fetchone()[0],1)
+        self.db.execute("DELETE FROM settings WHERE key='deploy_pause_until'")
+        self.order('short',clock=104,amount=1000)
+        self.assertEqual(wallet.view(self.db,1,104)['balance'],1000)
+
 
 class Providers(unittest.TestCase):
     def test_official_formats_and_currency_conversion(self):
@@ -159,3 +265,37 @@ class MarketHTTP(ServerTestCase):
         self.assertEqual(b.call('/api/register',dict(username='market_other',nickname='另一位',password='SyntheticMarket123',invite_code=code))[0],200)
         self.assertEqual(b.call('/api/market')[1]['market']['orders'],[])
         self.assertEqual(b.call('/api/market/cancel',dict(order_id=value['market']['orders'][0]['id'],operation_id='http_cancel_foreign_12345'))[0],400)
+
+
+    def test_short_concurrent_reserve_and_cover_receipts(self):
+        import time
+        with closing(sqlite3.connect(self.db_path)) as db:
+            invite=db.execute("SELECT value FROM settings WHERE key='invite_code'").fetchone()[0]
+        a=Client(self.base)
+        self.assertEqual(a.call('/api/register',dict(username='short_http_owner',nickname='做空測試',password='SyntheticMarket123',invite_code=invite))[0],200)
+        uid=a.call('/api/online/lobby')[1]['me']['id']
+        def tick(price,settle=True):
+            with closing(sqlite3.connect(self.db_path,timeout=10)) as db:
+                db.row_factory=sqlite3.Row;t=time.time()
+                market.apply_quotes(db,[dict(symbol='CC:BTC',price=str(price),bid=str(price),ask=str(price),native=str(price),fx='1',fx_at=t,asof=t,source='test')],t)
+                if settle:market.settle(db,t)
+                db.commit()
+        tick(100,False)
+        data=dict(symbol='CC:BTC',side='short',amount=1000,operation_id='http_short_same_reserve_1234')
+        with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(lambda _:a.call('/api/market/order',data),range(8)))
+        self.assertTrue(all(r[0]==200 for r in results),results)
+        self.assertEqual(len({r[1]['order_id'] for r in results}),1)
+        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],2000)
+        tick(100);short=a.call('/api/market')[1]['market']['shorts'][0]
+        data=dict(symbol='CC:BTC',side='cover',position_id=short['id'],operation_id='http_short_same_cover_12345')
+        with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(lambda _:a.call('/api/market/order',data),range(8)))
+        self.assertTrue(all(r[0]==200 for r in results),results)
+        self.assertEqual(len({r[1]['order_id'] for r in results}),1)
+        tick(90)
+        value=a.call('/api/market')[1]
+        self.assertEqual(value['wallet']['balance'],3100);self.assertEqual(value['market']['shorts'],[])
+        self.assertTrue(a.call('/api/market/order',data)[1]['replayed'])
+        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],3100)
+        with closing(sqlite3.connect(self.db_path)) as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE user_id=? AND kind='market_reserve'",(uid,)).fetchone()[0],1)
+            self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE user_id=? AND event_key=?",(uid,'market:cover:'+str(short['id']))).fetchone()[0],1)

@@ -44,7 +44,7 @@ window.ClubFishingScene=(()=>{
   return result;
  }
  function create(canvas,callbacks){
-  let model=null,frame=0,last=0,alive=true,visible=true,castAt=0,phase=null,hookAt=0,lastHud=0,presented=null,aim={x:500,y:260},targetId=null,board=null,inBoard=false;
+  let model=null,frame=0,last=0,alive=true,visible=true,castAt=0,phase=null,hookAt=0,lastHud=0,lastPresentation=0,presented=null,aim={x:500,y:260},targetId=null,board=null,inBoard=false;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)'),c=canvas.getContext('2d'),assets={},localShots=new Map();
   function text(value,x,y,size=14,color='#f5fbff',upright=false){c.save();c.translate(x,y);if(inBoard){c.scale(1/board.sx,1/board.sy);size=Math.max(11,Math.min(19,size*.62));}c.font='700 '+size+'px system-ui';c.textAlign='center';c.fillStyle=color;c.shadowColor='#031d38';c.shadowBlur=4;c.fillText(value,0,0);c.restore();}
   function cover(img,x,y,w,h,zoom=1){if(!img?.naturalWidth)return;const scale=Math.max(w/img.naturalWidth,h/img.naturalHeight)*zoom,bw=img.naturalWidth*scale,bh=img.naturalHeight*scale;c.drawImage(img,x+(w-bw)/2,y+(h-bh)/2,bw,bh);}
@@ -89,9 +89,18 @@ window.ClubFishingScene=(()=>{
    if(model.mode==='arcade')arcade(w,h,clock);else leisure(w,h,clock,now);
    const failed=Object.values(assets).some(img=>img.complete&&!img.naturalWidth);canvas.dataset.artState=failed?'failed':'ready';if(failed)text('素材載入較慢，操作與結算仍由伺服器確認',w/2,h*.55,13);
   }
-  function tick(now){frame=0;if(!alive||document.hidden||!visible)return;if(model?.mode==='leisure'&&model.pending?.phase==='playing'&&now-lastHud>=(reduced.matches?50:1000/60-.5)){const target=skillFrameProjection(model.pending,model.now(),model.holding,model.control);presented=smoothSkillFrame(presented,target,lastHud?(now-lastHud)/1000:0);lastHud=now;callbacks.skillFrame?.(presented,now);}else if(model?.pending?.phase!=='playing')presented=null;if(now-last>=(reduced.matches?50:33.3)){draw(now);last=now;}frame=requestAnimationFrame(tick);}
+  function tick(now){
+   frame=0;if(!alive||document.hidden||!visible)return;
+   const interval=reduced.matches?50:1000/60,steps=Math.floor((now-lastHud+.5)/interval);
+   if(model?.mode==='leisure'&&model.pending?.phase==='playing'&&steps>=1){
+    const target=skillFrameProjection(model.pending,model.now(),model.holding,model.control);
+    presented=smoothSkillFrame(presented,target,lastPresentation?(now-lastPresentation)/1000:0);
+    lastPresentation=now;lastHud+=steps*interval;callbacks.skillFrame?.(presented,now);
+   }else if(model?.pending?.phase!=='playing')presented=null;
+   if(now-last>=(reduced.matches?50:33.3)){draw(now);last=now;}frame=requestAnimationFrame(tick);
+  }
   function resume(){if(alive&&visible&&!document.hidden&&!frame)frame=requestAnimationFrame(tick);}
-  function visibility(){if(document.hidden){cancelAnimationFrame(frame);frame=0;presented=null;lastHud=0;}else resume();}
+  function visibility(){if(document.hidden){cancelAnimationFrame(frame);frame=0;presented=null;lastHud=lastPresentation=0;}else resume();}
   function point(e){if(model?.mode!=='arcade'||!model.world||!board)return null;const r=canvas.getBoundingClientRect(),dx=e.clientX-r.left-board.x,dy=e.clientY-r.top-board.y;if(dx<0||dy<0||dx>board.w||dy>board.h)return null;const x=dx/board.sx,y=dy/board.sy;let hit=null,dist=Infinity;for(const f of model.world.entities){if(model.now()<f.spawned_at||model.now()>=f.expires_at)continue;const p=worldPosition(f,model.now(),model.world.effects),a=fishHeading(f,model.now(),model.world.effects),dx=x-p.x,dy=y-p.y,v=((dx*Math.cos(a)+dy*Math.sin(a))/f.radius_x)**2+((-dx*Math.sin(a)+dy*Math.cos(a))/f.radius_y)**2;if(v<1.8&&v<dist){dist=v;hit=f;}}
    aim={x,y};if(model.locked&&hit)targetId=hit.id;else if(!model.locked)targetId=null;callbacks.aim?.(x,y,hit?.id||null);return aim;
   }
@@ -101,7 +110,7 @@ window.ClubFishingScene=(()=>{
   canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);document.addEventListener('visibilitychange',visibility);
   const resize=new ResizeObserver(()=>resume());resize.observe(canvas);const intersection=new IntersectionObserver(entries=>{visible=entries.at(-1).isIntersecting;if(visible)resume();else{cancelAnimationFrame(frame);frame=0;callbacks.shootStop?.();}});intersection.observe(canvas);
   for(const name of ['fish-atlas','gear-atlas','shore'])assets[name]=image(name,()=>{if(alive)resume();});
-  return {update(next){if(next.mode!==model?.mode||next.pending?.id!==model?.pending?.id){presented=null;lastHud=0;}if(next.mode==='arcade')for(const name of [next.world?.theme||'sea-board','arcade-atlas',...new Set((next.world?.entities||[]).map(f=>window.ClubFishingArt?.[f.species]?.asset).filter(Boolean))])if(!assets[name])assets[name]=image(name,()=>resume());if(next.pending?.phase==='playing'&&phase!=='playing')hookAt=performance.now();phase=next.pending?.phase;model=next;resume();},aim(id){targetId=id;},cast(){castAt=performance.now();resume();},
+  return {update(next){if(next.mode!==model?.mode||next.pending?.id!==model?.pending?.id){presented=null;lastHud=lastPresentation=0;}if(next.mode==='arcade')for(const name of [next.world?.theme||'sea-board','arcade-atlas',...new Set((next.world?.entities||[]).map(f=>window.ClubFishingArt?.[f.species]?.asset).filter(Boolean))])if(!assets[name])assets[name]=image(name,()=>resume());if(next.pending?.phase==='playing'&&phase!=='playing')hookAt=performance.now();phase=next.pending?.phase;model=next;resume();},aim(id){targetId=id;},cast(){castAt=performance.now();resume();},
    shotLocal(s){const player=model?.world?.players.find(p=>p.user_id===model.user);if(!player)return;const o=origin(player.seat),d=Math.hypot(s.x-o.x,s.y-o.y),laser=model.world.effects.some(e=>e.kind==='laser'&&e.user_id===model.user&&e.starts_at<=s.fired_at&&e.ends_at>s.fired_at),ammo=model.ammo?.find(a=>a.stake===model.stake),speed=laser?Math.max(1800,(ammo?.speed||1150)+350):ammo?.speed||1150;localShots.set(s.token,{token:s.token,born_at:s.fired_at,x0:o.x,y0:o.y,vx:(s.x-o.x)/d*speed,vy:(s.y-o.y)/d*speed,power:Math.max(1,model.stake/10),laser,radius:(model.cannons?.[model.cannon]?.radius||15)+(ammo?.radius_bonus||0)+(laser?12:0)});},
    rejectShots(tokens){for(const t of tokens)localShots.delete(t);},draw,destroy(){alive=false;cancelAnimationFrame(frame);resize.disconnect();intersection.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);document.removeEventListener('visibilitychange',visibility);}
   };

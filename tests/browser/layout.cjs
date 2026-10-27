@@ -58,6 +58,7 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       const m=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src),main:!!document.querySelector('#main')}));
       if(m.scroll>m.width+1){await page.screenshot({path:path.join(out,`${engine}-${name}-${width}-overflow.png`),fullPage:true});const overflowing=await page.evaluate(()=>[...document.querySelectorAll('#main *')].map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,right:r.right,width:r.width};}).filter(e=>e.width>0&&e.right>innerWidth+1).slice(-20));fs.writeFileSync(path.join(out,`${engine}-${name}-${width}-overflow.json`),JSON.stringify(overflowing,null,2));}
       assert.ok(m.main,name+' missing main');assert.ok(m.scroll<=m.width+1,engine+' '+name+' overflow '+JSON.stringify(m));assert.deepEqual(m.broken,[],engine+' '+name+' broken images');
+      if(name==='rewards'){const supplies=await page.locator('#daily-claim,#hourly-claim').evaluateAll(nodes=>nodes.map(e=>({id:e.id,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height})));assert.ok(supplies.length===2&&supplies.every(r=>r.width>=160&&r.height>=44&&r.height<=100),engine+' supply buttons must not collapse '+JSON.stringify(supplies));}
       if(name==='slot'){
        await page.waitForFunction(()=>[...document.querySelectorAll('.slot-reel .current-art')].every(i=>i.complete&&i.naturalWidth));
        for(const scale of ['100%','130%']){
@@ -100,7 +101,7 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
    }
    results.push({name,route,viewports:inspected});console.log('layout OK: '+name+' ('+inspected+' views)');
   }
-  for(const [route,name,selector] of [['lobby','lobby','#lobby-games'],['stats','ranking','.rank-row'],['members','members','.member-panel'],['clubhouse','clubhouse','.clubhouse-scene'],['rewards','rewards','.rewards-hub'],['collection','collection','.collection-card'],['profile','profile','#profile-console'],['wallet','transfers','#transfer-form'],['admin','admin','#admin-console']])await checkRoute(route==='admin'?admin:member,route,name,selector);
+  for(const [route,name,selector] of [['lobby','lobby','#lobby-games'],['stats','ranking','.rank-row'],['members','members','.member-panel'],['clubhouse','clubhouse','.clubhouse-scene'],['rewards','rewards','.rewards-hub'],['collection','collection','.collection-card'],['profile','profile','#profile-console'],['bank','bank','#bank-amount'],['wallet','transfers','#transfer-form'],['admin','admin','#admin-console']])await checkRoute(route==='admin'?admin:member,route,name,selector);
   const games=[['holdem',6,'.table-arena'],['big2',4,'.arcade-surface'],['blackjack',6,'.blackjack-player'],['mahjong',4,'.mj-table'],['roulette',1,'.roulette-stage'],['baccarat',1,'.arcade-surface'],['slot',1,'.slot-machine'],['mines',1,'.risk-cell'],['tower',1,'.tower-floor'],['dice',2,'.dice-board'],['inbetween',1,'.gate-board']];
   for(const [kind,count,selector] of games){
    if(only.size&&!only.has(kind==='inbetween'?'gate':kind))continue;

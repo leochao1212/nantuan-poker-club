@@ -93,6 +93,8 @@ def accounts(db,actor,clock,search='',page=1):
     where="NOT EXISTS (SELECT 1 FROM account_states s WHERE s.user_id=u.id AND s.status='deleted') AND (u.username LIKE ? ESCAPE '\\' OR u.nickname LIKE ? ESCAPE '\\')"
     count=db.execute('SELECT count(*) FROM users u WHERE '+where,(pattern,pattern)).fetchone()[0]
     totals=wallet.in_play(db)
+    import bank
+    banking=bank.assets(db,clock)
     seats={}
     for row in db.execute("SELECT id,name,status,state FROM poker_rooms WHERE status!='closed'"):
         for seat in json.loads(row['state'])['seats']:
@@ -109,7 +111,7 @@ def accounts(db,actor,clock,search='',page=1):
         person=dict(row);uid=person['id']
         access=member_accounts.state(db,uid)
         person.update(online=clock-person['last_seen']<16,in_play=totals.get(uid,0),
-                      total=person['balance']+totals.get(uid,0),room=seats.get(uid),status=access['status'],state_revision=access['revision'],status_reason=access['reason'])
+                      total=person['balance']+totals.get(uid,0)+banking.get(uid,0),room=seats.get(uid),bank=bank.summary(db,uid,clock),status=access['status'],state_revision=access['revision'],status_reason=access['reason'])
         people.append(person)
     history=[dict(row) for row in db.execute('''SELECT 'admin:'||g.id AS id,g.amount AS amount,g.note AS note,g.created_at AS created_at,
       a.nickname AS actor,a.username AS actor_username,t.nickname AS target,t.username AS target_username
@@ -123,5 +125,5 @@ def accounts(db,actor,clock,search='',page=1):
     return {'accounts':people,'history':history,'account_history':account_history,'total_matches':count,'page':page,'page_size':50,
             'total_accounts':db.execute("SELECT count(*) FROM users u WHERE NOT EXISTS (SELECT 1 FROM account_states s WHERE s.user_id=u.id AND s.status='deleted')").fetchone()[0],
             'online_accounts':db.execute("SELECT count(*) FROM poker_presence p WHERE last_seen>? AND NOT EXISTS (SELECT 1 FROM account_states s WHERE s.user_id=p.user_id AND s.status='deleted')",(clock-16,)).fetchone()[0],
-            'total_chips':db.execute('SELECT COALESCE(sum(balance),0) FROM wallets').fetchone()[0]+sum(totals.values()),
+            'total_chips':db.execute('SELECT COALESCE(sum(balance),0) FROM wallets').fetchone()[0]+sum(totals.values())+sum(banking.values()),
             'server_time':clock}

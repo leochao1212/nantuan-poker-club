@@ -231,7 +231,9 @@ def lobby(db, user, clock, *, touch_presence=True):
     for room in rooms:
         for seat in room['seats']:seat.update(cosmetics=cosmetics.get(seat['user_id'],{}),**profiles.get(seat['user_id'],{}))
     totals=wallet.in_play(db)
-    for person in people:person['total_chips']=person['balance']+totals.get(person['id'],0)
+    import bank
+    bank_assets=bank.assets(db,clock)
+    for person in people:person['total_chips']=person['balance']+totals.get(person['id'],0)+bank_assets.get(person['id'],0)
     people.sort(key=lambda u:(-u['total_chips'],-u['profit'],u['id']))
     for index,person in enumerate(people):person['rank']=index+1
     member_count=len(people)

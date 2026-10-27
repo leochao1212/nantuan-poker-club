@@ -640,7 +640,7 @@ main#main{padding-left:15px;padding-right:15px;}
 .action-feedback .button{margin-left:auto;}
 .room-heading p{flex-wrap:wrap;line-height:1.8;}
 }
-.wallet-panel{display:flex;align-items:center;justify-content:space-between;border:1px solid #65513a;}
+.wallet-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;border:1px solid #65513a;}
 .wallet-panel>div>span{color:var(--gold);font-size:13px;}
 .wallet-panel strong{display:block;}
 .wallet-panel p,.daily-box>span{font-size:12px;color:var(--muted);}
@@ -702,7 +702,7 @@ main#main{padding-left:15px;padding-right:15px;}
 .between-buttons .primary{grid-column:-2/-1;}
 .waiting-turn{flex-wrap:wrap;}
 .waiting-turn>.button{min-height:48px;font-size:13px;}
-.wallet-panel{align-items:stretch;flex-direction:column;}
+.wallet-panel{align-items:stretch;}
 .wallet-panel p,.daily-box>span{font-size:13px;}
 .bet-keypad .modal-head h2{font-size:21px;}
 #room-chat{position:fixed;max-width:none;}
@@ -1251,13 +1251,13 @@ dialog::backdrop{backdrop-filter:none;}
 .deal-pending{visibility:visible!important;}
 #deal-layer{display:none;}
 }
-.supply-boxes{display:flex;gap:20px;flex-wrap:wrap;}
-.supply-boxes .daily-box{justify-content:flex-start;max-width:280px;}
+.supply-boxes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;grid-column:1/-1;min-width:0;}
+.supply-boxes .daily-box{justify-content:flex-start;min-width:0;max-width:none;}
 .hourly-box small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-height:18px;}
 .hourly-box .button{min-height:50px;}
 @media (max-width:1100px){
-.wallet-panel{flex-wrap:wrap;}
-.supply-boxes{width:100%;display:grid;grid-template-columns:1fr 1fr;}
+.wallet-panel{grid-template-columns:minmax(0,1fr);}
+.supply-boxes{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));}
 .supply-boxes .daily-box{min-width:0;max-width:none;}
 .supply-boxes .button{min-width:0;width:100%;min-height:50px;}
 }
@@ -1992,6 +1992,8 @@ dialog::backdrop{backdrop-filter:none;}
 #transfer-more{margin-top:20px;}
 #open-transfers{min-width:44px;min-height:44px;}
 .wallet-transfer-link{min-height:44px;margin-top:12px;}
+.wallet-actions{display:flex;flex-wrap:wrap;gap:8px;min-width:0;}
+.wallet-actions .wallet-transfer-link{margin-top:0;}
 .member-transfer{width:100%;margin-top:16px;min-height:44px;}
 @media (max-width:1000px){
 .transfer-layout{grid-template-columns:1fr;gap:16px;}
@@ -2667,7 +2669,7 @@ dialog:has(.feature-dialog){width:min(800px,calc(100% - 24px));}
 .rewards-hub .club-missions{scroll-margin-top:100px;}
 .rewards-hub .wallet-panel{margin:0 0 24px;}
 .rewards-hub .club-missions{margin:0;}
-.rewards-hub .supply-boxes{flex:1;min-width:0;}
+.rewards-hub .supply-boxes{min-width:0;}
 .rewards-hub .daily-box{padding:16px;}
 .rewards-hub .daily-box .button{min-height:48px;white-space:normal;}
 .sidebar .nav-item[href="#rewards"]{position:relative;}
@@ -5140,3 +5142,8 @@ body[data-fishing]{overflow:hidden;background:#052d48}body[data-fishing] :is(.si
 /* Fishing supplies and owner-only settlement report share the existing detail panel. */
 .fish-supply{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px;border:1px solid #bda366;border-radius:14px;background:#092b42}.fish-supply h3,.fish-report h3{margin:0;color:#ffe4a0;font-size:18px}.fish-supply p{margin:6px 0;color:#ebf6ff}.fish-supply small{color:#c8e3ef;font-size:12px}.fish-supply .fish-panel-button{margin:0}.fish-supply .fish-supply-stock{flex-basis:100%;margin:0;padding-top:10px;border-top:1px solid #7494a6;color:#d9edfc;font-size:14px}.fish-report{margin-top:24px}.fish-report-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}.fish-report-totals div{min-width:0;padding:10px 6px;border-radius:8px;background:#082b45}.fish-report-totals span,.fish-shot-list span{display:block;font-size:12px;color:#c8e3ef}.fish-report-totals strong{display:block;overflow-wrap:anywhere;font-size:20px;color:#ffe4a0;font-variant-numeric:tabular-nums}.fish-report-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 8px}.fish-report-heading .fish-panel-button{margin:0;min-height:44px;padding:8px 12px}.fish-shot-list{list-style:none;margin:0;padding:0}.fish-shot-list li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #7595a66e}.fish-shot-list li>div{min-width:0}.fish-shot-list li>div:last-child{text-align:right;flex-shrink:0}.fish-shot-list strong{font-size:14px;color:#f3f9ff}.fish-shot-list .fish-report-empty{color:#c8e3ef;font-size:14px}.fish-panel-status{color:#ffe4a0;line-height:1.6}.fish-detail-modal button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .fish-detail-modal{--fish-panel-gutter:22px}.fish-detail-modal .fish-modal-head{position:sticky;top:calc(-1 * var(--fish-panel-gutter));z-index:2;background:#07425f;padding-block:10px}.fish-detail-modal .fish-icon{display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:1px solid #85bad2;border-radius:50%;background:#123e58;color:#effaff;font:28px/1 system-ui}.fish-detail-modal button{cursor:pointer;touch-action:manipulation}.fish-detail-modal button:disabled{cursor:default;opacity:.65}@media(max-width:760px){.fish-detail-modal{--fish-panel-gutter:16px}}
+
+/* Virtual-point bank: shared tokens, stable transaction controls, five mobile nav items. */
+#bank-console{min-width:0}.bank-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:12px 0 24px;border-bottom:1px solid var(--line);margin-bottom:24px}.bank-hero h2{font-size:clamp(24px,2.8vw,34px);line-height:1.25;margin:8px 0}.bank-hero p{color:var(--muted)}.bank-hero .small-label,.bank-hero p b{color:var(--gold)}.bank-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:24px}.bank-overview article{display:flex;flex-direction:column;gap:10px;min-width:0;padding:24px}.bank-overview article>span,.bank-overview article>p{color:var(--muted)}.bank-overview article>strong{display:flex;align-items:baseline;gap:8px;font-size:clamp(28px,3vw,40px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.bank-overview strong small{font-size:14px;color:var(--muted)}.bank-overview article>p{font-size:14px}.bank-overview .bank-vault{border-color:var(--gold)}.bank-vault>.button{align-self:flex-start;margin-top:auto}.bank-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}.bank-compose,.bank-records{padding:24px;min-width:0}.bank-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:20px 0}.bank-tabs .button{padding:10px 4px;min-height:44px}.bank-tabs [aria-pressed=true]{color:var(--gold);border-color:var(--gold);background:var(--panel2)}.bank-compose fieldset,.bank-admin fieldset{margin:0;padding:0;border:0;min-width:0}.bank-stepper{display:grid;grid-template-columns:52px minmax(0,1fr) 52px;gap:10px;margin:10px 0}.bank-stepper input{min-width:0;width:100%;height:56px;text-align:center;font-size:24px;font-variant-numeric:tabular-nums}.bank-stepper .button{padding:0;font-size:26px}.bank-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.bank-presets .button{min-height:44px;padding:6px}.bank-compose [data-bank-available]{font-size:14px;margin:12px 0;color:var(--muted);min-height:26px}.bank-submit{display:flex;gap:8px;flex-wrap:wrap}.bank-submit>.primary{flex:1;min-height:52px}.bank-message{min-height:56px;margin-top:12px;overflow-wrap:anywhere}.bank-message.error{color:var(--loss)}.bank-review{padding:16px;border:1px solid var(--gold);border-radius:12px;margin:12px 0;color:var(--gold)}.bank-rules{border-top:1px solid var(--line);padding-top:16px}.bank-rules summary{min-height:44px;cursor:pointer;display:flex;align-items:center}.bank-rules p{font-size:14px;margin:8px 0;color:var(--muted)}.bank-net{padding-top:16px;font-size:14px;color:var(--muted)}.bank-net strong{color:var(--ink);font-size:20px}.bank-records ul,.bank-settings-history{list-style:none;padding:0;margin:16px 0}.bank-records li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}.bank-records li span{display:flex;flex-direction:column;gap:6px;min-width:0}.bank-records li small{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.bank-records li b{white-space:nowrap}.bank-records .text-button{min-height:44px;flex-shrink:0}.bank-admin{padding:24px}.bank-admin>p,.bank-admin-form>p{color:var(--muted);margin:12px 0}.bank-admin fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}.bank-admin label{display:flex;flex-direction:column;gap:8px;min-width:0}.bank-admin input{min-width:0;width:100%;min-height:48px}.bank-admin-note{grid-column:1/-1}.bank-settings-history li{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.bank-settings-history span{color:var(--muted);font-size:13px}
+@media(max-width:1000px){.bank-layout{grid-template-columns:1fr}.bank-hero{align-items:flex-start}.bank-overview article{padding:18px}}
+@media(max-width:760px){.sidebar .nav-item[href="#bank"]{display:none}.bank-hero{display:block;padding-top:12px}.bank-hero>.button{margin-top:16px;min-height:44px}.bank-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.bank-overview article:last-child{grid-column:1/-1}.bank-overview article{padding:16px;gap:10px}.bank-overview article>strong{font-size:28px}.bank-overview .bank-vault>.button{padding:8px;min-height:44px;width:100%}.bank-layout{gap:16px}.bank-compose,.bank-records,.bank-admin{padding:16px}.bank-tabs{gap:6px}.bank-admin fieldset{grid-template-columns:1fr}.bank-admin-note{grid-column:auto}.bank-records .panel-title{gap:8px}}

@@ -5102,3 +5102,5 @@ html[data-ui=current] #app button.market-instrument[aria-pressed=true]{backgroun
 #app .market-compose [hidden]{display:none}
 
 .market-short-result{padding:12px;border-left:3px solid var(--gold);background:var(--panel2);font-size:14px;line-height:1.7}
+
+.rules-history pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.7}

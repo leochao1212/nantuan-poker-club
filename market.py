@@ -4,7 +4,7 @@ Cash buys reserve an integer budget; sells reserve existing fractional units.
 Both execute only on a source observation newer than submission. Displayed old
 closing prices can never be used for a fill. Quantities use 1e-8 fixed units.
 """
-from decimal import Decimal, InvalidOperation, ROUND_FLOOR, ROUND_CEILING
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import re
@@ -61,9 +61,20 @@ def decimal(value):
     try:
         if isinstance(value,bool):raise ValueError()
         result=Decimal(str(value))
-        if not result.is_finite() or result<=0 or result>Decimal('1000000000'):raise ValueError()
+        if not result.is_finite() or result<Decimal('0.000000000001') or result>Decimal('1000000000'):raise ValueError()
         return result
     except (ValueError,InvalidOperation):raise RuleError('價格或數量無效。') from None
+
+
+def value_points(units,price,*,up=False):
+    numerator,denominator=decimal(price).as_integer_ratio()
+    top=units*numerator;bottom=SCALE*denominator
+    return (top+bottom-1)//bottom if up else top//bottom
+
+
+def units_for_budget(budget,price):
+    numerator,denominator=decimal(price).as_integer_ratio()
+    return budget*SCALE*denominator//numerator
 
 
 def quantity(units):
@@ -82,7 +93,7 @@ def _assets(db):
     values={r[0]:r[1] for r in db.execute("SELECT user_id,sum(budget) FROM market_orders WHERE status='pending' AND side IN ('buy','short') GROUP BY user_id")}
     # Last known marks remain in net assets when a feed goes stale. Orders stop.
     for r in db.execute('SELECT p.user_id,p.units,p.cost,q.price FROM market_positions p LEFT JOIN market_quotes q USING(symbol) WHERE p.units>0'):
-        mark=int(Decimal(r['price'])*r['units']/SCALE) if r['price'] else r['cost']
+        mark=value_points(r['units'],r['price']) if r['price'] else r['cost']
         values[r['user_id']]=values.get(r['user_id'],0)+mark
     for r in db.execute("SELECT s.*,q.ask FROM market_shorts s LEFT JOIN market_quotes q USING(symbol) WHERE s.status='open'"):
         values[r['user_id']]=values.get(r['user_id'],0)+short_value(r,r['ask'])
@@ -102,7 +113,7 @@ def view(db,uid,clock,symbol=None,period=None):
     positions=[]
     for r in db.execute('SELECT * FROM market_positions WHERE user_id=? AND units>0',(uid,)):
         item=dict(r);reserved=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,r['symbol'])).fetchone()[0]
-        q=quotes.get(r['symbol']);mark=int(Decimal(q['price'])*r['units']/SCALE) if q else r['cost']
+        q=quotes.get(r['symbol']);mark=value_points(r['units'],q['price']) if q else r['cost']
         positions.append(dict(item,quantity=quantity(r['units']),available_quantity=quantity(r['units']-reserved),value=mark,profit=mark-r['cost'],stale=not quote_ready(q,clock)))
     shorts=[]
     for r in db.execute("SELECT * FROM market_shorts WHERE user_id=? AND status='open' ORDER BY id",(uid,)):
@@ -168,7 +179,7 @@ def mutate(db,user,action,data,clock):
                 p=db.execute('SELECT units FROM market_positions WHERE user_id=? AND symbol=?',(uid,symbol)).fetchone()
                 held=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,symbol)).fetchone()[0]
                 if not p or units>p[0]-held:raise RuleError('可賣出份額不足，部分份額可能已有委託。')
-                if Decimal(units)*Decimal(q['bid'])/SCALE<1:raise RuleError('賣出市值至少需要 1 點。')
+                if value_points(units,q['bid'])<1:raise RuleError('賣出市值至少需要 1 點。')
             elif side=='cover':
                 position=db.execute("SELECT * FROM market_shorts WHERE id=? AND user_id=? AND symbol=? AND status='open'",(position_id,uid,symbol)).fetchone()
                 if not position:raise RuleError('找不到可買回的做空倉位。')
@@ -176,7 +187,7 @@ def mutate(db,user,action,data,clock):
                 units=position['units']
             elif side=='short':
                 if db.execute("SELECT count(*) FROM market_shorts WHERE user_id=? AND status='open'",(uid,)).fetchone()[0]+db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND side='short' AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆做空倉位。')
-            elif int(Decimal(budget)*SCALE/Decimal(q['ask']))<1:raise RuleError('買入點數不足最小份額。')
+            elif units_for_budget(budget,q['ask'])<1:raise RuleError('買入點數不足最小份額。')
             if db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆委託，請先取消部分委託。')
             oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[INSTRUMENTS[symbol]['market']],position_id)).lastrowid
             if side in ('buy','short'):wallet.transfer(db,uid,-budget,'market_reserve','market:reserve:'+str(oid),clock)
@@ -220,8 +231,8 @@ def settle(db,clock):
         q=quotes.get(o['symbol'])
         if not quote_ready(q,clock) or q['asof']<=o['submitted_at']:continue
         if o['side']=='short':
-            price=Decimal(q['bid']);units=int(Decimal(o['budget'])*SCALE/price)
-            proceeds=int(Decimal(units)*price/SCALE)
+            price=Decimal(q['bid']);units=units_for_budget(o['budget'],price)
+            proceeds=value_points(units,price)
             if units<1 or units>10**14 or proceeds<1:
                 cancel(db,o,clock,'cancelled','新報價無法建立允許範圍內的做空倉位');changed=True;continue
             pid=db.execute("INSERT INTO market_shorts(user_id,symbol,units,margin,entry_points,entry_price,opened_at,entry_asof,status) VALUES(?,?,?,?,?,?,?,?,'open')",(o['user_id'],o['symbol'],units,o['budget'],proceeds,str(price),clock,q['asof'])).lastrowid
@@ -240,15 +251,15 @@ def settle(db,clock):
         p=db.execute('SELECT units,cost FROM market_positions WHERE user_id=? AND symbol=?',(o['user_id'],o['symbol'])).fetchone()
         old_units,old_cost=(p[0],p[1]) if p else (0,0)
         if o['side']=='buy':
-            units=int(Decimal(o['budget'])*SCALE/price)
+            units=units_for_budget(o['budget'],price)
             if units<1:cancel(db,o,clock,'cancelled','新報價不足最小份額');changed=True;continue
-            points=int((Decimal(units)*price/SCALE).to_integral_value(rounding=ROUND_CEILING))
+            points=value_points(units,price,up=True)
             new_units,new_cost=old_units+units,old_cost+points;profit=0
             if new_units>10**14 or new_cost>10**12:
                 cancel(db,o,clock,'cancelled','持倉已達上限');changed=True;continue
             wallet.transfer(db,o['user_id'],o['budget']-points,'market_refund','market:change:'+str(o['id']),clock)
         else:
-            units=o['units'];points=int(Decimal(units)*price/SCALE)
+            units=o['units'];points=value_points(units,price)
             if points>10**12:
                 cancel(db,o,clock,'cancelled','成交市值超過單筆上限');changed=True;continue
             if points<1:cancel(db,o,clock,'cancelled','新報價低於最低賣出市值');changed=True;continue
@@ -256,8 +267,8 @@ def settle(db,clock):
             cost=old_cost if units==old_units else old_cost*units//old_units
             new_units,new_cost=old_units-units,old_cost-cost;profit=points-cost
             wallet.transfer(db,o['user_id'],points,'market_sale','market:sale:'+str(o['id']),clock)
-        before_mark=int(Decimal(q['price'])*old_units/SCALE)
-        after_mark=int(Decimal(q['price'])*new_units/SCALE)
+        before_mark=value_points(old_units,q['price'])
+        after_mark=value_points(new_units,q['price'])
         wealth_delta(db,o['user_id'],after_mark-before_mark+(-points if o['side']=='buy' else points),clock)
         db.execute('INSERT INTO market_positions VALUES(?,?,?,?) ON CONFLICT(user_id,symbol) DO UPDATE SET units=excluded.units,cost=excluded.cost',(o['user_id'],o['symbol'],new_units,new_cost))
         db.execute("UPDATE market_orders SET status='filled',filled_at=?,fill_asof=?,fill_price=?,filled_units=?,points=?,profit=? WHERE id=?",(clock,q['asof'],str(price),units,points,profit,o['id']))
@@ -287,8 +298,8 @@ def apply_quotes(db,rows,clock):
             (symbol,str(price),str(bid),str(ask),str(decimal(r['native'])),str(decimal(r['fx'])),r['asof'],r['fx_at'],clock,r['source'],token,halted))
         if not halted:
             for p in db.execute('SELECT user_id,units,cost FROM market_positions WHERE symbol=? AND units>0',(symbol,)).fetchall():
-                before=int(Decimal(old['price'])*p['units']/SCALE) if old else p['cost']
-                after=int(price*p['units']/SCALE)
+                before=value_points(p['units'],old['price']) if old else p['cost']
+                after=value_points(p['units'],price)
                 wealth_delta(db,p['user_id'],after-before,clock)
             db.execute('INSERT OR REPLACE INTO market_prices VALUES(?,?,?)',(symbol,r['asof'],str(price)))
             for position in db.execute("SELECT * FROM market_shorts WHERE symbol=? AND status='open'",(symbol,)).fetchall():
@@ -304,7 +315,7 @@ def apply_quotes(db,rows,clock):
 
 def short_value(position,ask):
     if ask is None:return position['margin']
-    cover=int((Decimal(ask)*position['units']/SCALE).to_integral_value(rounding=ROUND_CEILING))
+    cover=value_points(position['units'],ask,up=True)
     return max(0,position['margin']+position['entry_points']-cover)
 
 

@@ -199,6 +199,17 @@ class MarketRules(unittest.TestCase):
         self.assertEqual(market.view(self.db,1,3600,'CC:BTC','1h')['chart']['points'],value['points'])
 
 
+    def test_high_precision_quotes_use_exact_integer_ratio_not_decimal_context(self):
+        high='100.000000000000000000000000000001'
+        low='99.999999999999999999999999999999'
+        self.assertEqual(market.units_for_budget(1000,high),999999999)
+        self.assertEqual(market.value_points(1000000000,high,up=True),1001)
+        self.assertEqual(market.value_points(1000000000,low),999)
+        self.quote(high,100);self.order(clock=101,amount=1000);self.quote(high,102);market.settle(self.db,102)
+        p=market.view(self.db,1,102)['positions'][0]
+        self.assertEqual(p['units'],999999999);self.assertEqual(p['cost'],1000)
+        self.assertEqual(wallet.view(self.db,1,102)['balance'],2000,'cannot take a point beyond the reserved budget')
+
 
 class Providers(unittest.TestCase):
     def test_official_formats_and_currency_conversion(self):

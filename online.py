@@ -233,7 +233,9 @@ def lobby(db, user, clock, *, touch_presence=True):
     totals=wallet.in_play(db)
     import bank
     bank_assets=bank.assets(db,clock)
-    for person in people:person['total_chips']=person['balance']+totals.get(person['id'],0)+bank_assets.get(person['id'],0)
+    import market
+    market_assets=market.assets(db)
+    for person in people:person['total_chips']=person['balance']+totals.get(person['id'],0)+bank_assets.get(person['id'],0)+market_assets.get(person['id'],0)
     people.sort(key=lambda u:(-u['total_chips'],-u['profit'],u['id']))
     for index,person in enumerate(people):person['rank']=index+1
     member_count=len(people)

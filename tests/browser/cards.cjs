@@ -8,8 +8,8 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/cards')
  const api=async(c,p,data)=>{const r=data?await c.request.post(base+p,{headers:{'X-Requested-With':'PokerClub'},data}):await c.request.get(base+p);assert.equal(r.status(),200,p+' '+await r.text());return r.json();};
  try{
   for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
-   const browser=await driver.launch({headless:true});browsers.push(browser);
-   for(const mobile of [true,false]){
+   if(process.env.CARDS_ENGINE&&process.env.CARDS_ENGINE!==engine)continue;const browser=await driver.launch({headless:true});browsers.push(browser);
+   for(const mobile of [true,false]){if(process.env.CARDS_DEVICE&&process.env.CARDS_DEVICE!==(mobile?'phone':'desktop'))continue;
     const c=await browser.newContext({viewport:{width:mobile?393:1366,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
     let ready=false;for(let i=0;i<100;i++){try{await api(c,'/api/bootstrap');ready=true;break;}catch{await sleep(100);}}assert.ok(ready);
     await api(c,'/api/register',{username:'cards_test_'+(++serial),nickname:'人物牌測試',password:'SyntheticCards123',invite_code:invite});if(!invite)invite=(await api(c,'/api/state')).invite_code;
@@ -31,24 +31,34 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/cards')
     await p.evaluate(()=>document.documentElement.dataset.cardBack='');
     const r=await api(c,'/api/online/rooms',{game_type:'blackjack',buy_in:1000,stake:20,operation_id:crypto.randomUUID()});await api(c,'/api/online/rooms/'+r.id+'/start',{stake:20,expected_hand_number:1,operation_id:crypto.randomUUID()});await p.evaluate(id=>{credentialsChanging=false;go(id);},r.id);await p.waitForFunction(id=>room?.id===id&&liveReady,r.id);await p.evaluate(()=>{credentialsChanging=true;stopLive();window.cardsFixture=structuredClone(room);});
     let cases=0;
-    for(const width of mobile?[320,393]:[768,1366]){
+    for(const width of mobile?[320,393]:[768,1024,1366,1920]){
      await p.setViewportSize({width,height:900});
      for(const count of [2,3,4,5])for(const split of [1,2,4]){
       await p.evaluate(({count,split})=>{const r=structuredClone(window.cardsFixture);r.status='playing';r.hand.phase='blackjack';r.hand.actor=me().id;r.hand.active_index=0;r.legal={actions:['hit','stand','double','split'],active_index:0};r.hand.dealer=['9d',null];const own=r.hand.players.find(q=>q.user_id===me().id);own.hands=Array.from({length:split},()=>({cards:['2s','3h','4d','5c','6s'].slice(0,count),bet:20,status:'playing',split:split>1}));r.hand.players=[own,{...structuredClone(own),user_id:999,nickname:'同桌玩家'}];document.querySelector('#app').innerHTML='<main id="main">'+ClubArcade.table(r,me(),{card,icon,feedback:''})+'</main>';}, {count,split});
       await p.waitForFunction(()=>[...document.querySelectorAll('[data-photo-card]')].every(e=>e.dataset.faceState==='ready'));
       const geometry=await p.evaluate(()=>({viewport:innerWidth,pageWidth:document.documentElement.scrollWidth,own:[...document.querySelectorAll('.blackjack-hands .playing-card')].map(e=>e.getBoundingClientRect().width),rows:[...document.querySelectorAll('.blackjack-cards')].map(row=>{const r=row.getBoundingClientRect(),cards=[...row.children].map(e=>e.getBoundingClientRect());return {rowWidth:r.width,right:Math.max(...cards.map(c=>c.right))-r.left,lines:new Set(cards.map(c=>Math.round(c.top))).size};}),dealer:[...document.querySelectorAll('.blackjack-dealer .playing-card')].map(e=>e.offsetWidth)}));
-      assert.ok(geometry.pageWidth<=geometry.viewport+1,engine+' card page overflow '+JSON.stringify({width,count,split,geometry}));assert.ok(geometry.own.every(w=>w>=(mobile?64:96)-1));assert.ok(geometry.dealer.every(w=>w>=59));for(const row of geometry.rows){assert.ok(row.right<=row.rowWidth+1,engine+' hand overflow '+JSON.stringify({width,count,split,row}));assert.equal(row.lines,1,'Keep a hand together');}cases++;
+      assert.ok(geometry.pageWidth<=geometry.viewport+1,engine+' card page overflow '+JSON.stringify({width,count,split,geometry}));assert.ok(geometry.own.every(w=>w>=(width>=1024?124:mobile?64:96)-1));assert.ok(geometry.dealer.every(w=>w>=(width>=1024?111:59)));for(const row of geometry.rows){assert.ok(row.right<=row.rowWidth+1,engine+' hand overflow '+JSON.stringify({width,count,split,row}));assert.equal(row.lines,1,'Keep a hand together');}cases++;
       if(split===1&&[2,5].includes(count)&&width===(mobile?393:1366))await p.locator('.arcade-surface').screenshot({path:path.join(out,engine+'-'+(mobile?'phone':'desktop')+'-'+count+'-cards.png')});
      }
     }
-    for(const width of mobile?[320,393]:[768,1366]){
+    for(const width of mobile?[320,393]:[768,1024,1366,1920]){
      await p.setViewportSize({width,height:900});await p.evaluate(()=>{const r=structuredClone(window.cardsFixture);r.game_type='baccarat';r.status='waiting';r.hand.phase='showdown';r.hand.summary='百家樂 · 合成版面';r.hand.player_cards=['2s','3h','4d'];r.hand.banker_cards=['5c','6s','Ah'];r.hand.player_total=9;r.hand.banker_total=2;delete r.next_game_settings;delete r.hand.game_settings;document.querySelector('#app').innerHTML='<main id="main">'+ClubArcade.table(r,me(),{card,icon,feedback:''})+'</main>';});
      await p.waitForFunction(()=>[...document.querySelectorAll('[data-photo-card]')].every(e=>e.dataset.faceState==='ready'));
      const groups=await p.evaluate(()=>[...document.querySelectorAll('.baccarat-cards')].map(row=>{const box=row.getBoundingClientRect();return {width:box.width,cards:[...row.children].map(c=>{const r=c.getBoundingClientRect();return {width:r.width,left:r.left-box.left,right:r.right-box.left};})};}));
-     for(const group of groups){assert.equal(group.cards.length,3);assert.ok(group.cards.every(c=>c.width>=51&&c.left>=-1&&c.right<=group.width+1),engine+' baccarat overflow '+JSON.stringify({width,group}));}
+     for(const group of groups){assert.equal(group.cards.length,3);assert.ok(group.cards.every(c=>c.width>=(width>=1024?119:51)&&c.left>=-1&&c.right<=group.width+1),engine+' baccarat overflow '+JSON.stringify({width,group}));}
      if(width===(mobile?393:1366))await p.locator('.arcade-surface').screenshot({path:path.join(out,engine+'-baccarat-'+(mobile?'phone':'desktop')+'.png')});
     }
-    checks.push({engine,mobile,loading:true,stale_decode:true,failed_image:true,backs:27,blackjack_cases:cases,baccarat_cases:2});await c.close();
+    if(!mobile)for(const width of [1024,1366,1920])for(const count of [5,13]){
+     await p.setViewportSize({width,height:900});await p.evaluate(count=>{const r=structuredClone(window.cardsFixture);r.game_type='big2';delete r.next_game_settings;delete r.hand.game_settings;r.capacity=4;r.hand.current_play=['3c','4d','5s','6h','7c'];r.hand.last_player=999;r.hand.actor=me().id;const own=r.hand.players.find(q=>q.user_id===me().id);own.cards=['3c','4c','5c','6c','7c','8c','9c','Tc','Jc','Qc','Kc','Ac','2c'].slice(0,count);own.card_count=count;r.hand.players=[own,{user_id:999,nickname:'同桌玩家',card_count:13}];r.legal={actions:['play','pass']};document.querySelector('#app').innerHTML='<main id="main">'+ClubArcade.table(r,me(),{card,icon,feedback:''})+'</main>';},count);
+     await p.waitForFunction(()=>[...document.querySelectorAll('[data-photo-card]')].every(e=>e.dataset.faceState==='ready'));
+     assert.ok(await p.locator('.hand-card .playing-card').evaluateAll(list=>list.length>0&&list.every(e=>e.offsetWidth>=95)),'desktop big2 hand width');
+     assert.ok(await p.locator('.big2-current .playing-card').evaluateAll(list=>list.length===5&&list.every(e=>e.offsetWidth>=83)),'desktop big2 played cards');assert.ok(await p.locator('.big2-current').evaluate(e=>{const r=e.getBoundingClientRect();return [...e.children].every(c=>{const a=c.getBoundingClientRect();return a.left>=r.left-1&&a.right<=r.right+1;});}),'five big2 played cards stay inside the table');
+     assert.equal(await p.locator('.hand-scroll').evaluate(e=>Number(getComputedStyle(e).getPropertyValue('--hand-count')||13)),count);
+     const spread=await p.locator('.hand-scroll').evaluate(e=>{const r=e.getBoundingClientRect(),c=[...e.children].map(n=>n.getBoundingClientRect());return {page:document.documentElement.scrollWidth,viewport:innerWidth,visible:c.every((v,i)=>!i||v.x-c[i-1].x>=39),rowWidth:r.width,scroll:e.scrollWidth,client:e.clientWidth};});assert.ok(spread.page<=spread.viewport+1&&spread.visible,'big2 legible rank exposure '+JSON.stringify({width,count,spread}));if(width>=1366)assert.ok(spread.scroll<=spread.client+2,'desktop full hand fits '+JSON.stringify({width,count,spread}));
+     await p.locator('.hand-card').last().scrollIntoViewIfNeeded();assert.ok(await p.locator('.hand-card').last().evaluate(e=>{const r=e.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return e===top||e.contains(top);}),'last large big2 card can be selected');
+     if(width===1366&&count===13)await p.locator('.arcade-surface').screenshot({path:path.join(out,engine+'-desktop-big2-13-cards.png')});
+    }
+    checks.push({engine,mobile,loading:true,stale_decode:true,failed_image:true,backs:27,blackjack_cases:cases,baccarat_cases:mobile?2:4,big2_cases:mobile?0:6});await c.close();
    }
   }
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors}));

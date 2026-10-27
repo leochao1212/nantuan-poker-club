@@ -76,6 +76,9 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       if(name==='holdem'){
        assert.equal(await page.locator('.is-me .seat-cards .playing-card').count(),2);
        const g=await page.evaluate(()=>({captionBottom:document.querySelector('.spot-3 .seat-caption').getBoundingClientRect().bottom,potTop:document.querySelector('.pot-total').getBoundingClientRect().top,boardBottom:document.querySelector('.community-cards').getBoundingClientRect().bottom,holeTop:Math.min(...[...document.querySelectorAll('.is-me .seat-cards .playing-card')].map(e=>e.getBoundingClientRect().top))}));
+       const cards=await page.evaluate(()=>({own:[...document.querySelectorAll('.is-me .seat-cards .playing-card')].map(e=>e.offsetWidth),board:[...document.querySelectorAll('.community-cards>*')].map(e=>e.offsetWidth)}));
+       if(width>=1024){assert.ok(cards.own.every(w=>w>=110),'desktop hold’em hand size '+JSON.stringify(cards));assert.ok(cards.board.every(w=>w>=59),'desktop community size '+JSON.stringify(cards));}
+       if(width<=760){assert.ok(cards.own.every(w=>w===76),'mobile hold’em cards stay unchanged');}
        assert.ok(g.captionBottom+2<=g.potTop,engine+' '+width+' top seat overlaps pot '+JSON.stringify(g));
        assert.ok(g.boardBottom+2<=g.holeTop,engine+' '+width+' hole cards overlap community '+JSON.stringify(g));
       }

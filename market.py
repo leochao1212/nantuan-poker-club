@@ -191,7 +191,7 @@ def settle(db,clock):
             if units<1:cancel(db,o,clock,'cancelled','新報價不足最小份額');changed=True;continue
             points=int((Decimal(units)*price/SCALE).to_integral_value(rounding=ROUND_CEILING))
             new_units,new_cost=old_units+units,old_cost+points;profit=0
-            if new_units>10**18 or new_cost>10**12:
+            if new_units>10**14 or new_cost>10**12:
                 cancel(db,o,clock,'cancelled','持倉已達上限');changed=True;continue
             wallet.transfer(db,o['user_id'],o['budget']-points,'market_refund','market:change:'+str(o['id']),clock)
         else:

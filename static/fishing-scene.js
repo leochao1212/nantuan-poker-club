@@ -25,8 +25,26 @@ window.ClubFishingScene=(()=>{
    }else{let v=Math.max(-.85,Math.min(.85,d.velocity*.86+(holding?-.125:.105))),y=d.zone_y+v*.05,half=d.width/2;if(y<half){y=half;v=0;}if(y>1-half){y=1-half;v=0;}const inside=Math.abs(fishY(d,at)-y)<=half;d.progress=Math.max(0,Math.min(1,d.progress+(inside?.155*d.rate:-.105)*.05));d.escape=Math.max(0,Math.min(1,d.escape+(inside?-.055:.145)*.05));Object.assign(d,{sim_at:at,zone_y:y,velocity:v});if(d.progress>=1)d.phase='caught';else if(d.escape>=1)d.phase='escaped';}
   }return d;
  }
+ // Presentation only: interpolate the 50 ms simulation; never settle a predicted catch.
+ function skillFrameProjection(source,clock,holding,control=null){
+  if(!source||source.phase!=='playing')return source;
+  const at=Math.min(clock,source.deadline,source.sim_at+1.1),d=skillProjection(source,at,holding,control);
+  const next=skillProjection(d,d.sim_at+.05,holding,control),fraction=Math.max(0,Math.min(1,(at-d.sim_at)/.05));
+  const result={...d,phase:source.phase};
+  for(const key of ['tension','progress','combo','danger','zone_y'])if(Number.isFinite(d[key])&&Number.isFinite(next[key]))result[key]=d[key]+(next[key]-d[key])*fraction;
+  result.progress=Math.min(.999,result.progress);return result;
+ }
+ function smoothSkillFrame(previous,target,elapsed){
+  if(!previous||previous.id!==target.id)return {...target};
+  const dt=Math.max(0,Math.min(.05,elapsed)),alpha=1-Math.exp(-dt/.045),result={...target};
+  for(const key of ['tension','progress','combo','danger','zone_y'])if(Number.isFinite(previous[key])&&Number.isFinite(target[key])){
+   const delta=(target[key]-previous[key])*alpha,limit=dt*(key==='progress'?.4:.9);
+   result[key]=previous[key]+Math.max(-limit,Math.min(limit,delta));
+  }
+  return result;
+ }
  function create(canvas,callbacks){
-  let model=null,frame=0,last=0,alive=true,visible=true,castAt=0,phase=null,hookAt=0,lastHud=0,aim={x:500,y:260},targetId=null,board=null,inBoard=false;
+  let model=null,frame=0,last=0,alive=true,visible=true,castAt=0,phase=null,hookAt=0,lastHud=0,lastPresentation=0,presented=null,aim={x:500,y:260},targetId=null,board=null,inBoard=false;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)'),c=canvas.getContext('2d'),assets={},localShots=new Map();
   function text(value,x,y,size=14,color='#f5fbff',upright=false){c.save();c.translate(x,y);if(inBoard){c.scale(1/board.sx,1/board.sy);size=Math.max(11,Math.min(19,size*.62));}c.font='700 '+size+'px system-ui';c.textAlign='center';c.fillStyle=color;c.shadowColor='#031d38';c.shadowBlur=4;c.fillText(value,0,0);c.restore();}
   function cover(img,x,y,w,h,zoom=1){if(!img?.naturalWidth)return;const scale=Math.max(w/img.naturalWidth,h/img.naturalHeight)*zoom,bw=img.naturalWidth*scale,bh=img.naturalHeight*scale;c.drawImage(img,x+(w-bw)/2,y+(h-bh)/2,bw,bh);}
@@ -59,22 +77,30 @@ window.ClubFishingScene=(()=>{
   function rod(w,h,clock,active,d){const tension=d?.tension??.2,bend=active?.phase==='playing'?tension:0,base={x:-w*.025,y:h*.94},tip={x:w*(.56-bend*.055),y:h*(.34+bend*.075)},img=assets['gear-atlas'];
    if(img?.naturalWidth){const dx=tip.x-base.x,dy=tip.y-base.y,scale=Math.hypot(dx,dy)/Math.hypot(480,430),angle=Math.atan2(dy,dx)-Math.atan2(-430,480);c.save();c.translate(base.x,base.y);c.rotate(angle);c.scale(scale,scale);c.drawImage(img,(model.rod||0)*img.naturalWidth/3,0,img.naturalWidth/3,img.naturalHeight*.46,-20,-440,512,470);c.restore();}return tip;
   }
-  function leisure(w,h,clock,now){const active=model.pending,d=active?.phase==='playing'?skillProjection(active,clock,model.holding,model.control):null,progress=d?.progress||0,biting=active?.phase==='waiting'&&clock>=active.ready_at;
+  function leisure(w,h,clock,now){const active=model.pending,d=active?.phase==='playing'?(presented?.id===active.id?presented:skillFrameProjection(active,clock,model.holding,model.control)):null,progress=d?.progress||0,biting=active?.phase==='waiting'&&clock>=active.ready_at;
    const tip=rod(w,h,clock,active,d);if(!active&&!model.sending)return;const t=reduced.matches?0:now/1000,float={x:w*(.59+Math.sin(t*.6)*.009),y:h*(.58-progress*.17)+Math.sin(t*(biting?10:2))*2};let target=float;
    if(d){target={x:w*(.58+Math.sin((clock-d.hooked_at)*1.7)*.09*(1-progress)),y:h*(.59-progress*.17)};const size=w*(.12+progress*.30);fish(d.species,target.x,target.y,size,Math.sin(clock*.7)>0?1:-1,Math.sin(clock*2)*.08,t,.45+progress*.45);}
    const travel=castAt&&!reduced.matches?Math.min(1,(now-castAt)/650):1,x=w*.25+(target.x-w*.25)*travel,y=target.y-Math.sin(travel*Math.PI)*h*.25;c.strokeStyle='#f5fbffe0';c.lineWidth=1.2;c.beginPath();c.moveTo(tip.x,tip.y);c.quadraticCurveTo((tip.x+x)/2,Math.min(tip.y,y)-8,x,y);c.stroke();
    c.strokeStyle='#e9fdff99';c.lineWidth=1.4;for(let i=0;i<3;i++){const radius=10+i*11+((t*7)%11);c.globalAlpha=.55-i*.13;c.beginPath();c.ellipse(target.x,target.y+6,radius,radius*.25,0,0,Math.PI*2);c.stroke();}c.globalAlpha=1;
    if(!d){c.fillStyle='#f77e60';c.beginPath();c.ellipse(x,y,4,11,0,0,Math.PI*2);c.fill();c.fillStyle='#fff8da';c.fillRect(x-3,y-5,6,4);if(biting)text('咬鉤了！',x,y-26,20,'#fff2a3');}
    if(d?.mechanic!=='tension'&&d){const py=h*.28,ph=h*.42,px=w*.85,pw=30;c.fillStyle='#032a4cdd';c.fillRect(px-pw/2-4,py-4,pw+8,ph+8);c.fillStyle='#e8ce7599';c.fillRect(px-pw/2,py+(d.zone_y-d.width/2)*ph,pw,d.width*ph);fish(d.species,px,py+fishY(d,clock)*ph,50,1,0,t);}
-   if(d&&now-lastHud>80){callbacks.skillFrame?.(d);lastHud=now;}
   }
   function draw(now=performance.now()){if(!alive||!model||document.hidden||!visible)return;const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,ratio=Math.min(w<600?1.5:2,devicePixelRatio||1);if(!w||!h)return;if(canvas.width!==Math.round(w*ratio)||canvas.height!==Math.round(h*ratio)){canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);}c.setTransform(ratio,0,0,ratio,0,0);c.clearRect(0,0,w,h);c.fillStyle='#076e95';c.fillRect(0,0,w,h);const clock=model.now(),fight=model.pending?.phase==='playing',zoom=model.mode==='leisure'&&fight&&!reduced.matches?1.08+Math.min(.08,Math.max(0,(now-hookAt)/4000)*.08):1;cover(assets[model.mode==='leisure'?'shore':model.world?.theme||'sea-board'],0,0,w,h,zoom);
    if(model.mode==='arcade')arcade(w,h,clock);else leisure(w,h,clock,now);
    const failed=Object.values(assets).some(img=>img.complete&&!img.naturalWidth);canvas.dataset.artState=failed?'failed':'ready';if(failed)text('素材載入較慢，操作與結算仍由伺服器確認',w/2,h*.55,13);
   }
-  function tick(now){frame=0;if(!alive||document.hidden||!visible)return;if(now-last>=(reduced.matches?50:33.3)){draw(now);last=now;}frame=requestAnimationFrame(tick);}
+  function tick(now){
+   frame=0;if(!alive||document.hidden||!visible)return;
+   const interval=reduced.matches?50:1000/60,steps=Math.floor((now-lastHud+.5)/interval);
+   if(model?.mode==='leisure'&&model.pending?.phase==='playing'&&steps>=1){
+    const target=skillFrameProjection(model.pending,model.now(),model.holding,model.control);
+    presented=smoothSkillFrame(presented,target,lastPresentation?(now-lastPresentation)/1000:0);
+    lastPresentation=now;lastHud+=steps*interval;callbacks.skillFrame?.(presented,now);
+   }else if(model?.pending?.phase!=='playing')presented=null;
+   if(now-last>=(reduced.matches?50:33.3)){draw(now);last=now;}frame=requestAnimationFrame(tick);
+  }
   function resume(){if(alive&&visible&&!document.hidden&&!frame)frame=requestAnimationFrame(tick);}
-  function visibility(){if(document.hidden){cancelAnimationFrame(frame);frame=0;}else resume();}
+  function visibility(){if(document.hidden){cancelAnimationFrame(frame);frame=0;presented=null;lastHud=lastPresentation=0;}else resume();}
   function point(e){if(model?.mode!=='arcade'||!model.world||!board)return null;const r=canvas.getBoundingClientRect(),dx=e.clientX-r.left-board.x,dy=e.clientY-r.top-board.y;if(dx<0||dy<0||dx>board.w||dy>board.h)return null;const x=dx/board.sx,y=dy/board.sy;let hit=null,dist=Infinity;for(const f of model.world.entities){if(model.now()<f.spawned_at||model.now()>=f.expires_at)continue;const p=worldPosition(f,model.now(),model.world.effects),a=fishHeading(f,model.now(),model.world.effects),dx=x-p.x,dy=y-p.y,v=((dx*Math.cos(a)+dy*Math.sin(a))/f.radius_x)**2+((-dx*Math.sin(a)+dy*Math.cos(a))/f.radius_y)**2;if(v<1.8&&v<dist){dist=v;hit=f;}}
    aim={x,y};if(model.locked&&hit)targetId=hit.id;else if(!model.locked)targetId=null;callbacks.aim?.(x,y,hit?.id||null);return aim;
   }
@@ -84,10 +110,10 @@ window.ClubFishingScene=(()=>{
   canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);document.addEventListener('visibilitychange',visibility);
   const resize=new ResizeObserver(()=>resume());resize.observe(canvas);const intersection=new IntersectionObserver(entries=>{visible=entries.at(-1).isIntersecting;if(visible)resume();else{cancelAnimationFrame(frame);frame=0;callbacks.shootStop?.();}});intersection.observe(canvas);
   for(const name of ['fish-atlas','gear-atlas','shore'])assets[name]=image(name,()=>{if(alive)resume();});
-  return {update(next){if(next.mode==='arcade')for(const name of [next.world?.theme||'sea-board','arcade-atlas',...new Set((next.world?.entities||[]).map(f=>window.ClubFishingArt?.[f.species]?.asset).filter(Boolean))])if(!assets[name])assets[name]=image(name,()=>resume());if(next.pending?.phase==='playing'&&phase!=='playing')hookAt=performance.now();phase=next.pending?.phase;model=next;resume();},aim(id){targetId=id;},cast(){castAt=performance.now();resume();},
+  return {update(next){if(next.mode!==model?.mode||next.pending?.id!==model?.pending?.id){presented=null;lastHud=lastPresentation=0;}if(next.mode==='arcade')for(const name of [next.world?.theme||'sea-board','arcade-atlas',...new Set((next.world?.entities||[]).map(f=>window.ClubFishingArt?.[f.species]?.asset).filter(Boolean))])if(!assets[name])assets[name]=image(name,()=>resume());if(next.pending?.phase==='playing'&&phase!=='playing')hookAt=performance.now();phase=next.pending?.phase;model=next;resume();},aim(id){targetId=id;},cast(){castAt=performance.now();resume();},
    shotLocal(s){const player=model?.world?.players.find(p=>p.user_id===model.user);if(!player)return;const o=origin(player.seat),d=Math.hypot(s.x-o.x,s.y-o.y),laser=model.world.effects.some(e=>e.kind==='laser'&&e.user_id===model.user&&e.starts_at<=s.fired_at&&e.ends_at>s.fired_at),ammo=model.ammo?.find(a=>a.stake===model.stake),speed=laser?Math.max(1800,(ammo?.speed||1150)+350):ammo?.speed||1150;localShots.set(s.token,{token:s.token,born_at:s.fired_at,x0:o.x,y0:o.y,vx:(s.x-o.x)/d*speed,vy:(s.y-o.y)/d*speed,power:Math.max(1,model.stake/10),laser,radius:(model.cannons?.[model.cannon]?.radius||15)+(ammo?.radius_bonus||0)+(laser?12:0)});},
    rejectShots(tokens){for(const t of tokens)localShots.delete(t);},draw,destroy(){alive=false;cancelAnimationFrame(frame);resize.disconnect();intersection.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);document.removeEventListener('visibilitychange',visibility);}
   };
  }
- return {create,portrait,gearArt,gearNames,traits,origin,worldPosition,fishHeading,fishY,skillProjection};
+ return {create,portrait,gearArt,gearNames,traits,origin,worldPosition,fishHeading,fishY,skillProjection,skillFrameProjection,smoothSkillFrame};
 })();

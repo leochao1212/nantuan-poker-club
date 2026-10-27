@@ -117,3 +117,5 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 [test_blackjack_benefits.py](../tests/python/test_blackjack_benefits.py)驗證0／邊界／100%優待、同牌序與守恆、自然Blackjack例外、加倍／分牌逐手退注、舊快照、移轉只啟用一次、後台記錄及回執重送／離桌入帳。瀏覽器layout的admin／blackjack檢查覆蓋三個快捷設定、自訂、預覽取消、填預設後事件重綁、牌桌優待與逐手返還。可從根目錄執行[配對模擬](../scripts/bench-blackjack-benefits.py)，僅使用固定種子的合成牌局與虛擬點數，無資料庫或網路，結果存忽略的artifacts。
 
 捕魚完整循環回歸另驗證每日補給的台灣午夜界線、同編號跨日重播／新編號領新一天、多人並發只發一份、故障回滾、停權與未知欄位拒絕、戰報所有權／連鎖去重／索引有界查詢。`npm run test:fishing`新增[fishing-bonus](../tests/browser/fishing-bonus.cjs)真瀏覽器延遲回應測試；手機／電腦實測補給已提交後回應遺失，再以原回執確認、不再增庫存，並檢查戰報在320px／橫向／桌機不溢出且按鈕可操作。測試均用合成資料。
+
+張力動畫回歸：[fishing-tension](../tests/browser/fishing-tension.cjs)使用實際呈現模組與假時鐘，檢查50ms內插值、過期預演上限、伺服器校正不瞬移、60／20Hz HUD與30／20fps Canvas預算、背景取消RAF、換竿重設和網路未回時立即反映按住／放開。真瀏覽器以MutationObserver量測實際按鍵／滑桿釣獲期間的指針transform更新，要求達到瀏覽器實際可用幀率（上限60Hz）的72%以上且不超過66Hz，避免將瀏覽器背景／省電節流誤判為動畫缺陷；不把合成環境幀率當作所有實體手機的保證。

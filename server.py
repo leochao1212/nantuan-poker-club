@@ -30,6 +30,7 @@ import voice_transport
 import club_admin
 import game_settings
 import transfers
+import bank
 import fishing
 import fishing_gameplay
 import member_accounts
@@ -375,6 +376,12 @@ class Handler(BaseHTTPRequestHandler):
                     picture=db.execute('SELECT avatar_png FROM member_profiles WHERE user_id=? AND revision=?',tuple(map(int,image_match.groups()))).fetchone()
                     if not picture or not picture[0]:raise Problem('找不到頭像。',404)
                     self.reply(200,picture[0],content_type='image/png')
+            elif path in ('/api/bank','/api/admin/bank-settings'):
+                query=parse_qs(urlsplit(self.path).query)
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);clock=time.time()
+                    value=bank.admin_view(db,user) if path.startswith('/api/admin/') else dict(bank=bank.view(db,user['id'],clock,query.get('before',[None])[0]),wallet=wallet.view(db,user['id'],clock))
+                self.reply(200,value)
             elif path in ('/api/wallet/transfers','/api/wallet/recipients'):
                 query=parse_qs(urlsplit(self.path).query)
                 with connect() as db:
@@ -441,7 +448,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/fishing-art.js", "/fishing-bonus.js", "/fishing-play.js", "/fishing-scene.js", "/fishing.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/bank.js", "/fishing-art.js", "/fishing-bonus.js", "/fishing-play.js", "/fishing-scene.js", "/fishing.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
                 ext = name.rsplit(".",1)[-1]
@@ -825,6 +832,15 @@ class Handler(BaseHTTPRequestHandler):
             changed=result.pop('wallet_changed',False)
             if changed:FISH_WALLET_DIRTY.set()
             elif not result['replayed'] and result['result']['action'] in ('shot','sell'):EVENTS.publish(0,lobby=False)
+            return Reply(200,result)
+        if path=='/api/admin/bank-settings':
+            result={**bank.configure(db,user,data,time.time()),**bank.admin_view(db,user)}
+            db.commit();EVENTS.publish()
+            return Reply(200,result)
+        if path in ('/api/bank/deposit','/api/bank/withdraw','/api/bank/collect','/api/bank/borrow','/api/bank/repay'):
+            clock=time.time();result=bank.mutate(db,user,path.rsplit('/',1)[1],data,clock)
+            result.update(bank=bank.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+            db.commit();EVENTS.publish()
             return Reply(200,result)
         if path=='/api/wallet/transfers':
             role=club_admin.identity(db,user['id'])

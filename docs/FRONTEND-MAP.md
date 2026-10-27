@@ -13,6 +13,8 @@ flowchart TD
   S --> RW["#rewards 補給與今日任務"]
   RW --> R["#collection 外觀收藏／特效"]
   S --> W["#wallet 轉帳與紀錄"]
+  S --> B["#bank 存款／領息／借還款"]
+  B --> W
   S --> P["#profile 個人設定／名片／資金"]
   S --> AD["#admin 管理後台"]
   L --> G["#table/:id 同頁牌桌"]
@@ -38,6 +40,7 @@ flowchart TD
 | 全域聊天與語音 | social.js、voice-worklet.js | night.css |
 | 管理帳號、籌碼 | admin.js | night.css |
 | 遊戲設定與派彩說明 | game-settings.js | night.css |
+| 銀行存貸、領息與後台銀行設定 | bank.js | night.css |
 | 點數轉帳 | transfers.js | night.css |
 | 發牌、靜止輪盤 | dealer.js、arcade-motion.js | night.css |
 | 輪盤／拉霸等待、轉動與揭曉 | round-presentation.js：ClubRoundPresentation | night.css |

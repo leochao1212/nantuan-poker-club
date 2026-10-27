@@ -121,3 +121,7 @@ Android 原生排版：`tests/android/adaptive-layout.cjs` 只允許模擬器，
 張力動畫回歸：[fishing-tension](../tests/browser/fishing-tension.cjs)使用實際呈現模組與假時鐘，檢查50ms內插值、過期預演上限、伺服器校正不瞬移、60／20Hz HUD與30／20fps Canvas預算、背景取消RAF、換竿重設和網路未回時立即反映按住／放開。真瀏覽器以MutationObserver量測實際按鍵／滑桿釣獲期間的指針transform更新，要求達到瀏覽器實際可用幀率（上限60Hz）的72%以上且不超過66Hz，避免將瀏覽器背景／省電節流誤判為動畫缺陷；不把合成環境幀率當作所有實體手機的保證。
 
 桌機放大牌面回歸另檢查1024／1366／1920px的大老二5張與13張手牌（兩引擎共12個版面）、13張在正常桌機寬度完整展開、至少40px牌角曝光、最後一張可選、五張桌面牌不溢出，以及實際牌數樣式符合CSP。牌桌版面測試驗證桌機德州公共牌／手牌放大而不與底池／其他座位重疊、手機仍為原尺寸。`CARDS_ENGINE=chromium|webkit`及`CARDS_DEVICE=phone|desktop`可縮小本機卡牌驗證範圍，CI預設全跑。
+
+銀行：`python -m unittest tests.python.test_bank -v` 與 `npm run test:bank`。測試整數單利／零頭、調息分段、貸款快照、並行重送、失敗回滾、取整利息上限，以及手機／桌機存提借還、遺失回應後重載、輸入焦點與管理員條件版本鎖。參見 [銀行規格](BANK.md)。
+
+釣魚效能：30／20fps Canvas 採相位累積，抖動 RAF 回歸避免漏幀；獨立魚場圖層維持原裁切與座標。原生瀏覽器測試換場景時驗證圖片解碼，允許瀏覽器從快取載入。量測環境、數字及限制見 [順暢度紀錄](design-proposals/fishing-performance-bank-20261027.md)。

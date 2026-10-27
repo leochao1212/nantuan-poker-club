@@ -22,6 +22,8 @@ def active(db):
 
 
 def initialize(db,clock):
+    import bank
+    bank.initialize(db)
     db.executescript("""
     CREATE TABLE IF NOT EXISTS wallet_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallets(user_id INTEGER PRIMARY KEY REFERENCES users(id),balance INTEGER NOT NULL CHECK(balance>=0));
@@ -122,12 +124,14 @@ def in_play(db):
 
 
 def view(db,uid,clock,totals=None):
+    import bank
     enabled=active(db)
     row=db.execute('SELECT balance FROM wallets WHERE user_id=?',(uid,)).fetchone()
     balance=row[0] if row else 0
     table=(in_play(db) if totals is None else totals).get(uid,0)
     claimed=bool(db.execute('SELECT 1 FROM wallet_ledger WHERE user_id=? AND event_key=?',(uid,'daily:'+day(clock))).fetchone())
     next_at=hourly_next_at(db,uid)
-    return {'income':clubhouse.income_view(db,uid,clock),'hourly_amount':HOURLY,'hourly_next_at':next_at,'hourly_available':enabled and clock>=next_at,'hourly_interval':HOURLY_SECONDS,
-            'enabled':enabled,'migration_pending':not enabled,'balance':balance,'in_play':table,'total':balance+table,
+    banking=bank.summary(db,uid,clock)
+    return {'bank':banking,'income':clubhouse.income_view(db,uid,clock),'hourly_amount':HOURLY,'hourly_next_at':next_at,'hourly_available':enabled and clock>=next_at,'hourly_interval':HOURLY_SECONDS,
+            'enabled':enabled,'migration_pending':not enabled,'balance':balance,'in_play':table,'total':balance+table+banking['savings']-banking['debt'],
             'daily_amount':DAILY,'daily_claimed':claimed,'day':day(clock),'initial':INITIAL}

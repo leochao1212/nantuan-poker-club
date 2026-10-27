@@ -640,7 +640,7 @@ main#main{padding-left:15px;padding-right:15px;}
 .action-feedback .button{margin-left:auto;}
 .room-heading p{flex-wrap:wrap;line-height:1.8;}
 }
-.wallet-panel{display:flex;align-items:center;justify-content:space-between;border:1px solid #65513a;}
+.wallet-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;border:1px solid #65513a;}
 .wallet-panel>div>span{color:var(--gold);font-size:13px;}
 .wallet-panel strong{display:block;}
 .wallet-panel p,.daily-box>span{font-size:12px;color:var(--muted);}
@@ -702,7 +702,7 @@ main#main{padding-left:15px;padding-right:15px;}
 .between-buttons .primary{grid-column:-2/-1;}
 .waiting-turn{flex-wrap:wrap;}
 .waiting-turn>.button{min-height:48px;font-size:13px;}
-.wallet-panel{align-items:stretch;flex-direction:column;}
+.wallet-panel{align-items:stretch;}
 .wallet-panel p,.daily-box>span{font-size:13px;}
 .bet-keypad .modal-head h2{font-size:21px;}
 #room-chat{position:fixed;max-width:none;}
@@ -1251,13 +1251,13 @@ dialog::backdrop{backdrop-filter:none;}
 .deal-pending{visibility:visible!important;}
 #deal-layer{display:none;}
 }
-.supply-boxes{display:flex;gap:20px;flex-wrap:wrap;}
-.supply-boxes .daily-box{justify-content:flex-start;max-width:280px;}
+.supply-boxes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;grid-column:1/-1;min-width:0;}
+.supply-boxes .daily-box{justify-content:flex-start;min-width:0;max-width:none;}
 .hourly-box small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-height:18px;}
 .hourly-box .button{min-height:50px;}
 @media (max-width:1100px){
-.wallet-panel{flex-wrap:wrap;}
-.supply-boxes{width:100%;display:grid;grid-template-columns:1fr 1fr;}
+.wallet-panel{grid-template-columns:minmax(0,1fr);}
+.supply-boxes{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));}
 .supply-boxes .daily-box{min-width:0;max-width:none;}
 .supply-boxes .button{min-width:0;width:100%;min-height:50px;}
 }
@@ -1992,6 +1992,8 @@ dialog::backdrop{backdrop-filter:none;}
 #transfer-more{margin-top:20px;}
 #open-transfers{min-width:44px;min-height:44px;}
 .wallet-transfer-link{min-height:44px;margin-top:12px;}
+.wallet-actions{display:flex;flex-wrap:wrap;gap:8px;min-width:0;}
+.wallet-actions .wallet-transfer-link{margin-top:0;}
 .member-transfer{width:100%;margin-top:16px;min-height:44px;}
 @media (max-width:1000px){
 .transfer-layout{grid-template-columns:1fr;gap:16px;}
@@ -2667,7 +2669,7 @@ dialog:has(.feature-dialog){width:min(800px,calc(100% - 24px));}
 .rewards-hub .club-missions{scroll-margin-top:100px;}
 .rewards-hub .wallet-panel{margin:0 0 24px;}
 .rewards-hub .club-missions{margin:0;}
-.rewards-hub .supply-boxes{flex:1;min-width:0;}
+.rewards-hub .supply-boxes{min-width:0;}
 .rewards-hub .daily-box{padding:16px;}
 .rewards-hub .daily-box .button{min-height:48px;white-space:normal;}
 .sidebar .nav-item[href="#rewards"]{position:relative;}

@@ -210,6 +210,19 @@ class MarketRules(unittest.TestCase):
         self.assertEqual(p['units'],999999999);self.assertEqual(p['cost'],1000)
         self.assertEqual(wallet.view(self.db,1,102)['balance'],2000,'cannot take a point beyond the reserved budget')
 
+    def test_deployment_gate_blocks_new_margin_but_allows_known_receipts(self):
+        request=dict(symbol='CC:BTC',side='short',amount=1000,operation_id='deploy_margin_receipt_1234')
+        first=market.mutate(self.db,self.user,'order',request,101)
+        self.db.execute("INSERT INTO settings VALUES('deploy_pause_until','1000')")
+        self.assertTrue(market.mutate(self.db,self.user,'order',request,102)['replayed'])
+        before=wallet.view(self.db,1,102)['balance']
+        with self.assertRaises(member_accounts.AccountError) as e:self.order('short',clock=103,amount=1000)
+        self.assertEqual(e.exception.status,503);self.assertEqual(wallet.view(self.db,1,103)['balance'],before)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM market_orders').fetchone()[0],1)
+        self.db.execute("DELETE FROM settings WHERE key='deploy_pause_until'")
+        self.order('short',clock=104,amount=1000)
+        self.assertEqual(wallet.view(self.db,1,104)['balance'],1000)
+
 
 class Providers(unittest.TestCase):
     def test_official_formats_and_currency_conversion(self):

@@ -165,6 +165,9 @@ def mutate(db,user,action,data,clock):
     if old:
         if old['fingerprint']!=fingerprint:raise member_accounts.AccountError('相同回執已用於其他交易。',409,'operation_conflict')
         return {**json.loads(old['result']),'replayed':True}
+    if action=='order' and side in ('short','cover'):
+        pause=db.execute("SELECT value FROM settings WHERE key='deploy_pause_until'").fetchone()
+        if pause and float(pause[0])>clock:raise member_accounts.AccountError('版本更新中，稍後確認原委託即可；尚未保留新點數。',503,'deployment_pending')
     db.execute('SAVEPOINT market_operation')
     try:
         if action=='cancel':

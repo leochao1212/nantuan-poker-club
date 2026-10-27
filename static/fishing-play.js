@@ -56,7 +56,7 @@ window.ClubFishingPlay=(()=>{
    aim(x,y,id=null){aim={x:Math.max(0,Math.min(1000,x)),y:Math.max(0,Math.min(600,y))};target=ctx.locked?.()?id||target:null;},
    target(id){target=id;const p=point(id);if(p)aim=p;},
    tap(){emit();},start,stop,release(){if(!auto)stop();},toggle(){shooting?stop():start(true);},
-   hold(value){held=value;const cast=get()?.pending;if(cast?.phase==='playing'&&now()-cast.input_at>.08)void input();},
+   hold(value){held=value;ctx.inputChanged?.();const cast=get()?.pending;if(cast?.phase==='playing'&&now()-cast.input_at>.08)void input();},
    holding:()=>held,
    modeChanged(){stop();held=false;if(ctx.mode()!=='arcade'){closeWorld();if(get()?.member)ctx.api('/api/fishing/leave',{gameplay_version:version,operation_id:ctx.id()}).then(r=>{if(alive)ctx.accept(r.state);}).catch(()=>{});}},
    destroy(){alive=false;closeWorld();held=false;clearInterval(inputTimer);clearTimeout(flushTimer);clearTimeout(readTimer);document.removeEventListener('visibilitychange',visibility);if(get()?.member)ctx.api('/api/fishing/leave',{gameplay_version:version,operation_id:ctx.id()}).catch(()=>{});},

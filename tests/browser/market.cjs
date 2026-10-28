@@ -19,6 +19,15 @@ const amount=p.locator('#market-amount'),submit=p.locator('[data-market-submit]'
 let value=await api('/api/market');assert.equal(value.wallet.balance,2000);assert.equal(value.wallet.total,3000);assert.equal(value.market.orders[0].status,'pending');
 quote('CC:BTC',125,true);await p.locator('[data-market-refresh]').click();await p.waitForFunction(()=>document.querySelector('[data-market-positions]').textContent.includes('8 份'));
 await p.locator('[data-market-side=sell]').click();await p.locator('[data-market-all]').click();assert.equal(await amount.inputValue(),'8');await submit.click();await submit.click();await p.waitForFunction(()=>document.querySelector('[data-market-message]').textContent.includes('已受理'));quote('CC:BTC',125,true);await p.locator('[data-market-refresh]').click();await p.waitForFunction(()=>document.querySelector('[data-market-cash]').textContent==='3,000');
+// Deterministic Taiwan UI states; no real data or production orders. Backend
+// session/freshness/settlement rules are exercised with clocked MIS fixtures.
+let taiwanState='ready',staleRelease;const staleGate=new Promise(r=>staleRelease=r);
+await p.route('**/api/market?*',async route=>{const response=await route.fetch(),body=await response.json();if(taiwanState==='stall')await staleGate;const i=body.market.instruments.find(i=>i.symbol==='TW:2330');i.quote.source='TWSE MIS 盤中報價';i.mode='盤中約 5–10 秒更新';i.available=taiwanState==='ready';i.valid_until=body.market.server_time+1;i.notice=i.available?'':'行情缺資料或連線失敗，暫停成交';await route.fulfill({response,json:body});});
+await p.locator('[data-market-side=buy]').click();await p.locator('[data-market-group=TW]').click();await p.waitForFunction(()=>!document.querySelector('[data-market-submit]').disabled);assert.ok((await p.locator('[data-market-timing]').innerText()).includes('MIS'));assert.equal(await p.locator('[data-market-period="15m"]').getAttribute('aria-pressed'),'true');
+taiwanState='stall';await p.locator('[data-market-refresh]').click();await p.waitForFunction(()=>document.querySelector('[data-market-submit]').disabled,null,{timeout:10000});
+taiwanState='missing';staleRelease();await p.waitForFunction(()=>document.querySelector('[data-market-source]').textContent.includes('行情缺資料'));assert.ok(await submit.isDisabled());
+taiwanState='ready';await p.locator('[data-market-refresh]').click();await p.waitForFunction(()=>!document.querySelector('[data-market-submit]').disabled);
+await p.unroute('**/api/market?*');await p.locator('[data-market-group=CC]').click();
 // A committed reply lost in transit must replay the same operation after reload.
 await p.locator('[data-market-side=buy]').click();await amount.fill('100');let first=true;const sent=[];
 await p.route('**/api/market/order',async route=>{sent.push(route.request().postDataJSON());if(first){first=false;await route.fetch();await route.abort('failed');}else await route.continue();});

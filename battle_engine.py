@@ -266,7 +266,7 @@ class Match:
             if p.slot:self.spawn_loot(p.x,p.z,p.slot)
             self.event('eliminated',player=p.id,by=attacker,rank=p.rank,source=source)
 
-    def shoot(self,p):
+    def shoot(self,p,pending=None):
         if not p.slot or p.reload_at or p.heal_at or self.clock<p.next_fire:return
         w=WEAPONS[p.slot]
         if p.weapons[p.slot]<=0:
@@ -289,7 +289,10 @@ class Match:
                 if d is not None and d<nearest:nearest=d;victim=q;headshot=head
         end=[round(origin[i]+direction[i]*nearest,2) for i in range(3)]
         self.event('shot',player=p.id,start=[round(v,2) for v in origin],end=end)
-        if victim:self.damage(victim,w['damage']*(1.8 if headshot else 1),p.id,headshot)
+        if victim:
+            hit=(victim,w['damage']*(1.8 if headshot else 1),p.id,headshot)
+            if pending is None:self.damage(*hit)
+            else:pending.append(hit)
 
     def bot_input(self,p):
         if self.clock<p.ai_at:return
@@ -346,6 +349,7 @@ class Match:
             else:return
         if self.phase!='playing':return
         elapsed=clock-self.started-DROP_SECONDS;self.update_zone(elapsed)
+        pending=[];shooters=[]
         for p in list(self.players.values()):
             if p.hp<=0:continue
             if not p.connected and p.gone_at is not None and clock-p.gone_at>25:
@@ -378,7 +382,17 @@ class Match:
                 p.hp=min(100,p.hp+60);p.medkits-=1;p.heal_at=0;self.event('healed',player=p.id)
             if math.hypot(p.x-self.zone['x'],p.z-self.zone['z'])>self.zone['r']:
                 self.damage(p,(2+self.zone['stage']*1.2)*STEP,source='zone')
-            if p.hp>0 and intent.get('fire'):self.shoot(p)
+            if p.hp>0 and intent.get('fire'):shooters.append(p)
+        for p in shooters:self.shoot(p,pending)
+        # Resolve shots from this tick together: insertion order / room ownership
+        # must not prevent an already-fired opponent from trading an elimination.
+        for hit in pending:self.damage(*hit)
+        fallen={p.id for p,_,_,_ in pending if p.hp<=0}
+        if len(fallen)>1:
+            rank=sum(p.hp>0 for p in self.players.values())+1
+            for uid in fallen:self.players[uid].rank=rank
+            for e in self.events:
+                if e['kind']=='eliminated' and e['player'] in fallen and e['at']==round(self.clock,2):e['rank']=rank
         for g in self.grenades[:]:
             nx,nz=g['x']+g['vx']*STEP,g['z']+g['vz']*STEP
             if self.safe(nx,nz,.15,y=max(0,g['y']),height=.2):g['x']=nx;g['z']=nz

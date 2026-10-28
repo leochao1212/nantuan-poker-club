@@ -69,6 +69,15 @@ class IslandRules(unittest.TestCase):
         self.assertFalse(p.helmet);self.assertEqual(p.armor,0);self.assertEqual(p.hp,60)
         m.damage(p,100,source='zone');self.assertEqual(p.hp,0);self.assertEqual(p.rank,2)
 
+    def test_same_tick_fire_can_trade_without_host_order_advantage(self):
+        m=self.match();m.rng.gauss=lambda mean,spread:0
+        for uid,yaw in ((1,0),(2,math.pi)):
+            p=m.players[uid];p.hp=10;p.weapons={'pistol':12};p.slot='pistol'
+            self.intent(m,uid,yaw=yaw,fire=True)
+        m.advance(12.05)
+        self.assertTrue(all(p.hp==0 and p.kills==1 and p.weapons['pistol']==11 and p.rank==1 for p in m.players.values()))
+        self.assertEqual(m.phase,'finished');self.assertIsNone(m.winner)
+
     def test_reload_and_heal_are_once_and_interruptible(self):
         m=self.match();p=m.players[1];p.slot='rifle';p.weapons={'rifle':2};p.reserve=10
         m.action(1,'reload');at=p.reload_at;m.action(1,'reload');self.assertEqual(p.reload_at,at)

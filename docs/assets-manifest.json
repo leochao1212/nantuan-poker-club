@@ -410,6 +410,16 @@
     "sha256": "9b2dfcd573b5733099b5903c489f46cf97ced859c90984e8f3e4de9c78ba1aad"
   },
   {
+    "path": "static/assets/clubhouse/tier-10-small.webp",
+    "bytes": 99260,
+    "sha256": "27efc3eafa6444d7c26b9dd3359b269003eef145e88dd69b40330cfc6bd3fb6f"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-10.webp",
+    "bytes": 312890,
+    "sha256": "e98435a6a8f6b90b850ad1239f71d3a04f39991fd37c9a283a61336d0e0e51aa"
+  },
+  {
     "path": "static/assets/clubhouse/tier-2-small.webp",
     "bytes": 40818,
     "sha256": "d1d6b81fbd0590f61a2829ee6cb4a16722e3e208f1d56f3cd1cb4f64106ea359"
@@ -438,6 +448,56 @@
     "path": "static/assets/clubhouse/tier-4.webp",
     "bytes": 199022,
     "sha256": "498fa2efd6a9a05b97c7a7b3beae04bef111d58238f95a9f65231d514250d9cf"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-5-small.webp",
+    "bytes": 99188,
+    "sha256": "d0e137e58d2290d6f68cf458f79cb81cdca71262bef28725563375338366cdda"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-5.webp",
+    "bytes": 310384,
+    "sha256": "9e60cd247a3c0a9467207af00cce057a5a5c4edfbc30ceb5320fb0d5baa098a1"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-6-small.webp",
+    "bytes": 97256,
+    "sha256": "cea4090089f0852a27deda30550e255d3d2814d0ae9d677d967ef27684b25aa5"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-6.webp",
+    "bytes": 309432,
+    "sha256": "ea136ca225f96795a50b22e6b1ae84cbf6e61dbea11d3ba90f74420a47ad7f51"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-7-small.webp",
+    "bytes": 92182,
+    "sha256": "0e2c3339609f9d6206bb950b638241338c9038aec193e3129bbb7bbd5ff0e421"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-7.webp",
+    "bytes": 300600,
+    "sha256": "895b87f290ca1ef790def36dc9f1bee73a08cea6629868e4a130413dbfdc1efa"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-8-small.webp",
+    "bytes": 96216,
+    "sha256": "a22f3be4f74f35d94ad3d0c084534d99f96fd31cf6a74a0b1486e9d06ecd0109"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-8.webp",
+    "bytes": 308372,
+    "sha256": "6fe959c5455a1c4a68105e6b37975ff812d9ed7ca98f5b3b0114751e042e2d9d"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-9-small.webp",
+    "bytes": 94066,
+    "sha256": "cf61224f1f280fd698a901e1c53223244da2a93f8d8156ad0fdcac7718f3907d"
+  },
+  {
+    "path": "static/assets/clubhouse/tier-9.webp",
+    "bytes": 297700,
+    "sha256": "08b1128495233b2c8d46dd644aca265d5742695134208de96a31aa4d8a4733f5"
   },
   {
     "path": "static/assets/covers/baccarat.webp",

@@ -93,6 +93,7 @@ python -m unittest tests.python.test_transfers.TransferRules.test_conservation_r
 | [test_income.py](test_income.py) | 被動收益累積、領取與個人資金水位。 |
 | [test_upgrades.py](test_upgrades.py) | 會所／設施升級、成本與收益邊界。 |
 | [test_clubhouse_speed.py](test_clubhouse_speed.py) | 建築等級帶來的速度加成及上限。 |
+| [test_clubhouse_ten_levels.py](test_clubhouse_ten_levels.py) | 十級升級、舊收益保留、27 次扣點／重送、十級封頂與二十張圖片 URL。 |
 | [test_staff.py](test_staff.py) | 員工派遣、領取、時間與重複結算防護。 |
 | [test_features.py](test_features.py) | 好友包廂、牌局重播與權限。 |
 

@@ -132,6 +132,61 @@ class ContractRules(unittest.TestCase):
         self.quote(100,103);market.settle(self.db,103);market.settle(self.db,104)
         self.assertFalse(self.positions());self.assertEqual(self.cash()['balance'],3000)
 
+    def test_limit_entry_waits_for_better_fresh_price_and_preserves_receipt(self):
+        r=self.order(order_kind='limit',limit_price='95',take_profit='110',stop_loss='90')
+        self.quote(100,102);self.assertFalse(market.settle(self.db,102))
+        self.assertEqual(self.cash()['balance'],1995)
+        self.quote(94,103);self.assertTrue(market.settle(self.db,103))
+        p=self.positions()[0];self.assertEqual((p['entry_native'],p['take_profit'],p['stop_loss']),('94','110','90'))
+        self.assertEqual(self.db.execute('SELECT order_kind,limit_native FROM market_contract_orders WHERE id=?',(r['order_id'],)).fetchone()[:],('limit','95'))
+        self.assertFalse(market.settle(self.db,103))
+
+    def test_short_limit_waits_upward_and_gap_past_exit_refunds(self):
+        self.order(direction='short',order_kind='limit',limit_price='105',take_profit='95',stop_loss='110')
+        self.quote(104,102);self.assertFalse(market.settle(self.db,102))
+        self.quote(111,103);self.assertTrue(market.settle(self.db,103))
+        self.assertFalse(self.positions());self.assertEqual(self.cash()['balance'],3000)
+        self.assertIn('越過',market.view(self.db,1,103)['contracts']['orders'][0]['reason'])
+
+    def test_take_profit_and_stop_loss_close_server_side_once_and_cancel_queued_close(self):
+        for n,(direction,tp,sl,target,reason) in enumerate([('long','110','95',110,'止盈觸發'),('short','90','105',105,'止損觸發'),('short','90','105',90,'止盈觸發'),('long','110','95',95,'止損觸發')]):
+            with self.subTest(direction=direction):
+                t=200+n*100
+                self.quote(100,t);self.order(clock=t+1,direction=direction,leverage=5,margin=100,take_profit=tp,stop_loss=sl)
+                self.quote(100,t+2);market.settle(self.db,t+2);p=self.positions(t+2)[0]
+                contracts.mutate(self.db,self.user,'close',dict(position_id=p['id'],operation_id='conditional_close_'+direction+str(n)),t+3)
+                self.quote(target,t+4);self.assertTrue(market.settle(self.db,t+4));self.assertFalse(market.settle(self.db,t+5))
+                h=market.view(self.db,1,t+5)['contracts']['history'][0];self.assertEqual(h['reason'],reason)
+                self.assertEqual(self.db.execute("SELECT count(*) FROM wallet_ledger WHERE event_key=?",('contract:close:'+str(p['id']),)).fetchone()[0],1)
+                self.assertEqual(self.db.execute("SELECT status FROM market_contract_orders WHERE action='close' AND position_id=?",(p['id'],)).fetchone()[0],'cancelled')
+
+    def test_trigger_never_uses_stale_or_same_entry_quote_and_liquidation_has_priority(self):
+        self.fill(take_profit='110',stop_loss='95')
+        self.quote(111,103)
+        market_data.apply(self.db,[('CC',[],'unavailable',163)],103)
+        self.assertFalse(market.settle(self.db,103));self.assertEqual(len(self.positions()),1)
+        self.quote(80,104);market.settle(self.db,104)
+        h=market.view(self.db,1,104)['contracts']['history'][0];self.assertEqual(h['status'],'liquidated')
+        self.assertNotEqual(h['reason'],'止損觸發')
+
+    def test_invalid_exits_and_changed_receipt_are_atomic(self):
+        for fields in [dict(order_kind='stop'),dict(order_kind='limit'),dict(order_kind='market',limit_price='100'),dict(take_profit='99'),dict(stop_loss='101'),dict(take_profit=True),dict(stop_loss='NaN')]:
+            with self.subTest(fields=fields),self.assertRaises(RuleError):self.order(**fields)
+        self.assertEqual(self.cash()['balance'],3000)
+        d=dict(operation_id='conditional_receipt_1234',symbol='CC:BTC',direction='long',leverage=5,margin=100,order_kind='limit',limit_price='95',stop_loss='90')
+        contracts.mutate(self.db,self.user,'open',d,101)
+        self.assertTrue(contracts.mutate(self.db,self.user,'open',d,1000)['replayed'])
+        with self.assertRaises(member_accounts.AccountError):contracts.mutate(self.db,self.user,'open',d|dict(stop_loss='91'),102)
+
+    def test_limit_can_queue_during_outage_expire_or_cancel_with_full_refund(self):
+        market_data.apply(self.db,[('CC',[],'unavailable',163)],101)
+        r=self.order(clock=102,order_kind='limit',limit_price='95')
+        self.assertFalse(market.settle(self.db,103));self.assertFalse(self.positions())
+        self.assertTrue(market.settle(self.db,102+7*86400));self.assertEqual(self.cash()['balance'],3000)
+        r=self.order(clock=103+7*86400,order_kind='limit',limit_price='95')
+        contracts.mutate(self.db,self.user,'cancel',dict(order_id=r['order_id'],operation_id='cancel_conditional_1234'),104+7*86400)
+        self.assertEqual(self.cash()['balance'],3000)
+
 
 class CandleRules(unittest.TestCase):
     quote=original.MarketRules.quote

@@ -43,7 +43,9 @@ class SpeedRules(unittest.TestCase):
             for key,spec in c.MISSIONS.items():
                 job=self.dispatch(op=f'speed_dispatch_{level}_{key}',mission=key)['job_id']
                 row=self.db.execute('SELECT * FROM staff_jobs WHERE id=?',(job,)).fetchone()
-                self.assertEqual(row['finishes_at']-row['started_at'],spec['seconds']*2/step)
+                # Higher tiers include repeating fractions (3.5x and 5.5x).
+                # Subtracting epoch timestamps loses sub-microsecond precision.
+                self.assertAlmostEqual(row['finishes_at']-row['started_at'],spec['seconds']*2/step,delta=0.000001)
                 self.assertEqual(row['reward'],spec['reward']);self.db.execute('DELETE FROM staff_jobs WHERE id=?',(job,))
     def test_completed_jobs_remain_ready_through_upgrade(self):
         job=self.dispatch()['job_id'];before=dict(self.db.execute('SELECT * FROM staff_jobs WHERE id=?',(job,)).fetchone())

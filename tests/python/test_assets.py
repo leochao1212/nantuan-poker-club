@@ -41,7 +41,9 @@ class StaticImages(unittest.TestCase):
         styles=re.findall(r'<link rel="stylesheet" href="([^"]+)"',html)
         self.assertEqual(len(styles),1)
         self.assertRegex(styles[0],r'^/night\.css\?v=[a-z0-9-]+$')
-        self.assertIn('/ui-art.js?v=market-direction-20261027',html)
+        self.assertIn('/ui-art.js?v=clubhouse-ten-20261028',html)
+        self.assertIn('/clubhouse-scene.js?v=clubhouse-ten-20261028',html)
+        self.assertIn('/profile.js?v=clubhouse-ten-20261028',html)
         self.assertIn('/round-presentation.js',html)
         for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):
             self.assertEqual(self.get('/'+name+'.css')[0],404,name)

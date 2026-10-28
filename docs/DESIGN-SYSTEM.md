@@ -34,7 +34,7 @@
 - PlayerIdentity：暱稱、頭像、稱號、輕量特效。
 - Cards／Dice／Wheel：結果資料與展示動畫分開。
 - VoiceControls：加入、靜音、收聽、成員、裝置設定。
-- EstateCard：名稱／等級、四級建築、獨立升級入口、員工動畫。
+- EstateCard：名稱／等級、十級建築、獨立升級入口、員工動畫。
 - Dialog／Toast／InlineStatus：確認、錯誤與持續狀態，避免同一訊息四處重複。
 
 上述是設計上的元件分類，尚未全部抽成獨立程式模組；實際檔案見 FRONTEND-MAP。

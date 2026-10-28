@@ -47,6 +47,7 @@ jobs:
       - run: npm ci
       - run: node scripts/vendor-market-chart.cjs --check
       - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:clubhouse
       - run: npm run test:ui
       - run: npm run test:journeys
       - run: npm run test:rewards
@@ -63,6 +64,7 @@ jobs:
         with:
           name: synthetic-browser-diagnostics
           path: |
+            artifacts/clubhouse-levels
             artifacts/browser
             artifacts/table-ux
             artifacts/rewards

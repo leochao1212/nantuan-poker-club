@@ -2,3 +2,7 @@
 /docs/licenses/lightweight-charts-LICENSE.txt -text
 /docs/licenses/lightweight-charts-NOTICE.txt -text
 /static/third-party-notices.txt -text
+# Preserve the upstream package bytes, including upstream indentation.
+/static/three.module.js -text -whitespace
+/static/three.core.js -text -whitespace
+/docs/licenses/three-LICENSE.txt -text

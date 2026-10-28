@@ -32,6 +32,8 @@
 
 !mahjong_engine.py
 !voice_transport.py
+!battle.py
+!battle_engine.py
 
 
 

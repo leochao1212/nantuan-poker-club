@@ -45,7 +45,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node scripts/vendor-market-chart.cjs --check
+      - run: node scripts/vendor-assets.cjs --check
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:clubhouse
       - run: npm run test:ui
@@ -77,9 +77,33 @@ jobs:
             artifacts/art-motion
             artifacts/round-presentation
           retention-days: 7
+  battle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/vendor-assets.cjs --check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:battle
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: synthetic-battle-diagnostics
+          path: artifacts/battle/browser
+          retention-days: 7
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: [core, browser]
+    needs: [core, browser, battle]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

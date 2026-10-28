@@ -5,6 +5,7 @@ Both execute only on a source observation newer than submission. Displayed old
 closing prices can never be used for a fill. Quantities use 1e-8 fixed units.
 """
 from decimal import Decimal, InvalidOperation
+from datetime import datetime, timezone, timedelta
 import hashlib
 import json
 import re
@@ -22,6 +23,15 @@ CATALOG = (
     ('CC:SOL','Solana','CC','USD'))
 INSTRUMENTS = {r[0]:dict(symbol=r[0],name=r[1],market=r[2],currency=r[3]) for r in CATALOG}
 PENDING_SECONDS = {'TW':7*86400,'US':7*86400,'CC':120}
+TAIPEI=timezone(timedelta(hours=8))
+TW_SOURCE='TWSE MIS 盤中報價'
+TW_QUOTE_AGE=30
+TW_CHECK_AGE=20
+
+
+def tw_session(clock):
+    local=datetime.fromtimestamp(clock,TAIPEI)
+    return local.weekday()<5 and 9*3600<=local.hour*3600+local.minute*60+local.second<13*3600+30*60
 
 
 def initialize(db):
@@ -55,6 +65,7 @@ def initialize(db):
     ''')
     if 'position_id' not in {r[1] for r in db.execute('PRAGMA table_info(market_orders)')}:
         db.execute('ALTER TABLE market_orders ADD COLUMN position_id INTEGER REFERENCES market_shorts(id)')
+    db.execute("CREATE TABLE IF NOT EXISTS market_quote_health(symbol TEXT PRIMARY KEY,issue TEXT NOT NULL)")
 
 
 def decimal(value):
@@ -82,11 +93,23 @@ def quantity(units):
 
 
 def quote_ready(q,clock):
-    if not q or q['halted']:return False
+    if not q or q['halted'] or ('issue' in q.keys() and q['issue']):return False
     group=INSTRUMENTS[q['symbol']]['market']
     age=clock-q['asof']
+    if group=='TW':
+        return q['source']==TW_SOURCE and tw_session(clock) and -5<=age<=TW_QUOTE_AGE and -5<=clock-q['checked_at']<=TW_CHECK_AGE
     # EOD may span a weekend; never execute against this age allowance alone.
     return -5<=age<=(120 if group=='CC' else 7*86400) and -5<=clock-q['checked_at']<=(120 if group=='CC' else 2*86400) and (INSTRUMENTS[q['symbol']]['currency']=='TWD' or -5<=clock-q['fx_at']<=3*86400)
+
+
+def quote_notice(q,code,clock):
+    if q and q['halted']:return '公司行動待確認，暫停成交'
+    if INSTRUMENTS[code]['market']=='TW':
+        if not tw_session(clock):return '盤後／休市，暫停成交'
+        if not q or q['source']!=TW_SOURCE:return '等待 MIS 盤中報價'
+        if 'issue' in q.keys() and q['issue']:return '行情缺資料或連線失敗，暫停成交'
+        if not quote_ready(q,clock):return '行情已過期，暫停成交'
+    return ''
 
 
 def _assets(db):
@@ -105,11 +128,15 @@ def assets(db):
     return view_cache.shared(db,'market_assets',('market_positions','market_orders','market_quotes','market_shorts'),lambda:_assets(db))
 
 def view(db,uid,clock,symbol=None,period=None):
-    quotes={r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')}
+    quotes={r['symbol']:dict(r) for r in db.execute("SELECT q.*,COALESCE(h.issue,'') AS issue FROM market_quotes q LEFT JOIN market_quote_health h USING(symbol)")}
     instruments=[]
     for code,item in INSTRUMENTS.items():
         q=quotes.get(code)
-        instruments.append(dict(item,quote=q,available=quote_ready(q,clock),mode='約 10 秒更新' if item['market']=='CC' else '每日收盤'))
+        until=None
+        if q and item['market']=='TW':
+            close=datetime.fromtimestamp(clock,TAIPEI).replace(hour=13,minute=30,second=0,microsecond=0).timestamp()
+            until=min(q['asof']+TW_QUOTE_AGE,q['checked_at']+TW_CHECK_AGE,close)
+        instruments.append(dict(item,quote=q,available=quote_ready(q,clock),valid_until=until,notice=quote_notice(q,code,clock),mode='盤中約 5–10 秒更新' if item['market']=='TW' else '約 10 秒更新' if item['market']=='CC' else '每日收盤'))
     positions=[]
     for r in db.execute('SELECT * FROM market_positions WHERE user_id=? AND units>0',(uid,)):
         item=dict(r);reserved=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,r['symbol'])).fetchone()[0]
@@ -176,7 +203,7 @@ def mutate(db,user,action,data,clock):
             if row['status']!='pending':raise RuleError('這筆委託已結束，請查看成交紀錄。')
             cancel(db,row,clock,'cancelled','自行取消')
         else:
-            q=db.execute('SELECT * FROM market_quotes WHERE symbol=?',(symbol,)).fetchone()
+            q=db.execute("SELECT q.*,COALESCE(h.issue,'') AS issue FROM market_quotes q LEFT JOIN market_quote_health h USING(symbol) WHERE q.symbol=?",(symbol,)).fetchone()
             if not quote_ready(q,clock):raise RuleError('行情未就緒或已過期，暫停新委託。')
             if side=='sell':
                 p=db.execute('SELECT units FROM market_positions WHERE user_id=? AND symbol=?',(uid,symbol)).fetchone()
@@ -219,7 +246,7 @@ def cancel(db,order,clock,status,reason):
 def settle(db,clock):
     import wallet
     changed=False
-    quotes={r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')}
+    quotes={r['symbol']:dict(r) for r in db.execute("SELECT q.*,COALESCE(h.issue,'') AS issue FROM market_quotes q LEFT JOIN market_quote_health h USING(symbol)")}
     for position in db.execute("SELECT * FROM market_shorts WHERE status='open'").fetchall():
         q=quotes.get(position['symbol'])
         if quote_ready(q,clock) and short_value(position,q['ask'])==0:
@@ -297,8 +324,9 @@ def apply_quotes(db,rows,clock):
         if halted and old:
             db.execute('UPDATE market_quotes SET halted=1,checked_at=? WHERE symbol=?',(clock,symbol));changed=True;continue
         token=hashlib.sha256(json.dumps([symbol,str(price),str(bid),str(ask),r['asof'],r['fx_at']]).encode()).hexdigest()[:24]
-        db.execute('INSERT INTO market_quotes VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET price=excluded.price,bid=excluded.bid,ask=excluded.ask,native=excluded.native,fx=excluded.fx,asof=excluded.asof,fx_at=excluded.fx_at,checked_at=excluded.checked_at,source=excluded.source,token=excluded.token,halted=excluded.halted',
+        db.execute("INSERT INTO market_quotes(symbol,price,bid,ask,native,fx,asof,fx_at,checked_at,source,token,halted) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET price=excluded.price,bid=excluded.bid,ask=excluded.ask,native=excluded.native,fx=excluded.fx,asof=excluded.asof,fx_at=excluded.fx_at,checked_at=excluded.checked_at,source=excluded.source,token=excluded.token,halted=excluded.halted",
             (symbol,str(price),str(bid),str(ask),str(decimal(r['native'])),str(decimal(r['fx'])),r['asof'],r['fx_at'],clock,r['source'],token,halted))
+        db.execute('DELETE FROM market_quote_health WHERE symbol=?',(symbol,))
         if not halted:
             for p in db.execute('SELECT user_id,units,cost FROM market_positions WHERE symbol=? AND units>0',(symbol,)).fetchall():
                 before=value_points(p['units'],old['price']) if old else p['cost']

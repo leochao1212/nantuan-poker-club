@@ -81,18 +81,19 @@ class MarketRules(unittest.TestCase):
         self.assertLessEqual(wallet.view(self.db,1,200)['balance'],3000)
         self.assertEqual(market.assets(self.db).get(1,0),0)
 
-    def test_stock_close_retrieval_is_not_new_price_and_split_halts(self):
-        self.quote(100,100,'TW:2330')
-        self.order(clock=101,symbol='TW:2330')
-        self.quote(100,200,'TW:2330',asof=100)
-        self.assertFalse(market.settle(self.db,200))
-        self.quote(110,300,'TW:2330');market.settle(self.db,300)
-        self.assertEqual(market.view(self.db,1,300)['orders'][0]['status'],'filled')
+    def test_stock_retrieval_is_not_new_price_and_split_halts(self):
+        at=datetime(2026,10,28,2,tzinfo=timezone.utc).timestamp()
+        self.quote(100,at,'TW:2330',source=market.TW_SOURCE)
+        self.order(clock=at+1,symbol='TW:2330')
+        self.quote(100,at+10,'TW:2330',asof=at,source=market.TW_SOURCE)
+        self.assertFalse(market.settle(self.db,at+10))
+        self.quote(110,at+20,'TW:2330',source=market.TW_SOURCE);market.settle(self.db,at+20)
+        self.assertEqual(market.view(self.db,1,at+20)['orders'][0]['status'],'filled')
         old=market.assets(self.db)[1]
-        self.quote(55,400,'TW:2330')
+        self.quote(55,at+25,'TW:2330',source=market.TW_SOURCE)
         q=dict(self.db.execute("SELECT * FROM market_quotes WHERE symbol='TW:2330'").fetchone())
         self.assertTrue(q['halted']);self.assertEqual(market.assets(self.db)[1],old)
-        with self.assertRaises(RuleError):self.order(clock=401,symbol='TW:2330')
+        with self.assertRaises(RuleError):self.order(clock=at+26,symbol='TW:2330')
 
     def test_sell_reservation_released_on_cancel_and_blocked_user_refunded(self):
         self.order();self.quote(100,102);market.settle(self.db,102)
@@ -227,9 +228,6 @@ class MarketRules(unittest.TestCase):
 class Providers(unittest.TestCase):
     def test_official_formats_and_currency_conversion(self):
         at=datetime(2026,10,27,7,tzinfo=timezone.utc).timestamp()
-        with patch('market_data.fetch_json',return_value=[dict(Code='2330',Date='1151027',ClosingPrice='1,000.00')]):
-            rows,status,_,_=market_data.read_provider('TW',at,None)
-        self.assertEqual(rows[0]['price'],'1000.00');self.assertEqual(rows[0]['asof'],at-5400)
         payload={'error':[],'result':{k:dict(a=['101'],b=['99'],c=['100']) for k in ['XXBTZUSD','XETHZUSD','SOLUSD']}}
         with patch('market_data.fetch_json',return_value=payload):
             rows,_,_,_=market_data.read_provider('CC',at,dict(rate='32',asof=at))
@@ -242,6 +240,123 @@ class Providers(unittest.TestCase):
         with patch.dict('os.environ',{'POKER_MARKETSTACK_KEY':'SECRET'}),patch('market_data.fetch_json',side_effect=ValueError('SECRET')):
             result=market_data.refresh(['US'],100,dict(rate='32',asof=100))
         self.assertNotIn('SECRET',str(result));self.assertEqual(result[0][3],86500)
+
+
+def mis_fixture(clock,code='2330',**fields):
+    local=datetime.fromtimestamp(clock,market.TAIPEI)
+    return dict(c=code,ex='tse',d=local.strftime('%Y%m%d'),t=local.strftime('%H:%M:%S'),tlong=str(int(clock)*1000),z='100',b='99_98_97_',a='101_102_103_',g='10_20_30_',f='10_20_30_')|fields
+
+
+class MISProviders(unittest.TestCase):
+    def setUp(self):self.at=datetime(2026,10,28,2,tzinfo=timezone.utc).timestamp()
+
+    def test_batched_request_preserves_source_time_and_no_key(self):
+        payload=dict(rtcode='0000',msgArray=[mis_fixture(self.at-10),mis_fixture(self.at-5,'2317')])
+        with patch('market_data.fetch_json',return_value=payload) as fetch:
+            rows,status,next_at,_=market_data.read_provider('TW',self.at,None)
+        from urllib.parse import urlparse,parse_qs
+        url=fetch.call_args.args[0];query=parse_qs(urlparse(url).query)
+        self.assertEqual(len(query['ex_ch'][0].split('|')),5)
+        self.assertEqual(status,'partial');self.assertEqual(next_at,self.at+5)
+        self.assertEqual(rows[0]['asof'],self.at-10);self.assertEqual(rows[0]['source'],market.TW_SOURCE)
+        self.assertEqual((rows[0]['price'],rows[0]['bid'],rows[0]['ask']),('100','99','101'))
+
+    def test_missing_invalid_crossed_stale_future_or_ambiguous_rows_rejected(self):
+        variants=[dict(z='-'),dict(z='0'),dict(z='NaN'),dict(z='Infinity'),dict(b='-'),dict(a='-'),dict(g='0'),dict(f='-'),dict(b='102_',a='101_'),dict(t=''),dict(tlong=''),dict(tlong=str(int(self.at-5)*1000)),dict(ex='otc'),dict(d='20261399'),dict(z=100),dict(b=None)]
+        for fields in variants:
+            with self.subTest(fields=fields):self.assertEqual(market_data.mis_rows(dict(rtcode='0000',msgArray=[mis_fixture(self.at,**fields)]),self.at),[])
+        for clock in (self.at-31,self.at+6,self.at-86400):
+            self.assertEqual(market_data.mis_rows(dict(rtcode='0000',msgArray=[mis_fixture(clock)]),self.at),[])
+        row=mis_fixture(self.at)
+        self.assertEqual(market_data.mis_rows(dict(rtcode='0000',msgArray=[row,row]),self.at),[])
+        self.assertEqual(market_data.mis_rows(dict(rtcode='0000',msgArray=[row,None,{},mis_fixture(self.at,'9999')]),self.at)[0]['symbol'],'TW:2330')
+        for data in ([],{},dict(rtcode='5000',msgArray=[]),dict(rtcode='0000',msgArray={})):
+            with self.assertRaises(ValueError):market_data.mis_rows(data,self.at)
+
+    def test_outside_session_does_not_fetch_and_failure_retries_bounded(self):
+        for at in (self.at-2*3600,self.at+4*3600,self.at+3*86400):
+            with patch('market_data.fetch_json') as fetch:
+                rows,status,_,_=market_data.read_provider('TW',at,None)
+            fetch.assert_not_called();self.assertEqual((rows,status),([],'closed'))
+        with patch('market_data.fetch_json',side_effect=TimeoutError):
+            result=market_data.refresh(['TW'],self.at,None)
+        self.assertEqual(result,[('TW',[],'unavailable',self.at+5)])
+
+
+class MISRules(unittest.TestCase):
+    quote=MarketRules.quote
+    order=MarketRules.order
+
+    def setUp(self):
+        MarketRules.setUp(self)
+        self.at=datetime(2026,10,28,2,tzinfo=timezone.utc).timestamp()
+
+    def tick(self,clock,rows=None,status='partial'):
+        payload=dict(rtcode='0000',msgArray=rows if rows is not None else [mis_fixture(clock)])
+        observations=market_data.mis_rows(payload,clock)
+        market_data.apply(self.db,[('TW',observations,status,clock+5)],clock)
+
+    def test_old_eod_never_trades_and_upgrade_does_not_wait_hourly_schedule(self):
+        self.quote(100,self.at,'TW:2330',source='TWSE 開放資料')
+        self.db.execute('INSERT INTO market_providers VALUES(?,?,?,?)',('TW',self.at+3600,self.at,'ok'))
+        self.assertIn('TW',market_data.due(self.db,self.at))
+        with self.assertRaises(RuleError):self.order(clock=self.at+1,symbol='TW:2330')
+        self.tick(self.at+2);self.order(clock=self.at+3,symbol='TW:2330')
+        self.assertNotIn('TW',market_data.due(self.db,self.at+3))
+        self.assertIn('TW',market_data.due(self.db,self.at+7))
+
+    def test_partial_quote_immediately_blocks_only_missing_symbol_and_resumes(self):
+        self.tick(self.at,[mis_fixture(self.at),mis_fixture(self.at,'2317')])
+        self.order(clock=self.at+1,symbol='TW:2330')
+        self.tick(self.at+2,[mis_fixture(self.at+2,z='-'),mis_fixture(self.at+2,'2317')])
+        self.assertFalse(market.settle(self.db,self.at+2))
+        instruments={r['symbol']:r for r in market.view(self.db,1,self.at+2)['instruments']}
+        self.assertFalse(instruments['TW:2330']['available']);self.assertTrue(instruments['TW:2317']['available'])
+        with self.assertRaises(RuleError):self.order(clock=self.at+2,symbol='TW:2330')
+        self.assertEqual(wallet.view(self.db,1,self.at+2)['balance'],2000)
+        self.tick(self.at+5);self.assertTrue(market.settle(self.db,self.at+5));self.assertFalse(market.settle(self.db,self.at+6))
+        self.assertEqual(len(market.view(self.db,1,self.at+6)['positions']),1)
+        self.assertEqual(self.db.execute("SELECT count(*) FROM wallet_ledger WHERE kind='market_reserve'").fetchone()[0],1)
+
+    def test_failure_staleness_repeated_source_time_and_closed_session_never_fill(self):
+        self.tick(self.at);self.order(clock=self.at+1,symbol='TW:2330')
+        market_data.apply(self.db,[('TW',[],'unavailable',self.at+7)],self.at+2)
+        self.assertFalse(market.settle(self.db,self.at+2))
+        self.tick(self.at+5,[mis_fixture(self.at)])
+        self.assertFalse(market.settle(self.db,self.at+5),'same source time is not new')
+        with self.assertRaises(RuleError):self.order(clock=self.at+26,symbol='TW:2330')
+        self.tick(self.at+31,[mis_fixture(self.at)])
+        self.assertFalse(market.settle(self.db,self.at+31))
+        self.tick(self.at+32);self.assertTrue(market.settle(self.db,self.at+32))
+        self.assertFalse(market.quote_ready(self.db.execute("SELECT * FROM market_quotes WHERE symbol='TW:2330'").fetchone(),self.at+4*3600))
+        self.assertEqual(wallet.view(self.db,1,self.at+4*3600)['balance'],2000)
+
+    def test_missing_quote_does_not_liquidate_short_and_old_marks_are_preserved(self):
+        self.tick(self.at);self.order('short',clock=self.at+1,symbol='TW:2330');self.tick(self.at+2);market.settle(self.db,self.at+2)
+        before=market.assets(self.db)[1]
+        self.tick(self.at+5,[mis_fixture(self.at+5,z='-',a='1000_')]);market.settle(self.db,self.at+5)
+        self.assertEqual(market.assets(self.db)[1],before)
+        self.assertEqual(market.view(self.db,1,self.at+5)['shorts'][0]['status'],'open')
+        self.assertEqual(wallet.view(self.db,1,self.at+5)['balance'],2000)
+
+    def test_receipt_replay_and_cancel_remain_safe_when_mis_disappears(self):
+        self.tick(self.at)
+        request=dict(symbol='TW:2330',side='buy',amount=1000,operation_id='mis_receipt_recovery_1234')
+        first=market.mutate(self.db,self.user,'order',request,self.at+1)
+        market_data.apply(self.db,[('TW',[],'unavailable',self.at+7)],self.at+2)
+        self.assertTrue(market.mutate(self.db,self.user,'order',request,self.at+3)['replayed'])
+        cancel=dict(order_id=first['order_id'],operation_id='mis_cancel_recovery_1234')
+        market.mutate(self.db,self.user,'cancel',cancel,self.at+4)
+        self.assertTrue(market.mutate(self.db,self.user,'cancel',cancel,self.at+5)['replayed'])
+        self.assertEqual(wallet.view(self.db,1,self.at+5)['balance'],3000)
+        self.tick(self.at+6);self.assertFalse(market.settle(self.db,self.at+6))
+        self.assertEqual(len(market.view(self.db,1,self.at+6)['orders']),1)
+
+    def test_health_table_keeps_original_quote_schema_rollback_compatible(self):
+        self.tick(self.at)
+        self.assertEqual(len(self.db.execute('PRAGMA table_info(market_quotes)').fetchall()),12)
+        self.db.execute("INSERT INTO market_quotes VALUES('TW:0050','100','99','101','100','1',?,?,?,'old version','token',0)",(self.at,self.at,self.at))
+        self.assertFalse(next(i for i in market.view(self.db,1,self.at)['instruments'] if i['symbol']=='TW:0050')['available'])
 
 
 class MarketHTTP(ServerTestCase):

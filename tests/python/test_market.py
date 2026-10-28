@@ -577,6 +577,23 @@ class YahooRules(unittest.TestCase):
         self.assertFalse(self.instrument(self.at+3*86400)['available'])
         self.assertIn('休市',self.instrument(self.at+3*86400)['notice'])
 
+    def test_short_chart_queries_do_not_scan_all_accumulated_history(self):
+        self.tick(self.at)
+        self.db.executemany('INSERT INTO market_history VALUES(?,?,?,?,?,?)',
+            [('US:AAPL',self.at-86400-n,'100','100','1',self.at) for n in range(25000)])
+        calls=0
+        def budget():
+            nonlocal calls
+            calls+=1
+            return int(calls>100)
+        self.db.set_progress_handler(budget,1000)
+        try:
+            chart=market.chart(self.db,'US:AAPL','15m',self.at)
+            self.assertEqual(len(chart['points']),4)
+            chart=market.chart(self.db,'US:AAPL','15m',self.at+3*86400)
+            self.assertEqual(chart['to_at'],self.at)
+        finally:self.db.set_progress_handler(None,0)
+
     def test_daily_schedule_migration_and_retry_are_persisted(self):
         self.db.execute('INSERT INTO market_providers VALUES(?,?,?,?)',('US',self.at+86400,self.at,'missing_key'))
         self.assertIn('US',market_data.due(self.db,self.at))

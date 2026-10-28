@@ -401,13 +401,13 @@ def chart(db,symbol,period,clock):
         if not session or not session['session_start']<=clock<session['session_end']:
             # At weekends/pre-open, a short-range view ends at the last real
             # observation instead of showing a blank wall-clock window.
-            latest=db.execute('SELECT max(asof) FROM (SELECT asof FROM market_prices WHERE symbol=? AND asof<=? UNION ALL SELECT asof FROM market_history WHERE symbol=? AND asof<=?)',(symbol,clock,symbol,clock)).fetchone()[0]
+            latest=db.execute('SELECT max(at) FROM (SELECT max(asof) AS at FROM market_prices WHERE symbol=? AND asof<=? UNION ALL SELECT max(asof) AS at FROM market_history WHERE symbol=? AND asof<=?)',(symbol,clock,symbol,clock)).fetchone()[0]
             if latest is not None:clock=latest
     start=clock-seconds;bucket=max(1,seconds/240)
     # Historical minute closes are chart-only; settlement never reads this table.
-    source='SELECT asof,price FROM market_prices WHERE symbol=:symbol'
+    source='SELECT asof,price FROM market_prices WHERE symbol=:symbol AND asof>=:start AND asof<=:clock'
     if INSTRUMENTS[symbol]['market']=='US':
-        source+=' UNION ALL SELECT h.asof,h.price FROM market_history h WHERE h.symbol=:symbol AND NOT EXISTS(SELECT 1 FROM market_prices p WHERE p.symbol=h.symbol AND p.asof=h.asof)'
+        source+=' UNION ALL SELECT h.asof,h.price FROM market_history h WHERE h.symbol=:symbol AND h.asof>=:start AND h.asof<=:clock AND NOT EXISTS(SELECT 1 FROM market_prices p WHERE p.symbol=h.symbol AND p.asof=h.asof)'
     rows=db.execute('WITH samples AS ('+source+''') SELECT p.asof,p.price FROM samples p JOIN (
       SELECT max(asof) AS asof FROM samples WHERE asof>=:start AND asof<=:clock
       GROUP BY CAST((asof-:start)/:bucket AS INTEGER)) b ON p.asof=b.asof ORDER BY p.asof''',dict(symbol=symbol,start=start,clock=clock,bucket=bucket)).fetchall()

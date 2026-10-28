@@ -5167,6 +5167,73 @@ html[data-ui=current] #app #market-console .button.primary[data-direction=short]
 #market-console .market-chart-dialog .market-price-section{margin:0}#market-console .market-chart-dialog .market-candle-canvas{height:max(180px,calc(100dvh - 280px))}#market-console .market-chart-dialog [data-chart-expand]{display:none}
 html.market-chart-open{overflow:hidden}
 @media(min-width:1600px){#market-console .market-layout{grid-template-columns:280px minmax(0,1fr) 220px}#market-console .market-watch{display:block}#market-console .market-mobile-picker{display:none}}
-@media(max-width:1100px){#market-console .market-discovery{grid-template-columns:minmax(0,1fr);gap:8px}#market-console .market-discovery .market-groups .button{flex:1;min-width:0}#market-console .market-layout{grid-template-columns:minmax(0,1fr)}#market-console .market-mobile-jump{display:flex;gap:8px;margin:12px 0}#market-console .market-mobile-jump .button{flex:1}#market-console .market-ticket{scroll-margin-top:110px}#market-console .market-quote{font-size:30px}#market-console .market-ticket{max-width:none}}
-@media(max-width:760px){#market-console{padding:10px;border-radius:8px}#market-console .market-overview{grid-template-columns:repeat(2,minmax(0,1fr))}#market-console .market-overview .panel{padding:10px}#market-console .market-overview strong{font-size:20px}#market-console .market-banner{padding:12px;align-items:flex-start;flex-wrap:wrap}#market-console .market-banner h2{font-size:17px}#market-console .market-banner .button{font-size:12px}#market-console [data-market-search-results]{grid-template-columns:1fr}#market-console :is(.market-ticket,.market-compose){padding:12px}#market-console .market-price-section{padding:8px}#market-console .market-chart-heading{gap:6px}#market-console .market-chart-heading>strong{width:100%;font-size:12px}#market-console .market-chart-heading [data-chart-expand]{margin-left:auto;padding-inline:8px;font-size:12px}#market-console .market-periods{width:100%}#market-console .market-periods .button{flex:1;padding-inline:4px}#market-console .market-candle-canvas{height:330px}#market-console .chart-tools{gap:4px}#market-console .chart-tools .button{padding-inline:8px}#market-console .chart-tools label{font-size:11px}#market-console .market-bottom,#market-console .contract-positions{grid-template-columns:minmax(0,1fr)}#market-console .market-chart-dialog{width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0;padding:10px;padding-top:max(10px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom))}#market-console .market-chart-dialog .market-candle-canvas{height:max(180px,calc(100dvh - 350px))}#market-console .market-dialog-heading{top:-10px}#market-console .market-records li{flex-wrap:wrap}}
+#market-console .market-phone-header,#market-console .market-phone-holdings,#market-console .market-phone-modes,#market-console .contract-quick-cost{display:none}
+#market-console .contract-risk-details>summary,#market-console .market-chart-analysis-tools>summary{display:none}
+#market-console .contract-settings{display:grid;grid-template-columns:1fr;gap:0}
+#market-console .market-instrument span:first-child{flex:1;min-width:0}#market-console .market-instrument span:first-child strong{font-size:13px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+#market-console .market-pair-dialog{background:#101820;color:var(--ink);border:1px solid var(--line);border-radius:12px;width:min(560px,calc(100vw - 24px));max-width:none;max-height:90dvh;padding:16px;overflow:auto}
+#market-console .market-pair-dialog::backdrop{background:#050c13d9}#market-console .market-pair-dialog .market-dialog-heading{position:sticky;top:-16px;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:12px;background:#101820}
+#market-console .market-pair-dialog .market-watch{display:block;padding:0;border:0;background:transparent}#market-console .market-pair-dialog .market-watch h2{display:none}#market-console .market-pair-dialog .market-instrument{min-height:62px}#market-console .market-pair-dialog .market-instrument strong{font-size:15px}
+html.market-picker-open{overflow:hidden}
+@media(max-width:1100px){
+ #app #main:has(>#market-console)>.page-heading{display:none}
+ #market-console{padding:0;border:0;border-radius:8px}
+ #market-console .market-banner{display:none}
+ #market-console .market-layout{display:block}
+ #market-console .market-phone-header{display:block;padding:12px 14px 0}
+ #market-console .market-phone-pair{display:flex;align-items:center;gap:8px}
+ html[data-ui=current] #app #market-console [data-mobile-pair]{flex:1;min-width:0;text-align:left;justify-content:space-between;font-size:16px;background:transparent;border:0;padding-left:0}
+ #market-console [data-mobile-pair-name]{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #market-console .market-phone-quote{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
+ #market-console .market-phone-quote .market-quote{font-size:26px;line-height:1.3;margin:0}
+ #market-console .market-phone-cash{text-align:right;flex-shrink:0;font-size:11px;color:var(--muted)}#market-console .market-phone-cash strong{display:block;margin-top:4px;font-size:14px;color:var(--ink)}
+ #market-console [data-mobile-feed-status]{color:var(--warn);font-size:12px;line-height:1.5;margin:6px 0}#market-console [data-mobile-feed-status]:empty{display:none}
+ #market-console [data-mobile-equivalent]{font-size:11px;color:var(--muted);margin:4px 0 8px}
+ #market-console .market-phone-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border-bottom:1px solid var(--line)}
+ #market-console .market-phone-tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;min-height:46px;padding:8px 2px;font-size:14px;color:var(--muted);font-weight:600;white-space:nowrap}
+ #market-console .market-phone-tabs [aria-selected=true]{border-bottom-color:var(--emerald);color:var(--ink)}
+ #market-console .market-phone-holdings{display:block;padding:12px 14px}
+ #market-console .market-phone-assets .market-overview{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px}#market-console .market-phone-assets .market-overview .panel{padding:10px}#market-console .market-overview strong{font-size:20px}
+ html[data-ui=current] #app #market-console :is(.market-ticket,.market-compose){padding:12px 14px;border:0;border-radius:0;background:transparent}
+ #market-console .market-ticket-heading,#market-console .market-mobile-picker,#market-console .market-analysis>:is([data-market-symbol-label],[data-market-title],[data-market-native]){display:none}
+ #market-console .market-phone-modes{display:block;margin-top:12px}#market-console .market-phone-modes summary{font-size:12px;color:var(--muted)}
+ #market-console .contract-settings{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px}
+ #market-console .market-ticket .contract-settings label{margin-top:0}
+ #market-console .contract-directions{margin:0 0 12px}
+ #market-console .market-ticket [data-market-contract-ticket] .market-presets{display:none}
+ #market-console .contract-percent{margin:10px 0 4px}
+ #market-console .contract-exits-toggle{min-height:44px;padding-left:0;font-size:13px}
+ #market-console .contract-quick-cost{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin:8px 0}#market-console .contract-quick-cost strong{font-size:14px;color:var(--ink)}
+ #market-console .contract-risk-details>summary,#market-console .market-chart-analysis-tools>summary{display:list-item;font-size:12px;color:var(--muted);min-height:44px}
+ #market-console .contract-risk-details{margin:0}
+ #market-console .contract-warning:empty,#market-console .bank-message:empty,#market-console[data-mobile-view] [data-market-message][data-source=read]{display:none}
+ #market-console .contract-warning,#market-console .bank-message{min-height:0;margin:6px 0;font-size:12px}
+ #market-console .market-ticket .market-submit{margin:12px 0 0}
+ #market-console .market-price-section{margin:0;padding:8px;border-radius:6px}
+ #market-console .market-chart-heading>strong{display:none}
+ #market-console .market-chart-heading [data-chart-expand]{margin-left:auto;order:3;font-size:12px;padding:7px 9px}
+ #market-console .market-periods{gap:4px}#market-console .market-periods .button{min-width:44px;padding:7px;font-size:12px}
+ #market-console .market-chart-analysis-tools>summary{padding-block:10px}
+ #market-console .market-candle-canvas{height:330px}
+ #market-console .market-chart-dialog .market-candle-canvas{height:max(180px,calc(100dvh - 260px))}
+ #market-console .market-bottom,#market-console .contract-positions{grid-template-columns:minmax(0,1fr)}
+ #market-console .market-phone-holdings .market-contract-account{padding:12px;margin-top:8px}
+ #market-console .market-attribution{padding:12px 14px;margin:0;font-size:10px}
+ #market-console .market-pair-dialog .market-discovery{display:block;margin-bottom:8px}#market-console .market-pair-dialog .market-groups{display:flex;margin:0 0 10px}#market-console .market-pair-dialog .market-groups .button{flex:1;min-width:0}
+ #market-console .market-pair-dialog [data-market-search-results]{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+ #app .club-main:has(#market-console){background:#101820}#app .club-main:has(#market-console) main#main{padding:0 0 calc(160px + env(safe-area-inset-bottom));background:#101820}#app .club-main:has(#market-console)>.page-foot{display:none}
+ #market-console .market-phone-header{padding:8px 12px 0}
+ html[data-ui=current] #app #market-console :is(.market-ticket,.market-compose){padding:12px}
+ #market-console[data-mobile-view=trade] .market-ticket .market-submit{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));z-index:35;margin:0;padding:8px 12px;background:#101820;border-top:1px solid var(--line);display:flex;flex-wrap:nowrap;gap:8px}
+ #market-console .market-ticket .market-submit>.primary{flex:1;width:auto;min-height:48px}#market-console .market-ticket .market-submit>[data-contract-back]{width:auto;flex:0 0 auto;min-height:48px}
+ #market-console .market-ticket{padding-bottom:90px}
+ #market-console .market-chart-dialog{width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0;padding:10px;padding-top:max(10px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom))}
+ #market-console .market-dialog-heading{top:-10px}
+ #market-console .market-pair-dialog{width:100vw;height:86dvh;max-height:86dvh;border:0;border-radius:14px 14px 0 0;margin:auto 0 0;padding:14px;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+ #market-console .market-pair-dialog .market-dialog-heading{top:-14px}
+ #market-console .market-records li{flex-wrap:wrap}
+}
+
 @media(prefers-reduced-motion:reduce){#market-console *,#market-console *::after{transition:none;animation:none;scroll-behavior:auto}}

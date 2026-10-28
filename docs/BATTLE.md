@@ -69,3 +69,5 @@ python scripts/bench-battle.py
 - [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html)：使用本機固定 `three@0.186.1`，MIT 授權在 `docs/licenses/three-LICENSE.txt` 與公開 `/third-party-notices.txt`。`scripts/vendor-assets.cjs` 比對 npm 固定套件位元組；執行時不依賴 CDN。
 
 合成帳號的實際畫面：[桌面戰場](screenshots/battle-desktop.png)、[手機直向](screenshots/battle-phone.png)。
+
+CI 的 3D 瀏覽器流程獨立成 `battle` job，正式 release 同時依賴 core、browser、battle 成功；軟體 GPU 的引擎首次啟動另留 60 秒預算並保存實際耗時，互動預設仍為 15 秒。射速以伺服器時間核對，放開按鍵後等待原輸入序號回應，再確認彈藥停止減少，不用 CI 指標事件派送所耗的牆鐘時間假裝真實按住時長。

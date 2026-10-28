@@ -395,7 +395,15 @@ PERIODS={'15m':900,'1h':3600,'1d':86400,'7d':7*86400,'30d':30*86400,'180d':180*8
 
 def chart(db,symbol,period,clock):
     if symbol not in INSTRUMENTS or period not in PERIODS:raise RuleError('價格圖標的或時間範圍無效。')
-    seconds=PERIODS[period];start=clock-seconds;bucket=max(1,seconds/240)
+    seconds=PERIODS[period]
+    if INSTRUMENTS[symbol]['market']=='US':
+        session=db.execute('SELECT session_start,session_end FROM market_quote_meta WHERE symbol=?',(symbol,)).fetchone()
+        if not session or not session['session_start']<=clock<session['session_end']:
+            # At weekends/pre-open, a short-range view ends at the last real
+            # observation instead of showing a blank wall-clock window.
+            latest=db.execute('SELECT max(asof) FROM (SELECT asof FROM market_prices WHERE symbol=? AND asof<=? UNION ALL SELECT asof FROM market_history WHERE symbol=? AND asof<=?)',(symbol,clock,symbol,clock)).fetchone()[0]
+            if latest is not None:clock=latest
+    start=clock-seconds;bucket=max(1,seconds/240)
     # Historical minute closes are chart-only; settlement never reads this table.
     source='SELECT asof,price FROM market_prices WHERE symbol=:symbol'
     if INSTRUMENTS[symbol]['market']=='US':

@@ -172,7 +172,7 @@ def yahoo_packet(data,symbol,clock,fx):
     rate=market.decimal(fx['rate']);snapshot=None
     try:
         at=source_time(meta['regularMarketTime']);native=market.decimal(meta['regularMarketPrice']);price=str(native*rate)
-        if not clock-8*86400<=at<=clock+5 or not start<=at<=end+5:raise ValueError('Invalid trade time')
+        if not clock-8*86400<=at<=clock+5:raise ValueError('Invalid trade time')
         # Twelve legacy quote columns remain intact. Mirrored reference prices
         # are hidden from the public bid/ask display; they are not Yahoo BBO.
         snapshot=dict(symbol=symbol,price=price,bid=price,ask=price,native=str(native),fx=fx['rate'],fx_at=fx['asof'],asof=at,source=market.US_SOURCE)
@@ -185,7 +185,7 @@ def yahoo_packet(data,symbol,clock,fx):
         for at,native in zip(times,closes):
             try:
                 at=source_time(at);native=market.decimal(native)
-                if at in duplicates or not start<=at<end or at+60>clock or at<clock-7*86400:continue
+                if at in duplicates or at+60>clock or at<clock-7*86400:continue
                 history.append((symbol,at,str(native*rate),str(native),fx['rate'],fx['asof']))
             except (ValueError,TypeError,market.RuleError):continue
     except (ValueError,KeyError,TypeError,IndexError):pass
@@ -196,7 +196,7 @@ def yahoo_batch(clock,fx):
     symbols=[s for s,i in market.INSTRUMENTS.items() if i['market']=='US']
     def read(symbol):
         try:
-            url='https://query1.finance.yahoo.com/v8/finance/chart/'+urllib.parse.quote(symbol.split(':')[1],safe='')+'?interval=1m&range=1d'
+            url='https://query1.finance.yahoo.com/v8/finance/chart/'+urllib.parse.quote(symbol.split(':')[1],safe='')+'?interval=1m&range=1d&includePrePost=false'
             return yahoo_packet(fetch_json(url),symbol,clock,fx)
         except Exception:return None
     with ThreadPoolExecutor(max_workers=3) as pool:packets=[p for p in pool.map(read,symbols) if p]

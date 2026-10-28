@@ -436,7 +436,7 @@ class YahooFormats(unittest.TestCase):
         self.assertEqual(p['end']-p['start'],23400)
 
     def test_missing_or_invalid_snapshot_keeps_chart_only_never_synthesizes_quote(self):
-        for fields in [dict(regularMarketPrice=None),dict(regularMarketPrice=0),dict(regularMarketPrice=float('nan')),dict(regularMarketTime=True),dict(regularMarketTime=self.at+6),dict(regularMarketTime=self.at-86400)]:
+        for fields in [dict(regularMarketPrice=None),dict(regularMarketPrice=0),dict(regularMarketPrice=float('nan')),dict(regularMarketTime=True),dict(regularMarketTime=self.at+6),dict(regularMarketTime=self.at-9*86400)]:
             p=market_data.yahoo_packet(yahoo_fixture(self.at,**fields),'US:AAPL',self.at,self.fx)
             self.assertIsNone(p['quote']);self.assertEqual(len(p['history']),3)
         data=yahoo_fixture(self.at);r=data['chart']['result'][0]
@@ -445,6 +445,15 @@ class YahooFormats(unittest.TestCase):
         self.assertEqual([r[1] for r in market_data.yahoo_packet(data,'US:AAPL',self.at,self.fx)['history']],[self.at-60])
         r['timestamp']=[self.at-60];r['indicators']['quote'][0]['close']=[0]
         self.assertEqual(market_data.yahoo_packet(data,'US:AAPL',self.at,self.fx)['history'],[])
+
+    def test_next_session_metadata_keeps_last_close_and_history_for_display_only(self):
+        data=yahoo_fixture(self.at)
+        r=data['chart']['result'][0]['meta']['currentTradingPeriod']['regular']
+        r['start']+=86400;r['end']+=86400
+        packet=market_data.yahoo_packet(data,'US:AAPL',self.at+12*3600,self.fx)
+        self.assertIsNotNone(packet['quote'])
+        self.assertEqual(len(packet['history']),4)
+        self.assertLess(packet['quote']['asof'],packet['start'])
 
     def test_wrong_instrument_currency_session_and_error_rejected(self):
         for fields in [dict(symbol='OTHER'),dict(currency='TWD'),dict(instrumentType='ETF'),dict(dataGranularity='1d'),dict(currentTradingPeriod={}),dict(currentTradingPeriod=dict(regular=dict(start=True,end=self.at)))]:
@@ -461,7 +470,7 @@ class YahooFormats(unittest.TestCase):
             rows,status,next_at,_=market_data.read_provider('US',self.at,self.fx)
         self.assertEqual((len(rows),status,next_at),(2,'partial',self.at+60))
         self.assertEqual(mocked.call_count,3)
-        self.assertTrue(all(c.args[0].startswith('https://query1.finance.yahoo.com/v8/finance/chart/') and c.args[0].endswith('?interval=1m&range=1d') for c in mocked.call_args_list))
+        self.assertTrue(all(c.args[0].startswith('https://query1.finance.yahoo.com/v8/finance/chart/') and c.args[0].endswith('?interval=1m&range=1d&includePrePost=false') for c in mocked.call_args_list))
         with patch('market_data.fetch_json',side_effect=lambda u:yahoo_fixture(self.at,u.split('/chart/')[1].split('?')[0])):
             self.assertEqual(market_data.read_provider('US',self.at,self.fx)[2],self.at+10)
             self.assertEqual(market_data.read_provider('US',self.at+6*3600,self.fx)[1:3],('closed',self.at+6*3600+60))
@@ -558,6 +567,15 @@ class YahooRules(unittest.TestCase):
         self.assertEqual([p['at'] for p in points],[self.at-180,self.at-120,self.at-60,self.at])
         self.assertIn('分鐘',market.chart(self.db,'US:AAPL','15m',self.at)['basis'])
         self.assertEqual(len(self.db.execute('PRAGMA table_info(market_quotes)').fetchall()),12)
+
+    def test_weekend_chart_ends_at_last_real_point_but_does_not_reopen_trading(self):
+        self.tick(self.at)
+        chart=market.chart(self.db,'US:AAPL','15m',self.at+3*86400)
+        self.assertEqual(chart['to_at'],self.at)
+        self.assertEqual(chart['from_at'],self.at-900)
+        self.assertEqual(len(chart['points']),4)
+        self.assertFalse(self.instrument(self.at+3*86400)['available'])
+        self.assertIn('休市',self.instrument(self.at+3*86400)['notice'])
 
     def test_daily_schedule_migration_and_retry_are_persisted(self):
         self.db.execute('INSERT INTO market_providers VALUES(?,?,?,?)',('US',self.at+86400,self.at,'missing_key'))

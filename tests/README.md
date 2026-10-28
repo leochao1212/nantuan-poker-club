@@ -21,3 +21,5 @@ npm run test:motion
 ## 3D 生存戰
 
 `python/test_battle.py` 驗證固定步長、伺服器射擊／彈藥、掩體、補給、縮圈、房間／租約與有界快照。`python/test_battle_http.py` 使用臨時 SQLite 與真正 HTTP／WebSocket，驗證認證、來源、房主、重送及不改點數。`npm run test:battle` 啟動獨立服務與 Chromium 軟體 WebGL，覆蓋雙人對戰、AI 補位、觸控、重連、SPA 清理與響應式版面；報告在忽略的 `artifacts/battle/browser/`。此測試不代表實體手機幀率。
+
+`npm run test:battle-perf`：固定 16 角色／40 補給／4 人射擊的批次渲染與攝影機回歸；包括 GPU 緩衝配置、同圖重用、停止後不回拉、碰撞索引與視覺預測。輸出是軟體 WebGL 比較數據，不代表實體手機 FPS。

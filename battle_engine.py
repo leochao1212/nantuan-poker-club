@@ -122,6 +122,7 @@ class Player:
     connected: bool = True
     gone_at: float | None = None
     next_fire: float = 0
+    fire_pending: bool = False
     reload_at: float = 0
     heal_at: float = 0
     ai_at: float = 0
@@ -206,6 +207,9 @@ class Match:
         for k in ('fire','aim','sprint','crouch','jump'):
             if not isinstance(data.get(k,False),bool):raise ValueError('無效的按鍵狀態。')
             values[k]=data.get(k,False)
+        # Preserve a trigger edge when down/up packets arrive between two ticks.
+        if values['fire'] and not p.intent.get('fire') and self.phase=='playing' and p.hp>0:
+            p.fire_pending=True
         p.seq=int(seq);p.intent=values;p.input_at=clock
 
     def action(self,uid,kind,value=None):
@@ -382,7 +386,8 @@ class Match:
                 p.hp=min(100,p.hp+60);p.medkits-=1;p.heal_at=0;self.event('healed',player=p.id)
             if math.hypot(p.x-self.zone['x'],p.z-self.zone['z'])>self.zone['r']:
                 self.damage(p,(2+self.zone['stage']*1.2)*STEP,source='zone')
-            if p.hp>0 and intent.get('fire'):shooters.append(p)
+            if p.hp>0 and (intent.get('fire') or p.fire_pending and clock-p.input_at<.7):shooters.append(p)
+            p.fire_pending=False
         for p in shooters:self.shoot(p,pending)
         # Resolve shots from this tick together: insertion order / room ownership
         # must not prevent an already-fired opponent from trading an elimination.

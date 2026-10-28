@@ -78,6 +78,19 @@ class IslandRules(unittest.TestCase):
         self.assertTrue(all(p.hp==0 and p.kills==1 and p.weapons['pistol']==11 and p.rank==1 for p in m.players.values()))
         self.assertEqual(m.phase,'finished');self.assertIsNone(m.winner)
 
+    def test_short_trigger_survives_release_before_next_tick_without_extra_shots(self):
+        m=self.match();p=m.players[1];p.slot='pistol';p.weapons={'pistol':12}
+        self.intent(m,fire=True);self.intent(m,fire=False);m.advance(12.05)
+        self.assertEqual(p.weapons['pistol'],11,'A press and release in the same tick must fire once')
+        m.advance(12.10);self.assertEqual(p.weapons['pistol'],11)
+        self.intent(m,fire=True);self.intent(m,fire=False);m.advance(12.15)
+        self.assertEqual(p.weapons['pistol'],11,'Rapid taps must not bypass weapon cooldown')
+        m.advance(12.60);self.assertEqual(p.weapons['pistol'],11,'A blocked tap must not fire later')
+        self.intent(m,fire=True);self.intent(m,fire=False);m.advance(12.65)
+        self.assertEqual(p.weapons['pistol'],10)
+        self.intent(m,fire=True);self.intent(m,fire=False);m.advance(13.65)
+        self.assertEqual(p.weapons['pistol'],10,'Expired trigger edges must not fire after a stall')
+
     def test_reload_and_heal_are_once_and_interruptible(self):
         m=self.match();p=m.players[1];p.slot='rifle';p.weapons={'rifle':2};p.reserve=10
         m.action(1,'reload');at=p.reload_at;m.action(1,'reload');self.assertEqual(p.reload_at,at)

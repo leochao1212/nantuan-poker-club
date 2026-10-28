@@ -137,7 +137,7 @@ class BattleHub:
             if len(self.peers)>=MAX_PEERS and peer.uid not in self.peers:raise ValueError('戰場連線已滿。')
             r=self.rooms[peer.code];old=self.peers.get(peer.uid)
             if old:old.close(4001)
-            self.peers[peer.uid]=peer;p=r.match.players[peer.uid];p.connected=True;p.gone_at=None;p.seq=-1;p.intent={}
+            self.peers[peer.uid]=peer;p=r.match.players[peer.uid];p.connected=True;p.gone_at=None;p.seq=-1;p.intent={};p.fire_pending=False
             peer.control(dict(type='welcome',room=peer.code,title=r.title,host=r.host,bots=r.bots,
                               map=r.match.map,weapons=WEAPONS,roster=[dict(id=p.id,name=p.name,bot=p.bot) for p in r.match.players.values()]))
             peer.snapshot(self.view(r,peer.uid));self.ensure_worker()
@@ -147,7 +147,7 @@ class BattleHub:
             if self.peers.get(peer.uid) is not peer:return
             self.peers.pop(peer.uid,None);r=self.rooms.get(peer.code)
             if r and peer.uid in r.match.players:
-                p=r.match.players[peer.uid];p.connected=False;p.gone_at=time.monotonic();p.intent={}
+                p=r.match.players[peer.uid];p.connected=False;p.gone_at=time.monotonic();p.intent={};p.fire_pending=False
         peer.stop()
 
     def handle(self,peer,data):

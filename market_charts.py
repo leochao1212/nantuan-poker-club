@@ -74,18 +74,26 @@ def enrich(db,model,symbol,clock,interval):
     last={n:dict(at=r['asof'],price=r['native']) for n,r in enumerate(samples)}
     # Limit raw bars before aggregation by using the requested interval's last
     # 500 groups; each group is composed exclusively of source minute candles.
-    start=max(model['from_at'],model['to_at']-seconds*500)
+    # Include the entire first bucket even when the visible range begins in
+    # its middle. Otherwise a 1h bar in a 15m view can have the wrong open.
+    start=int(max(model['from_at'],model['to_at']-seconds*500)//seconds)*seconds
     raw=db.execute('SELECT * FROM market_candles WHERE symbol=? AND asof>=? AND asof<=? ORDER BY asof',(symbol,start,model['to_at'])).fetchall()
     groups={}
     for r in raw:
         at=int(r['asof']//seconds)*seconds
-        if at not in groups:groups[at]=dict(time=at,open=r['open'],high=r['high'],low=r['low'],close=r['close'],volume=r['volume'],complete=bool(r['complete']),source=r['source'])
+        if at not in groups:groups[at]=dict(time=at,open=r['open'],high=r['high'],low=r['low'],close=r['close'],volume=r['volume'],complete=bool(r['complete']),source=r['source'],first=r['asof'],last=r['asof'],observed_minutes=1,contiguous=True)
         else:
             b=groups[at];b['high']=str(max(Decimal(b['high']),Decimal(r['high'])));b['low']=str(min(Decimal(b['low']),Decimal(r['low'])));b['close']=r['close'];b['complete']=b['complete'] and bool(r['complete'])
+            b['contiguous']=b['contiguous'] and r['asof']==b['last']+60;b['last']=r['asof'];b['observed_minutes']+=1
             b['volume']=str(Decimal(b['volume'])+Decimal(r['volume'])) if b['volume'] is not None and r['volume'] is not None else None
     candles=list(groups.values())[-500:]
-    for b in candles:b['complete']=b['complete'] and b['time']+seconds<=clock
+    for b in candles:
+        source_complete=b['complete']
+        b['covered']=b['first']==b['time'] and b['last']==b['time']+seconds-60 and b['observed_minutes']==seconds//60 and b['contiguous']
+        b['complete']=source_complete and b['covered'] and b['time']+seconds<=clock
+        b['status']='已收盤' if b['complete'] else '尚未收盤' if not source_complete or b['time']+seconds>clock else '取樣未齊'
+        del b['first'],b['last'],b['contiguous']
     model.update(currency=currency,display_points=list(last.values()),candles=candles,interval=interval,
-        candle_notice='原始分鐘 OHLC 聚合；不補空缺，未收盤 K 線會更新。' if candles else '尚無有效 OHLC，先顯示實際觀測線。',
+        candle_notice='原始分鐘 OHLC 聚合；缺少分鐘資料會標示「取樣未齊」，不補畫假價格。' if candles else '尚無有效 OHLC，先顯示實際觀測線。',
         basis=('美元行情；錢包、保證金與損益以台幣點數結算。' if currency=='USD' else '台幣行情；點數與台幣 1：1。')+'原始分鐘 K 線與歷史資料不參與成交。')
     return model

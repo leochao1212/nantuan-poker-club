@@ -122,7 +122,7 @@
 
 K 線使用 [TradingView Lightweight Charts 5.2.1](https://tradingview.github.io/lightweight-charts/docs) 的固定本機套件，只有交易頁需要畫 K 線才載入，不連執行期 CDN。Apache 授權與 NOTICE 隨站台提供，`scripts/vendor-market-chart.cjs --check` 核對套件與本機檔案一致。
 
-Yahoo 提供股票原始分鐘 open／high／low／close／volume；Kraken 提供美元交易對原始 OHLC。圖表時間軸與查價統一使用台灣時間，保留原 UTC epoch，不平移或造假來源時間。原幣 `market_observations` 與純圖表 `market_candles` 分開保存，不把當天匯率倒算成過去原幣價，也不讓歷史 K 線觸發成交。無效 OHLC、未來時間及重複矛盾點略過；未收盤 K 線標明並可更新，已完成來源 K 線不改寫。保留八天純圖表資料，提供 1 分／5 分／15 分／1 小時／日 K 聚合，一次最多五百根；缺資料不補假價，缺 OHLC 時只畫真實觀測線。
+Yahoo 提供股票原始分鐘 open／high／low／close／volume；Kraken 提供美元交易對原始 OHLC。圖表時間軸與查價統一使用台灣時間，保留原 UTC epoch，不平移或造假來源時間。原幣 `market_observations` 與純圖表 `market_candles` 分開保存，不把當天匯率倒算成過去原幣價，也不讓歷史 K 線觸發成交。無效 OHLC、未來時間及重複矛盾點略過；未收盤 K 線標明並可更新，已完成來源 K 線不改寫。保留八天純圖表資料，提供 1 分／5 分／15 分／1 小時／日 K 聚合，一次最多五百根；聚合時包含顯示範圍內第一根 K 棒的完整時段，只有每分鐘樣本連續且齊全才標示「已收盤」，缺樣本標「取樣未齊」並列出觀測分鐘數。股票休市的日 K 也按實際分鐘資料標示，不補假價；缺 OHLC 時只畫真實觀測線。
 
 可縮放／拖曳、鍵盤查 OHLC、均線20／EMA20／布林20、兩點趨勢線；畫線以帳號／標的／週期儲存在本機，最多十二條。左右鍵查價；畫線時上下鍵調整端點價、Enter 設點、Esc 取消，縮放與重設另有按鈕，並保留 OHLC 數值表。指標不足二十根會說明，不補假樣本。分析／畫線不下單、不改任何行情或點數。
 

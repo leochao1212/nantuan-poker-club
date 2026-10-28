@@ -147,6 +147,24 @@ class CandleRules(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT count(*) FROM market_quotes WHERE symbol='US:AAPL'").fetchone()[0],0)
         self.assertFalse(market.settle(self.db,self.at))
 
+    def test_hourly_candle_in_short_view_uses_full_bucket_and_labels_missing_minutes(self):
+        end=(self.at//3600+1)*3600
+        start=end-3600
+        rows=[charts.bar('CC:BTC',start+n*60,str(100+n),str(102+n),str(99+n),str(101+n),1,end,'test OHLC') for n in range(60)]
+        charts.apply(self.db,rows,end)
+        full=market.chart(self.db,'CC:BTC','15m',end,'1h')['candles']
+        self.assertEqual(len(full),1)
+        self.assertEqual((full[0]['open'],full[0]['close']),('100','160'))
+        self.assertTrue(full[0]['complete'])
+        self.assertEqual(full[0]['status'],'已收盤')
+        self.db.execute("DELETE FROM market_candles WHERE symbol='CC:BTC'")
+        charts.apply(self.db,rows[45:],end)
+        partial=market.chart(self.db,'CC:BTC','15m',end,'1h')['candles']
+        self.assertEqual(len(partial),1)
+        self.assertEqual(partial[0]['open'],'145')
+        self.assertFalse(partial[0]['complete'])
+        self.assertEqual((partial[0]['status'],partial[0]['observed_minutes']),('取樣未齊',15))
+
     def test_bad_ohlc_future_duplicates_and_incomplete_updates(self):
         for args in [('100','99','98','101'),('100','102','101','100'),('0','102','99','100'),('NaN','102','99','100')]:
             self.assertIsNone(charts.bar('US:AAPL',self.at-60,*args,None,self.at,'test'))

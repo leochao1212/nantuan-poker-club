@@ -139,4 +139,4 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 
 `bank.py` 共用既有 SQLite 與交易序列，`static/bank.js` 提供玩家與管理員介面。存款單利、新貸款條件快照、私人分頁明細及回執皆有界／可重送。查詢只投影利息、不增加背景寫入。銀行資產納入錢包、排行、個人資金圖及後台；本金移轉不記成獲利，全部還清以送達時計算並固定回執。完整規則見 [銀行規格](BANK.md)。
 
-點數交易由 `market.py` 負責現貨／一倍做空原子記帳、`market_data.py` 背景抓價、`static/market.js` 控制委託介面、`static/market-chart.js` 顯示真實時間軸。完整規則與資料限制見 [點數交易所](MARKET.md)。`schema_migrations.py` 只做一次性舊資料結清，不含已移除的遊戲引擎或 API；歷史帳本保留供核帳與部署回滾。
+點數交易由 `market.py` 整合總資產與舊持倉；`market_contracts.py` 負責逐倉合約原子記帳與風控，`market_catalog.py` 處理驗證搜尋／自選，`market_charts.py` 保存原幣與原始 OHLC；`market_data.py` 由獨立來源工作抓價。`static/market.js` 控制搜尋及共用回執，`static/market-contracts.js` 提供逐倉委託，`static/market-chart.js` 延遲載入固定本機 Lightweight Charts、分析與畫線。完整規則與資料限制見 [點數交易所](MARKET.md)。`schema_migrations.py` 只做一次性舊資料結清，不含已移除的遊戲引擎或 API；歷史帳本保留供核帳與部署回滾。

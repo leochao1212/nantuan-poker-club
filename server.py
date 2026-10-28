@@ -33,6 +33,8 @@ import transfers
 import bank
 import market
 import market_data
+import market_catalog
+import market_contracts
 import member_accounts
 from realtime import Hub, WriteQueue
 from dataclasses import dataclass
@@ -350,11 +352,16 @@ class Handler(BaseHTTPRequestHandler):
                     picture=db.execute('SELECT avatar_png FROM member_profiles WHERE user_id=? AND revision=?',tuple(map(int,image_match.groups()))).fetchone()
                     if not picture or not picture[0]:raise Problem('找不到頭像。',404)
                     self.reply(200,picture[0],content_type='image/png')
+            elif path=='/api/market/search':
+                query=parse_qs(urlsplit(self.path).query)
+                with connect() as db:
+                    user=self.user(db);member_accounts.require_active(db,user['id'])
+                self.reply(200,market_catalog.search(query.get('market',['TW'])[0],query.get('q',[''])[0],user['id']))
             elif path=='/api/market':
                 query=parse_qs(urlsplit(self.path).query)
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);clock=time.time()
-                    value=dict(market=market.view(db,user['id'],clock,query.get('symbol',[None])[0],query.get('period',[None])[0]),wallet=wallet.view(db,user['id'],clock))
+                    value=dict(market=market.view(db,user['id'],clock,query.get('symbol',[None])[0],query.get('period',[None])[0],query.get('interval',[None])[0]),wallet=wallet.view(db,user['id'],clock))
                 self.reply(200,value)
             elif path in ('/api/bank','/api/admin/bank-settings'):
                 query=parse_qs(urlsplit(self.path).query)
@@ -428,9 +435,9 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/third-party-notices.txt", "/lightweight-charts.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
-                types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml"}
+                types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "txt":"text/plain"}
                 ext = name.rsplit(".",1)[-1]
                 raw, raw_etag, packed, packed_etag = static_text(ROOT / "static" / name)
                 zipped = accepts_gzip(self.headers.get("Accept-Encoding"))
@@ -758,6 +765,14 @@ class Handler(BaseHTTPRequestHandler):
                 CLIENT_EVENT_BUDGET[user['id']]=[*budget,clock];CLIENT_EVENT_AT[key]=clock
             print(json.dumps({'event':'client_connection','kind':kind,'client':client,'user_id':user['id'],**fields,'at':now()}),flush=True)
             db.commit();return Reply(200,{'ok':True})
+        if path=='/api/market/watch':
+            clock=time.time();item=market_catalog.watch(db,user['id'],data.get('symbol'),clock,wake=data.get('heartbeat') is not True)
+            result=dict(ok=True) if data.get('heartbeat') is True else dict(ok=True,instrument=item,market=market.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+            db.commit();return Reply(200,result)
+        if path in ('/api/market/contracts/open','/api/market/contracts/close','/api/market/contracts/cancel'):
+            clock=time.time();result=market_contracts.mutate(db,user,path.rsplit('/',1)[1],data,clock)
+            result.update(market=market.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+            db.commit();EVENTS.publish();return Reply(200,result)
         if path in ('/api/market/order','/api/market/cancel'):
             clock=time.time();result=market.mutate(db,user,path.rsplit('/',1)[1],data,clock)
             result.update(market=market.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
@@ -983,26 +998,26 @@ def main():
             except Exception as error:
                 print("Dealer clock:", type(error).__name__, str(error), flush=True)
     threading.Thread(target=dealer_clock, daemon=True).start()
-    def market_clock():
-        # Fetch on a single background worker; no HTTP request, write queue or
-        # open SQLite transaction waits for an external market service.
+    def market_clock(provider):
+        # Providers are independent: a slow history/Yahoo request cannot hold up
+        # Taiwan/crypto quote execution, and no network work holds the write queue.
         while not stopping.wait(5):
             try:
                 clock=time.time()
                 with connect() as db:
-                    names=market_data.due(db,clock);fx=market_data.fx_state(db)
-                results=market_data.refresh(names,clock,fx)
+                    if provider not in market_data.due(db,clock):continue
+                    fx=market_data.fx_state(db);instruments=market_catalog.active(db,clock,market.CATALOG)
+                results=market_data.refresh([provider],clock,fx,instruments)
                 with WRITES.enter():
                     with connect() as db:
                         db.execute('BEGIN IMMEDIATE')
-                        market_data.apply(db,results,time.time())
+                        market_data.apply(db,results,time.time(),instruments)
                         settled=market.settle(db,time.time());db.commit()
-                # Quote ticks do not wake every poker lobby/table subscriber.
-                # Only actual balance/position changes use the shared wallet push.
                 if settled:EVENTS.publish()
-            except Exception as error:print('Market clock:',type(error).__name__,flush=True)
+            except Exception as error:print('Market clock:',provider,type(error).__name__,flush=True)
     if os.environ.get('POKER_MARKET_DATA','1')=='1':
-        threading.Thread(target=market_clock,daemon=True).start()
+        for provider in ('FX','TW','US','CC','BARS'):
+            threading.Thread(target=market_clock,args=(provider,),daemon=True,name='market-'+provider).start()
 
     try:
         server.serve_forever()

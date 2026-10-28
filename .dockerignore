@@ -37,3 +37,7 @@
 
 
 !schema_migrations.py
+
+!market_catalog.py
+!market_contracts.py
+!market_charts.py

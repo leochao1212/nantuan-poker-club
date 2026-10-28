@@ -262,7 +262,7 @@ class MISProviders(unittest.TestCase):
         self.assertEqual((rows[0]['price'],rows[0]['bid'],rows[0]['ask']),('100','99','101'))
 
     def test_missing_invalid_crossed_stale_future_or_ambiguous_rows_rejected(self):
-        variants=[dict(z='-'),dict(z='0'),dict(z='NaN'),dict(z='Infinity'),dict(b='-'),dict(a='-'),dict(g='0'),dict(f='-'),dict(b='102_',a='101_'),dict(t=''),dict(tlong=''),dict(tlong=str(int(self.at-5)*1000)),dict(ex='otc'),dict(d='20261399'),dict(z=100),dict(b=None)]
+        variants=[dict(z=None),dict(z='0'),dict(z='NaN'),dict(z='Infinity'),dict(b='-'),dict(a='-'),dict(g='0'),dict(f='-'),dict(b='102_',a='101_'),dict(t=''),dict(tlong=''),dict(tlong=str(int(self.at-5)*1000)),dict(ex='otc'),dict(d='20261399'),dict(z=100),dict(b=None)]
         for fields in variants:
             with self.subTest(fields=fields):self.assertEqual(market_data.mis_rows(dict(rtcode='0000',msgArray=[mis_fixture(self.at,**fields)]),self.at),[])
         for clock in (self.at-31,self.at+6,self.at-86400):
@@ -272,6 +272,13 @@ class MISProviders(unittest.TestCase):
         self.assertEqual(market_data.mis_rows(dict(rtcode='0000',msgArray=[row,None,{},mis_fixture(self.at,'9999')]),self.at)[0]['symbol'],'TW:2330')
         for data in ([],{},dict(rtcode='5000',msgArray=[]),dict(rtcode='0000',msgArray={})):
             with self.assertRaises(ValueError):market_data.mis_rows(data,self.at)
+
+    def test_missing_last_trade_can_use_explicit_fresh_bbo_reference_not_fake_trade(self):
+        rows=market_data.mis_rows(dict(rtcode='0000',msgArray=[mis_fixture(self.at,z='-',b='99_',a='101_')]),self.at)
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]['price'],'100');self.assertEqual(rows[0]['source'],market.TW_MID_SOURCE)
+        self.assertEqual((rows[0]['bid'],rows[0]['ask']),('99','101'))
+        self.assertFalse(market_data.mis_rows(dict(rtcode='0000',msgArray=[mis_fixture(self.at-31,z='-')]),self.at))
 
     def test_outside_session_does_not_fetch_and_failure_retries_bounded(self):
         for at in (self.at-2*3600,self.at+4*3600,self.at+3*86400):
@@ -308,7 +315,7 @@ class MISRules(unittest.TestCase):
     def test_partial_quote_immediately_blocks_only_missing_symbol_and_resumes(self):
         self.tick(self.at,[mis_fixture(self.at),mis_fixture(self.at,'2317')])
         self.order(clock=self.at+1,symbol='TW:2330')
-        self.tick(self.at+2,[mis_fixture(self.at+2,z='-'),mis_fixture(self.at+2,'2317')])
+        self.tick(self.at+2,[mis_fixture(self.at+2,z='-',a='-'),mis_fixture(self.at+2,'2317')])
         self.assertFalse(market.settle(self.db,self.at+2))
         instruments={r['symbol']:r for r in market.view(self.db,1,self.at+2)['instruments']}
         self.assertFalse(instruments['TW:2330']['available']);self.assertTrue(instruments['TW:2317']['available'])
@@ -334,7 +341,7 @@ class MISRules(unittest.TestCase):
     def test_missing_quote_does_not_liquidate_short_and_old_marks_are_preserved(self):
         self.tick(self.at);self.order('short',clock=self.at+1,symbol='TW:2330');self.tick(self.at+2);market.settle(self.db,self.at+2)
         before=market.assets(self.db)[1]
-        self.tick(self.at+5,[mis_fixture(self.at+5,z='-',a='1000_')]);market.settle(self.db,self.at+5)
+        self.tick(self.at+5,[mis_fixture(self.at+5,z='-',a='-')]);market.settle(self.db,self.at+5)
         self.assertEqual(market.assets(self.db)[1],before)
         self.assertEqual(market.view(self.db,1,self.at+5)['shorts'][0]['status'],'open')
         self.assertEqual(wallet.view(self.db,1,self.at+5)['balance'],2000)
@@ -456,7 +463,7 @@ class YahooFormats(unittest.TestCase):
         self.assertLess(packet['quote']['asof'],packet['start'])
 
     def test_wrong_instrument_currency_session_and_error_rejected(self):
-        for fields in [dict(symbol='OTHER'),dict(currency='TWD'),dict(instrumentType='ETF'),dict(dataGranularity='1d'),dict(currentTradingPeriod={}),dict(currentTradingPeriod=dict(regular=dict(start=True,end=self.at)))]:
+        for fields in [dict(symbol='OTHER'),dict(currency='TWD'),dict(instrumentType='MUTUALFUND'),dict(dataGranularity='1d'),dict(currentTradingPeriod={}),dict(currentTradingPeriod=dict(regular=dict(start=True,end=self.at)))]:
             with self.subTest(fields=fields),self.assertRaises((ValueError,KeyError)):
                 market_data.yahoo_packet(yahoo_fixture(self.at,**fields),'US:AAPL',self.at,self.fx)
         with self.assertRaises(ValueError):market_data.yahoo_packet(dict(chart=dict(error=dict(code='Not Found'),result=None)),'US:AAPL',self.at,self.fx)

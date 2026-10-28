@@ -14,12 +14,16 @@
     "test:market": "node tests/browser/market.cjs",
     "test:bank": "node tests/browser/bank.cjs",
     "test:journeys": "node tests/browser/table-journeys.cjs",
-    "test:rewards": "node tests/browser/rewards.cjs"
+    "test:rewards": "node tests/browser/rewards.cjs",
+    "test:contracts": "node tests/browser/market-contracts.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
   },
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "lightweight-charts": "5.2.1"
   }
 }

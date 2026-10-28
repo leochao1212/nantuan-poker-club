@@ -45,11 +45,13 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: node scripts/vendor-market-chart.cjs --check
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:ui
       - run: npm run test:journeys
       - run: npm run test:rewards
       - run: npm run test:market
+      - run: npm run test:contracts
       - run: npm run test:bank
       - run: npm run test:cards
       - run: npm run test:limits
@@ -65,6 +67,7 @@ jobs:
             artifacts/table-ux
             artifacts/rewards
             artifacts/market/browser
+            artifacts/market/contracts-browser
             artifacts/bank/browser
             artifacts/bet-limit-browser
             artifacts/cards

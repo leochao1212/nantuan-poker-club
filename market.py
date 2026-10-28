@@ -10,6 +10,9 @@ import hashlib
 import json
 import re
 import member_accounts
+import market_catalog
+import market_contracts
+import market_charts
 from poker_engine import RuleError
 
 SCALE = 100_000_000
@@ -25,6 +28,7 @@ INSTRUMENTS = {r[0]:dict(symbol=r[0],name=r[1],market=r[2],currency=r[3]) for r 
 PENDING_SECONDS = {'TW':7*86400,'US':7*86400,'CC':120}
 TAIPEI=timezone(timedelta(hours=8))
 TW_SOURCE='TWSE MIS 盤中報價'
+TW_MID_SOURCE='TWSE MIS 買賣中間參考價'
 TW_QUOTE_AGE=30
 TW_CHECK_AGE=20
 US_SOURCE='Yahoo Finance 成交參考價'
@@ -74,6 +78,9 @@ def initialize(db):
     db.execute("CREATE TABLE IF NOT EXISTS market_quote_health(symbol TEXT PRIMARY KEY,issue TEXT NOT NULL)")
     # Keep the original twelve quote columns compatible with rollback releases.
     db.execute('CREATE TABLE IF NOT EXISTS market_quote_meta(symbol TEXT PRIMARY KEY,session_start REAL NOT NULL,session_end REAL NOT NULL)')
+    market_catalog.initialize(db,CATALOG)
+    market_contracts.initialize(db)
+    market_charts.initialize(db)
     db.execute('CREATE TABLE IF NOT EXISTS market_history(symbol TEXT NOT NULL,asof REAL NOT NULL,price TEXT NOT NULL,native TEXT NOT NULL,fx TEXT NOT NULL,fx_at REAL NOT NULL,PRIMARY KEY(symbol,asof))')
 
 
@@ -102,11 +109,11 @@ def quantity(units):
 
 
 def quote_ready(q,clock):
-    if not q or q['halted'] or ('issue' in q.keys() and q['issue']):return False
-    group=INSTRUMENTS[q['symbol']]['market']
+    if not q or market_catalog.group(q['symbol']) not in ('TW','US','CC') or q['halted'] or ('issue' in q.keys() and q['issue']):return False
+    group=market_catalog.group(q['symbol'])
     age=clock-q['asof']
     if group=='TW':
-        return q['source']==TW_SOURCE and tw_session(clock) and -5<=age<=TW_QUOTE_AGE and -5<=clock-q['checked_at']<=TW_CHECK_AGE
+        return q['source'] in (TW_SOURCE,TW_MID_SOURCE) and tw_session(clock) and -5<=age<=TW_QUOTE_AGE and -5<=clock-q['checked_at']<=TW_CHECK_AGE
     if group=='US':
         return (q['source']==US_SOURCE and 'session_start' in q.keys() and
             q['session_start'] is not None and q['session_end'] is not None and
@@ -118,15 +125,15 @@ def quote_ready(q,clock):
 
 def quote_notice(q,code,clock):
     if q and q['halted']:return '公司行動待確認，暫停成交'
-    if INSTRUMENTS[code]['market']=='US':
+    if market_catalog.group(code)=='US':
         if not q or q['source']!=US_SOURCE:return '等待 Yahoo 行情，暫停成交'
         if 'issue' in q.keys() and q['issue']:return '行情缺資料或連線失敗，暫停成交'
         if q['session_start'] is None or q['session_end'] is None:return '交易時段待確認，暫停成交'
         if not q['session_start']<=clock<q['session_end']:return '盤後／休市，暫停成交'
         if not quote_ready(q,clock):return '行情或匯率已過期，暫停成交'
-    if INSTRUMENTS[code]['market']=='TW':
+    if market_catalog.group(code)=='TW':
         if not tw_session(clock):return '盤後／休市，暫停成交'
-        if not q or q['source']!=TW_SOURCE:return '等待 MIS 盤中報價'
+        if not q or q['source'] not in (TW_SOURCE,TW_MID_SOURCE):return '等待 MIS 盤中報價'
         if 'issue' in q.keys() and q['issue']:return '行情缺資料或連線失敗，暫停成交'
         if not quote_ready(q,clock):return '行情已過期，暫停成交'
     return ''
@@ -135,7 +142,7 @@ def quote_notice(q,code,clock):
 def execution_price(q,side):
     # Yahoo chart supplies last trades, NOT an executable bid/ask. US orders
     # explicitly simulate fills at the next reference trade for both directions.
-    return q['price'] if INSTRUMENTS[q['symbol']]['market']=='US' else q['ask' if side in ('buy','cover') else 'bid']
+    return q['price'] if market_catalog.group(q['symbol'])=='US' else q['ask' if side in ('buy','cover') else 'bid']
 
 
 def _assets(db):
@@ -146,17 +153,19 @@ def _assets(db):
         values[r['user_id']]=values.get(r['user_id'],0)+mark
     for r in db.execute("SELECT s.*,q.ask FROM market_shorts s LEFT JOIN market_quotes q USING(symbol) WHERE s.status='open'"):
         values[r['user_id']]=values.get(r['user_id'],0)+short_value(r,r['ask'])
+    for uid,amount in market_contracts.assets(db,{r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')}).items():values[uid]=values.get(uid,0)+amount
     return values
 
 
 def assets(db):
     import view_cache
-    return view_cache.shared(db,'market_assets',('market_positions','market_orders','market_quotes','market_shorts'),lambda:_assets(db))
+    return view_cache.shared(db,'market_assets',('market_positions','market_orders','market_quotes','market_shorts','market_contracts','market_contract_orders'),lambda:_assets(db))
 
-def view(db,uid,clock,symbol=None,period=None):
+def view(db,uid,clock,symbol=None,period=None,interval=None):
     quotes={r['symbol']:dict(r) for r in db.execute(QUOTE_SQL)}
     instruments=[]
-    for code,item in INSTRUMENTS.items():
+    for item in market_catalog.visible(db,uid,CATALOG,symbol):
+        code=item['symbol']
         q=quotes.get(code)
         until=None
         if q and item['market']=='TW':
@@ -178,9 +187,9 @@ def view(db,uid,clock,symbol=None,period=None):
         shorts.append(dict(item,quantity=quantity(r['units']),value=value,profit=value-r['margin'],
             liquidation_price=format(Decimal(r['margin']+r['entry_points'])*SCALE/r['units'],'f'),
             closing=closing,stale=not quote_ready(q,clock)))
-    return dict(instruments=instruments,positions=positions,shorts=shorts,
+    return dict(instruments=instruments,positions=positions,shorts=shorts,contracts=market_contracts.view(db,uid,clock,quotes),
         short_history=[dict(r,quantity=quantity(r['units'])) for r in db.execute("SELECT * FROM market_shorts WHERE user_id=? AND status!='open' ORDER BY id DESC LIMIT 20",(uid,))],
-        chart=chart(db,symbol,period,clock) if symbol else None,
+        chart=chart(db,symbol,period,clock,interval) if symbol else None,
         orders=[dict(r,quantity=quantity(r['filled_units'] if r['status']=='filled' else r['units'])) for r in db.execute('SELECT * FROM market_orders WHERE user_id=? ORDER BY id DESC LIMIT 50',(uid,))],
         providers=[dict(r) for r in db.execute('SELECT * FROM market_providers ORDER BY name')],
         value=assets(db).get(uid,0),server_time=clock)
@@ -196,7 +205,7 @@ def mutate(db,user,action,data,clock):
     position_id=None
     if action=='order':
         symbol=data.get('symbol');side=data.get('side')
-        if not isinstance(symbol,str) or symbol not in INSTRUMENTS or side not in ('buy','sell','short','cover'):raise RuleError('請選擇交易標的與買賣方向。')
+        if not isinstance(symbol,str) or not market_catalog.get(db,symbol) or side not in ('buy','sell','short','cover'):raise RuleError('請選擇交易標的與買賣方向。')
         budget=data.get('amount') if side in ('buy','short') else 0
         minimum=10 if side=='short' else 1
         if side in ('buy','short') and (type(budget) is not int or not minimum<=budget<=1_000_000):raise RuleError(f'點數須為 {minimum}–1,000,000 的整數。')
@@ -248,7 +257,7 @@ def mutate(db,user,action,data,clock):
                 if db.execute("SELECT count(*) FROM market_shorts WHERE user_id=? AND status='open'",(uid,)).fetchone()[0]+db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND side='short' AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆做空倉位。')
             elif units_for_budget(budget,execution_price(q,'buy'))<1:raise RuleError('買入點數不足最小份額。')
             if db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆委託，請先取消部分委託。')
-            oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[INSTRUMENTS[symbol]['market']],position_id)).lastrowid
+            oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[market_catalog.group(symbol)],position_id)).lastrowid
             if side in ('buy','short'):wallet.transfer(db,uid,-budget,'market_reserve','market:reserve:'+str(oid),clock)
         result=dict(ok=True,order_id=oid,action=action,replayed=False)
         db.execute('INSERT INTO market_operations VALUES(?,?,?,?)',(uid,op,fingerprint,json.dumps(result)))
@@ -332,6 +341,11 @@ def settle(db,clock):
         db.execute('INSERT INTO market_positions VALUES(?,?,?,?) ON CONFLICT(user_id,symbol) DO UPDATE SET units=excluded.units,cost=excluded.cost',(o['user_id'],o['symbol'],new_units,new_cost))
         db.execute("UPDATE market_orders SET status='filled',filled_at=?,fill_asof=?,fill_price=?,filled_units=?,points=?,profit=? WHERE id=?",(clock,q['asof'],str(price),units,points,profit,o['id']))
         changed=True
+    if db.execute("SELECT 1 FROM market_contracts WHERE status='open' UNION ALL SELECT 1 FROM market_contract_orders WHERE status='pending' LIMIT 1").fetchone():
+        before=market_contracts.assets(db,quotes);cash={r[0]:r[1] for r in db.execute('SELECT user_id,balance FROM wallets')}
+        changed=market_contracts.settle(db,clock,quotes) or changed
+        after=market_contracts.assets(db,quotes);cash_after={r[0]:r[1] for r in db.execute('SELECT user_id,balance FROM wallets')}
+        for uid in before.keys()|after.keys():wealth_delta(db,uid,after.get(uid,0)-before.get(uid,0)+cash_after.get(uid,0)-cash.get(uid,0),clock)
     return changed
 
 
@@ -342,15 +356,16 @@ def apply_quotes(db,rows,clock):
     repricing portfolios or granting old share counts a split-sized windfall.
     """
     changed=False
+    before_contracts=market_contracts.assets(db,{r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')})
     for r in rows:
         symbol=r['symbol']
-        if symbol not in INSTRUMENTS:raise RuleError('未知行情標的。')
+        if not market_catalog.get(db,symbol):raise RuleError('未知行情標的。')
         price,bid,ask=(decimal(r[k]) for k in ('price','bid','ask'))
-        if INSTRUMENTS[symbol]['market']=='US':bid=ask=price
+        if market_catalog.group(symbol)=='US':bid=ask=price
         if bid>ask or r['asof']>clock+5 or r['asof']<clock-8*86400:continue
         old=db.execute('SELECT * FROM market_quotes WHERE symbol=?',(symbol,)).fetchone()
         if old and r['asof']<old['asof']:continue
-        halted=int(bool(old and (old['halted'] or INSTRUMENTS[symbol]['market']!='CC' and abs(price/Decimal(old['price'])-1)>Decimal('.35'))))
+        halted=int(bool(old and (old['halted'] or market_catalog.group(symbol)!='CC' and abs(price/Decimal(old['price'])-1)>Decimal('.35'))))
         if halted and old:
             db.execute('UPDATE market_quotes SET halted=1,checked_at=? WHERE symbol=?',(clock,symbol));changed=True;continue
         token=hashlib.sha256(json.dumps([symbol,str(price),str(bid),str(ask),r['asof'],r['fx_at']]).encode()).hexdigest()[:24]
@@ -363,13 +378,16 @@ def apply_quotes(db,rows,clock):
                 after=value_points(p['units'],price)
                 wealth_delta(db,p['user_id'],after-before,clock)
             db.execute('INSERT OR REPLACE INTO market_prices VALUES(?,?,?)',(symbol,r['asof'],str(price)))
+            market_charts.snapshot(db,r)
             for position in db.execute("SELECT * FROM market_shorts WHERE symbol=? AND status='open'",(symbol,)).fetchall():
                 before=short_value(position,old['ask'] if old else None)
                 after=short_value(position,str(ask))
                 wealth_delta(db,position['user_id'],after-before,clock)
-            keep=7*86400 if INSTRUMENTS[symbol]['market']=='CC' else 180*86400
+            keep=7*86400 if market_catalog.group(symbol)=='CC' else 180*86400
             db.execute('DELETE FROM market_prices WHERE symbol=? AND asof<?',(symbol,clock-keep))
         changed=True
+    after_contracts=market_contracts.assets(db,{r['symbol']:dict(r) for r in db.execute('SELECT * FROM market_quotes')})
+    for uid in before_contracts.keys()|after_contracts.keys():wealth_delta(db,uid,after_contracts.get(uid,0)-before_contracts.get(uid,0),clock)
     return changed
 
 
@@ -393,10 +411,10 @@ def close_short(db,position,q,clock,*,liquidated=False):
 PERIODS={'15m':900,'1h':3600,'1d':86400,'7d':7*86400,'30d':30*86400,'180d':180*86400}
 
 
-def chart(db,symbol,period,clock):
-    if symbol not in INSTRUMENTS or period not in PERIODS:raise RuleError('價格圖標的或時間範圍無效。')
+def chart(db,symbol,period,clock,interval=None):
+    if not market_catalog.get(db,symbol) or period not in PERIODS:raise RuleError('價格圖標的或時間範圍無效。')
     seconds=PERIODS[period]
-    if INSTRUMENTS[symbol]['market']=='US':
+    if market_catalog.group(symbol)=='US':
         session=db.execute('SELECT session_start,session_end FROM market_quote_meta WHERE symbol=?',(symbol,)).fetchone()
         if not session or not session['session_start']<=clock<session['session_end']:
             # At weekends/pre-open, a short-range view ends at the last real
@@ -406,13 +424,15 @@ def chart(db,symbol,period,clock):
     start=clock-seconds;bucket=max(1,seconds/240)
     # Historical minute closes are chart-only; settlement never reads this table.
     source='SELECT asof,price FROM market_prices WHERE symbol=:symbol AND asof>=:start AND asof<=:clock'
-    if INSTRUMENTS[symbol]['market']=='US':
+    if market_catalog.group(symbol)=='US':
         source+=' UNION ALL SELECT h.asof,h.price FROM market_history h WHERE h.symbol=:symbol AND h.asof>=:start AND h.asof<=:clock AND NOT EXISTS(SELECT 1 FROM market_prices p WHERE p.symbol=h.symbol AND p.asof=h.asof)'
     rows=db.execute('WITH samples AS ('+source+''') SELECT p.asof,p.price FROM samples p JOIN (
       SELECT max(asof) AS asof FROM samples WHERE asof>=:start AND asof<=:clock
       GROUP BY CAST((asof-:start)/:bucket AS INTEGER)) b ON p.asof=b.asof ORDER BY p.asof''',dict(symbol=symbol,start=start,clock=clock,bucket=bucket)).fetchall()
     # Preserve source timestamps and observed prices; never synthesize tick/K data.
-    return dict(symbol=symbol,period=period,from_at=start,to_at=clock,
+    model=dict(symbol=symbol,period=period,from_at=start,to_at=clock,
       points=[dict(at=r[0],price=r[1]) for r in rows],currency='TWD',max_points=241,gap_seconds=max(90,bucket*2.5),
-      retention_days=7 if INSTRUMENTS[symbol]['market']=='CC' else 180,
-      basis='Yahoo 分鐘收盤線＋成交參考快照；分鐘時間為區間起點，美元依匯入時匯率換算點數。歷史線不參與成交。' if INSTRUMENTS[symbol]['market']=='US' else '')
+      retention_days=7 if market_catalog.group(symbol)=='CC' else 180,
+      basis='Yahoo 分鐘收盤線＋成交參考快照；分鐘時間為區間起點，美元依匯入時匯率換算點數。歷史線不參與成交。' if market_catalog.group(symbol)=='US' else '')
+
+    return market_charts.enrich(db,model,symbol,clock,interval or '1m')

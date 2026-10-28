@@ -17,7 +17,8 @@
     "test:rewards": "node tests/browser/rewards.cjs",
     "test:contracts": "node tests/browser/market-contracts.cjs",
     "test:clubhouse": "node tests/browser/clubhouse-levels.cjs",
-    "test:battle": "node tests/browser/battle.cjs"
+    "test:battle": "node tests/browser/battle.cjs",
+    "test:battle-perf": "node tests/browser/battle-performance.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

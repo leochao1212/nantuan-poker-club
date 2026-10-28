@@ -95,11 +95,12 @@ jobs:
       - run: node scripts/vendor-assets.cjs --check
       - run: npx playwright install --with-deps chromium
       - run: npm run test:battle
+      - run: npm run test:battle-perf
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: synthetic-battle-diagnostics
-          path: artifacts/battle/browser
+          path: artifacts/battle
           retention-days: 7
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

@@ -5367,8 +5367,8 @@ html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibili
 #app #battle-console .battle-scene-note.show{opacity:1}
 #app #battle-console .battle-hit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:38px;color:#ffe6a1;opacity:0;line-height:1}
 #app #battle-console .battle-hit.show{animation:island-hit .3s ease-out}
-#app #battle-console.battle-damaged .battle-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;box-shadow:inset 0 0 100px #b2613370;animation:island-hit .3s ease-out}
-#app #battle-console.battle-outside-zone .battle-world{filter:saturate(.7) hue-rotate(8deg)}
+#app #battle-console .battle-damage{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;background:radial-gradient(ellipse at center,transparent 55%,#b2613370)}
+#app #battle-console.battle-outside-zone .battle-stage::before{content:"";position:absolute;inset:0;background:#469fcb20;pointer-events:none;z-index:1}
 @keyframes island-hit{from{opacity:1}to{opacity:0}}
 @media(pointer:coarse){#app #battle-console .battle-touch:not([hidden]){display:block}#app #battle-console .battle-desktop-hints{display:none}#app #battle-console .battle-vitals{bottom:max(6px,env(safe-area-inset-bottom));width:290px;padding:7px 10px}#app #battle-console .battle-equipment{margin-top:4px}#app #battle-console .battle-equipment button{min-height:44px}}
 @media(max-width:1100px){#app #battle-console .battle-entry{gap:22px;padding-left:30px;padding-right:30px}#app #battle-console .battle-top{gap:7px}#app #battle-console .battle-top button{padding:7px 9px;font-size:12px}#app #battle-console .battle-top>div{gap:5px}#app #battle-console .battle-connection{max-width:150px}}
@@ -5398,3 +5398,5 @@ html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibili
  #app #battle-console .battle-phase-note{top:30%;font-size:20px}#app #battle-console .battle-feed{top:97px;left:12px;font-size:10px}#app #battle-console .battle-pickup{top:45%;font-size:13px}#app #battle-console :is(.battle-pause,.battle-result){max-height:calc(100% - 32px);padding:18px;width:320px}#app #battle-console .battle-scene-note{bottom:40%}
 }
 @media(prefers-reduced-motion:reduce){#app #battle-console *,#app #battle-console *::after{transition:none!important;animation:none!important}}
+
+@media(prefers-reduced-motion:reduce){#app #battle-console .battle-damage{display:none}}

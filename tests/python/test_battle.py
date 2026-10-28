@@ -159,6 +159,15 @@ class IslandRooms(unittest.TestCase):
         with self.assertRaises(ValueError):self.hub.join(2,'乙',code)
         self.hub.leave(1);self.hub.leave(1);self.assertFalse(self.hub.rooms);self.assertFalse(self.hub.members)
 
+    def test_finished_participant_count_survives_a_player_leaving(self):
+        code=self.hub.create(1,'甲')['code'];self.hub.join(2,'乙',code);match=self.hub.rooms[code].match
+        match.start(0,False);match.advance(12);match.damage(match.players[2],1000,1);match.advance(12.05)
+        self.hub.leave(2)
+        self.assertEqual(match.snapshot(1)['total'],2);self.assertEqual(match.players[2].rank,2)
+        self.assertEqual(self.hub.list(1)['rooms'][0]['humans'],1);self.assertNotIn(2,self.hub.members)
+        other=self.hub.create(2,'乙')['code'];self.hub.leave(1)
+        self.assertNotIn(code,self.hub.rooms);self.assertEqual(self.hub.members[2],other)
+
     def test_room_title_ai_validation_and_expiry(self):
         with self.assertRaises(ValueError):self.hub.create(1,'甲','x'*33)
         with self.assertRaises(ValueError):self.hub.create(1,'甲',bots='yes')

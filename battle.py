@@ -82,8 +82,8 @@ class BattleHub:
     def list(self,uid):
         with self.lock:
             return dict(current=self.members.get(uid),capacity=CAPACITY,rooms=[dict(code=r.code,title=r.title,host=r.host,
-                    players=[dict(id=p.id,name=p.name,connected=p.connected) for p in r.match.players.values() if not p.bot],
-                    humans=sum(not p.bot for p in r.match.players.values()),phase=r.match.phase,bots=r.bots)
+                    players=[dict(id=p.id,name=p.name,connected=p.connected) for p in r.match.players.values() if not p.bot and self.members.get(p.id)==r.code],
+                    humans=sum(not p.bot and self.members.get(p.id)==r.code for p in r.match.players.values()),phase=r.match.phase,bots=r.bots)
                     for r in self.rooms.values()],weapons=WEAPONS)
 
     def create(self,uid,name,title='',bots=True):
@@ -123,9 +123,10 @@ class BattleHub:
             peer=self.peers.pop(uid,None)
             if peer:peer.close()
             if r and uid in r.match.players:
-                if r.match.phase in ('waiting','finished'):r.match.players.pop(uid)
+                if r.match.phase=='waiting':r.match.players.pop(uid)
+                elif r.match.phase=='finished':r.match.players[uid].connected=False
                 else:r.match.damage(r.match.players[uid],1000,source='leave')
-                humans=[p.id for p in r.match.players.values() if not p.bot and p.id in self.members]
+                humans=[p.id for p in r.match.players.values() if not p.bot and self.members.get(p.id)==code]
                 if r.host==uid:r.host=humans[0] if humans else 0
                 if not humans:self.rooms.pop(code,None)
             return dict(ok=True)

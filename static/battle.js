@@ -20,7 +20,7 @@ window.ClubBattle=(()=>{
   function status(value,bad=false){text('[data-battle-message]',value);text('[data-battle-wait-message]',value);q('[data-battle-message]')?.classList.toggle('is-error',bad);}
   function send(data){if(socket?.readyState===WebSocket.OPEN&&performance.now()-lastState<2500)socket.send(JSON.stringify(data));}
   function action(kind,value){if(takeover)return;send({type:'action',action:kind,...(value===undefined?{}:{value})});}
-  function pause(value){paused=value;scene?.pause(value);if(value&&scene&&code)send({type:'input',seq:seq++,...scene.input()});if(q('[data-battle-pause]'))q('[data-battle-pause]').hidden=!value;}
+  function pause(value){if(value&&!takeover&&state&&(state.self.hp<=0||state.phase==='finished')){paused=false;scene?.pause(true);q('[data-battle-pause]').hidden=true;delete q('[data-battle-result]').dataset.dismissed;q('[data-battle-result]').hidden=false;return;}paused=value;scene?.pause(value);if(value&&q('[data-battle-result]'))q('[data-battle-result]').hidden=true;if(value&&scene&&code)send({type:'input',seq:seq++,...scene.input()});if(q('[data-battle-pause]'))q('[data-battle-pause]').hidden=!value;}
   function connection(value,bad=false){text('[data-battle-connection]',value);q('[data-battle-connection]')?.classList.toggle('is-error',bad);}
   function paintRooms(data){
     const list=q('[data-battle-rooms]');if(!list)return;list.replaceChildren();
@@ -45,7 +45,7 @@ window.ClubBattle=(()=>{
     ws.onclose=event=>{if(token!==epoch||!root)return;scene?.pause(true);if(event.code===4001){takeover=true;connection('已在另一個分頁連線',true);pause(true);q('[data-battle-takeover]').hidden=false;return;}if(event.code===4003){takeover=true;connection('登入已失效，請重新整理登入',true);pause(true);return;}if(event.code===4004){return void returnToMenu('這個戰場已結束。');}connection('恢復戰場連線中…',true);if(!document.hidden)retry=setTimeout(()=>recoverSocket(token),Math.min(2000,400*2**Math.min(3,retries++)));};
   }
   function paint(){if(!state||!root)return;const s=state.self,waiting=state.phase==='waiting',finished=state.phase==='finished',dead=s.hp<=0;
-    q('[data-battle-waiting]').hidden=!waiting;q('[data-battle-hud]').hidden=waiting;q('[data-battle-touch]').hidden=waiting||dead||finished;q('[data-battle-menu]').hidden=waiting;root.classList.toggle('battle-active',!waiting);document.documentElement.classList.toggle('island-active',!waiting);
+    q('[data-battle-waiting]').hidden=!waiting;q('[data-battle-hud]').hidden=waiting;q('[data-battle-touch]').hidden=waiting||dead||finished;q('[data-battle-menu]').hidden=waiting;text('[data-battle-menu]',finished?'結果':dead?'觀戰選單':'選單');if((dead||finished)&&!takeover){paused=false;q('[data-battle-pause]').hidden=true;}root.classList.toggle('battle-active',!waiting);document.documentElement.classList.toggle('island-active',!waiting);
     scene.active=!waiting&&!dead&&!finished;connection('即時戰場 · '+(ping?ping+' ms':'已連線'));
     text('[data-battle-title]',state.title);text('[data-battle-code]',state.room);
     if(waiting){if(paused)pause(false);const roster=state.players.map(p=>`<span><i class="${p.connected?'':'offline'}"></i>${esc(p.name)}${p.id===owner?' <small>房主</small>':''}</span>`).join('');if(q('[data-battle-roster]').innerHTML!==roster)q('[data-battle-roster]').innerHTML=roster;text('[data-battle-ready-note]',state.bots?'開局後 AI 補滿 16 人；分享房號讓朋友先加入。':'僅真人對戰，至少需要 2 人。');q('[data-battle-start]').disabled=owner!==ctx.user.id||!state.bots&&state.total<2;text('[data-battle-start]',owner===ctx.user.id?'開始空降':'等待房主開始');}

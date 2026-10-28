@@ -233,13 +233,13 @@ class Providers(unittest.TestCase):
             rows,_,_,_=market_data.read_provider('CC',at,dict(rate='32',asof=at))
         self.assertEqual(rows[0]['ask'],'3232');self.assertEqual(rows[0]['bid'],'3168')
 
-    def test_missing_key_failure_budget_and_no_secret_leak(self):
-        with patch.dict('os.environ',{},clear=True),patch('market_data.fetch_json') as fetch:
+    def test_missing_fx_and_upstream_failure_stop_and_back_off_without_errors(self):
+        with patch('market_data.fetch_json') as fetch:
             result=market_data.refresh(['US','CC'],100,None);fetch.assert_not_called()
-            self.assertEqual(result[0][2],'missing_key');self.assertEqual(result[1][2],'fx_unavailable')
-        with patch.dict('os.environ',{'POKER_MARKETSTACK_KEY':'SECRET'}),patch('market_data.fetch_json',side_effect=ValueError('SECRET')):
+            self.assertEqual([r[2] for r in result],['fx_unavailable','fx_unavailable'])
+        with patch('market_data.fetch_json',side_effect=ValueError('SECRET')):
             result=market_data.refresh(['US'],100,dict(rate='32',asof=100))
-        self.assertNotIn('SECRET',str(result));self.assertEqual(result[0][3],86500)
+        self.assertNotIn('SECRET',str(result));self.assertEqual(result[0][3],160)
 
 
 def mis_fixture(clock,code='2330',**fields):
@@ -414,3 +414,189 @@ class MarketHTTP(ServerTestCase):
         with closing(sqlite3.connect(self.db_path)) as db:
             self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE user_id=? AND kind='market_reserve'",(uid,)).fetchone()[0],1)
             self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE user_id=? AND event_key=?",(uid,'market:cover:'+str(short['id']))).fetchone()[0],1)
+
+
+def yahoo_fixture(clock,code='AAPL',**meta_fields):
+    start=datetime.fromtimestamp(clock,timezone.utc).replace(hour=13,minute=30,second=0,microsecond=0).timestamp()
+    meta=dict(symbol=code,currency='USD',instrumentType='EQUITY',dataGranularity='1m',regularMarketTime=clock,regularMarketPrice=100,
+        currentTradingPeriod=dict(regular=dict(start=start,end=start+23400)))|meta_fields
+    return dict(chart=dict(error=None,result=[dict(meta=meta,timestamp=[clock-180,clock-120,clock-60,clock],indicators=dict(quote=[dict(close=[98,99,100,101])]))]))
+
+
+class YahooFormats(unittest.TestCase):
+    def setUp(self):
+        self.at=datetime(2026,10,28,15,tzinfo=timezone.utc).timestamp();self.fx=dict(rate='32',asof=self.at)
+
+    def test_trade_and_minute_history_are_distinct_with_original_times_and_fx(self):
+        p=market_data.yahoo_packet(yahoo_fixture(self.at),'US:AAPL',self.at,self.fx)
+        self.assertEqual(p['quote']['asof'],self.at);self.assertEqual(p['quote']['price'],'3200')
+        self.assertEqual(p['quote']['source'],market.US_SOURCE)
+        self.assertEqual([r[1] for r in p['history']],[self.at-180,self.at-120,self.at-60])
+        self.assertEqual(p['history'][0][2:],(str(98*32),'98','32',self.at))
+        self.assertEqual(p['end']-p['start'],23400)
+
+    def test_missing_or_invalid_snapshot_keeps_chart_only_never_synthesizes_quote(self):
+        for fields in [dict(regularMarketPrice=None),dict(regularMarketPrice=0),dict(regularMarketPrice=float('nan')),dict(regularMarketTime=True),dict(regularMarketTime=self.at+6),dict(regularMarketTime=self.at-9*86400)]:
+            p=market_data.yahoo_packet(yahoo_fixture(self.at,**fields),'US:AAPL',self.at,self.fx)
+            self.assertIsNone(p['quote']);self.assertEqual(len(p['history']),3)
+        data=yahoo_fixture(self.at);r=data['chart']['result'][0]
+        r['timestamp']=[self.at-180,self.at-120,self.at-120,self.at-60,self.at,self.at+60]
+        r['indicators']['quote'][0]['close']=[None,98,99,100,101,102]
+        self.assertEqual([r[1] for r in market_data.yahoo_packet(data,'US:AAPL',self.at,self.fx)['history']],[self.at-60])
+        r['timestamp']=[self.at-60];r['indicators']['quote'][0]['close']=[0]
+        self.assertEqual(market_data.yahoo_packet(data,'US:AAPL',self.at,self.fx)['history'],[])
+
+    def test_next_session_metadata_keeps_last_close_and_history_for_display_only(self):
+        data=yahoo_fixture(self.at)
+        r=data['chart']['result'][0]['meta']['currentTradingPeriod']['regular']
+        r['start']+=86400;r['end']+=86400
+        packet=market_data.yahoo_packet(data,'US:AAPL',self.at+12*3600,self.fx)
+        self.assertIsNotNone(packet['quote'])
+        self.assertEqual(len(packet['history']),4)
+        self.assertLess(packet['quote']['asof'],packet['start'])
+
+    def test_wrong_instrument_currency_session_and_error_rejected(self):
+        for fields in [dict(symbol='OTHER'),dict(currency='TWD'),dict(instrumentType='ETF'),dict(dataGranularity='1d'),dict(currentTradingPeriod={}),dict(currentTradingPeriod=dict(regular=dict(start=True,end=self.at)))]:
+            with self.subTest(fields=fields),self.assertRaises((ValueError,KeyError)):
+                market_data.yahoo_packet(yahoo_fixture(self.at,**fields),'US:AAPL',self.at,self.fx)
+        with self.assertRaises(ValueError):market_data.yahoo_packet(dict(chart=dict(error=dict(code='Not Found'),result=None)),'US:AAPL',self.at,self.fx)
+
+    def test_fixed_catalog_partial_failure_bounded_retry_and_closed_poll(self):
+        def fetch(url):
+            code=url.split('/chart/')[1].split('?')[0]
+            if code=='NVDA':raise ValueError('private upstream details')
+            return yahoo_fixture(self.at,code)
+        with patch('market_data.fetch_json',side_effect=fetch) as mocked:
+            rows,status,next_at,_=market_data.read_provider('US',self.at,self.fx)
+        self.assertEqual((len(rows),status,next_at),(2,'partial',self.at+60))
+        self.assertEqual(mocked.call_count,3)
+        self.assertTrue(all(c.args[0].startswith('https://query1.finance.yahoo.com/v8/finance/chart/') and c.args[0].endswith('?interval=1m&range=1d&includePrePost=false') for c in mocked.call_args_list))
+        with patch('market_data.fetch_json',side_effect=lambda u:yahoo_fixture(self.at,u.split('/chart/')[1].split('?')[0])):
+            self.assertEqual(market_data.read_provider('US',self.at,self.fx)[2],self.at+10)
+            self.assertEqual(market_data.read_provider('US',self.at+6*3600,self.fx)[1:3],('closed',self.at+6*3600+60))
+
+
+class YahooRules(unittest.TestCase):
+    quote=MarketRules.quote
+    order=MarketRules.order
+
+    def setUp(self):
+        MarketRules.setUp(self)
+        self.at=datetime(2026,10,28,15,tzinfo=timezone.utc).timestamp()
+        self.fx=dict(rate='1',asof=self.at)
+
+    def tick(self,clock,**fields):
+        packet=market_data.yahoo_packet(yahoo_fixture(clock,**fields),'US:AAPL',clock,self.fx)
+        market_data.apply(self.db,[('US',[packet],'partial',clock+10)],clock)
+        return packet
+
+    def instrument(self,clock):
+        return next(i for i in market.view(self.db,1,clock)['instruments'] if i['symbol']=='US:AAPL')
+
+    def test_reference_fills_once_after_submission_not_on_history_or_refetch(self):
+        self.tick(self.at);self.order(clock=self.at+1,symbol='US:AAPL')
+        self.tick(self.at+10,regularMarketTime=self.at)
+        self.assertFalse(market.settle(self.db,self.at+10))
+        self.assertEqual(wallet.view(self.db,1,self.at+10)['balance'],2000)
+        self.tick(self.at+11,regularMarketPrice=110);self.assertTrue(market.settle(self.db,self.at+11))
+        self.assertFalse(market.settle(self.db,self.at+12))
+        v=market.view(self.db,1,self.at+12)
+        self.assertEqual(v['orders'][0]['fill_price'],'110');self.assertEqual(v['orders'][0]['fill_asof'],self.at+11)
+        i=self.instrument(self.at+12);self.assertTrue(i['available']);self.assertIsNone(i['quote']['bid']);self.assertIsNone(i['quote']['ask'])
+        self.assertEqual(i['quote']['execution'],'reference_trade')
+        self.assertEqual(wallet.view(self.db,1,self.at+12)['total'],2999)
+
+    def test_missing_snapshot_or_history_only_never_fills_and_recovery_is_safe(self):
+        self.tick(self.at)
+        d=dict(symbol='US:AAPL',side='buy',amount=1000,operation_id='yahoo_receipt_recovery_1234')
+        market.mutate(self.db,self.user,'order',d,self.at+1)
+        self.tick(self.at+5,regularMarketPrice=None)
+        self.assertFalse(market.settle(self.db,self.at+5));self.assertFalse(self.instrument(self.at+5)['available'])
+        self.assertGreater(len(market.chart(self.db,'US:AAPL','15m',self.at+5)['points']),1)
+        self.assertTrue(market.mutate(self.db,self.user,'order',d,self.at+6)['replayed'])
+        with self.assertRaises(RuleError):self.order(clock=self.at+6,symbol='US:AAPL')
+        self.tick(self.at+10);self.assertTrue(market.settle(self.db,self.at+10))
+        self.assertEqual(wallet.view(self.db,1,self.at+10)['balance'],2000)
+        self.assertEqual(self.db.execute("SELECT count(*) FROM wallet_ledger WHERE kind='market_reserve'").fetchone()[0],1)
+
+    def test_freshness_fx_session_and_source_are_required_for_accept_and_fill(self):
+        self.tick(self.at)
+        for clock in (self.at-1,self.at+31,self.at+6*3600):
+            with self.subTest(clock=clock),self.assertRaises(RuleError):self.order(clock=clock,symbol='US:AAPL')
+        self.tick(self.at+91,regularMarketTime=self.at)
+        self.assertFalse(self.instrument(self.at+91)['available'])
+        self.tick(self.at+92);self.db.execute("UPDATE market_quotes SET fx_at=? WHERE symbol='US:AAPL'",(self.at-4*86400,))
+        self.assertFalse(self.instrument(self.at+92)['available'])
+        self.db.execute("UPDATE market_quotes SET source='Marketstack 免費收盤行情' WHERE symbol='US:AAPL'")
+        self.assertFalse(self.instrument(self.at+92)['available'])
+
+    def test_session_bounds_support_dst_and_half_days_without_local_clock_guess(self):
+        for start in (datetime(2026,10,28,13,30,tzinfo=timezone.utc).timestamp(),datetime(2026,11,27,14,30,tzinfo=timezone.utc).timestamp()):
+            self.db.execute("DELETE FROM market_quotes WHERE symbol='US:AAPL'")
+            self.fx['asof']=start
+            packet=market_data.yahoo_packet(yahoo_fixture(start+60,currentTradingPeriod=dict(regular=dict(start=start,end=start+12600))),'US:AAPL',start+60,self.fx)
+            market_data.apply(self.db,[('US',[packet],'partial',start+70)],start+60)
+            self.assertTrue(self.instrument(start+61)['available'])
+            q=dict(self.db.execute(market.QUOTE_SQL+" WHERE q.symbol='US:AAPL'").fetchone());q.update(asof=start+12600-1,checked_at=start+12600-1)
+            self.assertTrue(market.quote_ready(q,start+12600-1));self.assertFalse(market.quote_ready(q,start+12600))
+
+    def test_regression_failure_and_stale_data_do_not_liquidate_or_change_last_mark(self):
+        self.tick(self.at);self.order('short',clock=self.at+1,symbol='US:AAPL');self.tick(self.at+2);market.settle(self.db,self.at+2)
+        self.tick(self.at+3,regularMarketTime=self.at)
+        self.assertFalse(self.instrument(self.at+3)['available'])
+        before=wallet.view(self.db,1,self.at+3)['total']
+        self.tick(self.at+4,regularMarketPrice=None)
+        market_data.apply(self.db,[('US',[],'unavailable',self.at+65)],self.at+5)
+        self.assertFalse(market.settle(self.db,self.at+5))
+        self.assertEqual(wallet.view(self.db,1,self.at+5)['total'],before)
+        self.assertEqual(len(market.view(self.db,1,self.at+5)['shorts']),1)
+        self.tick(self.at+6);self.order('cover',clock=self.at+7,symbol='US:AAPL',position_id=1)
+        self.tick(self.at+8,regularMarketPrice=90);market.settle(self.db,self.at+8)
+        self.assertEqual(wallet.view(self.db,1,self.at+8)['balance'],3100)
+        self.assertEqual(market.view(self.db,1,self.at+8)['shorts'],[])
+
+    def test_history_is_deduplicated_not_revalued_and_never_creates_holdings(self):
+        self.tick(self.at);before=wallet.view(self.db,1,self.at)['total']
+        first=list(map(tuple,self.db.execute("SELECT * FROM market_history WHERE symbol='US:AAPL' ORDER BY asof")))
+        self.fx['rate']='1.1';self.tick(self.at)
+        self.assertEqual(list(map(tuple,self.db.execute("SELECT * FROM market_history WHERE symbol='US:AAPL' ORDER BY asof"))),first)
+        self.assertEqual(wallet.view(self.db,1,self.at)['total'],before)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM market_positions').fetchone()[0],0)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM market_quotes').fetchone()[0],2)
+        points=market.chart(self.db,'US:AAPL','15m',self.at)['points']
+        self.assertEqual([p['at'] for p in points],[self.at-180,self.at-120,self.at-60,self.at])
+        self.assertIn('分鐘',market.chart(self.db,'US:AAPL','15m',self.at)['basis'])
+        self.assertEqual(len(self.db.execute('PRAGMA table_info(market_quotes)').fetchall()),12)
+
+    def test_weekend_chart_ends_at_last_real_point_but_does_not_reopen_trading(self):
+        self.tick(self.at)
+        chart=market.chart(self.db,'US:AAPL','15m',self.at+3*86400)
+        self.assertEqual(chart['to_at'],self.at)
+        self.assertEqual(chart['from_at'],self.at-900)
+        self.assertEqual(len(chart['points']),4)
+        self.assertFalse(self.instrument(self.at+3*86400)['available'])
+        self.assertIn('休市',self.instrument(self.at+3*86400)['notice'])
+
+    def test_short_chart_queries_do_not_scan_all_accumulated_history(self):
+        self.tick(self.at)
+        self.db.executemany('INSERT INTO market_history VALUES(?,?,?,?,?,?)',
+            [('US:AAPL',self.at-86400-n,'100','100','1',self.at) for n in range(25000)])
+        calls=0
+        def budget():
+            nonlocal calls
+            calls+=1
+            return int(calls>100)
+        self.db.set_progress_handler(budget,1000)
+        try:
+            chart=market.chart(self.db,'US:AAPL','15m',self.at)
+            self.assertEqual(len(chart['points']),4)
+            chart=market.chart(self.db,'US:AAPL','15m',self.at+3*86400)
+            self.assertEqual(chart['to_at'],self.at)
+        finally:self.db.set_progress_handler(None,0)
+
+    def test_daily_schedule_migration_and_retry_are_persisted(self):
+        self.db.execute('INSERT INTO market_providers VALUES(?,?,?,?)',('US',self.at+86400,self.at,'missing_key'))
+        self.assertIn('US',market_data.due(self.db,self.at))
+        market_data.apply(self.db,[('US',[],'unavailable',self.at+60)],self.at)
+        self.assertNotIn('US',market_data.due(self.db,self.at+59))
+        self.assertIn('US',market_data.due(self.db,self.at+60))

@@ -1,6 +1,6 @@
 # 素材與畫面交接
 
-目前沒有 WebGL 或即時 3D 引擎。會所是四套 WebP 建築插圖，加一層 SVG 員工動畫；卡牌、遊戲封面及稱號等主要由 HTML／CSS／內嵌 SVG 組合。
+目前沒有 WebGL 或即時 3D 引擎。會所是十套 WebP 建築插圖，加一層 SVG 員工動畫；卡牌、遊戲封面及稱號等主要由 HTML／CSS／內嵌 SVG 組合。
 
 ## 建築與封面
 
@@ -10,6 +10,12 @@
 | 會所 Lv.2 | [桌機圖片](../static/assets/clubhouse/tier-2.webp)／[手機圖片](../static/assets/clubhouse/tier-2-small.webp) | 暖燈小館：整修後的街角小店，3:2 展示區 |
 | 會所 Lv.3 | [桌機圖片](../static/assets/clubhouse/tier-3.webp)／[手機圖片](../static/assets/clubhouse/tier-3-small.webp) | 尊爵會館，3:2 展示區 |
 | 會所 Lv.4 | [桌機圖片](../static/assets/clubhouse/tier-4.webp)／[手機圖片](../static/assets/clubhouse/tier-4-small.webp) | 曜金行宮，3:2 展示區 |
+| 會所 Lv.5 | [桌機圖片](../static/assets/clubhouse/tier-5.webp)／[手機圖片](../static/assets/clubhouse/tier-5-small.webp) | 翡翠御苑，3:2 展示區 |
+| 會所 Lv.6 | [桌機圖片](../static/assets/clubhouse/tier-6.webp)／[手機圖片](../static/assets/clubhouse/tier-6-small.webp) | 星河城堡，3:2 展示區 |
+| 會所 Lv.7 | [桌機圖片](../static/assets/clubhouse/tier-7.webp)／[手機圖片](../static/assets/clubhouse/tier-7-small.webp) | 雲頂王庭，3:2 展示區 |
+| 會所 Lv.8 | [桌機圖片](../static/assets/clubhouse/tier-8.webp)／[手機圖片](../static/assets/clubhouse/tier-8-small.webp) | 天際皇宮，3:2 展示區 |
+| 會所 Lv.9 | [桌機圖片](../static/assets/clubhouse/tier-9.webp)／[手機圖片](../static/assets/clubhouse/tier-9-small.webp) | 星耀帝城，3:2 展示區 |
+| 會所 Lv.10 | [桌機圖片](../static/assets/clubhouse/tier-10.webp)／[手機圖片](../static/assets/clubhouse/tier-10-small.webp) | 楠團天宮，3:2 展示區 |
 | 大廳主圖 | [poker-night.webp](../static/assets/poker-night.webp) | 大廳主圖區（左側留白給標題） |
 | 遊戲封面 ×11 | static/assets/covers/*.webp（德州、大老二、21 點、輪盤、百家樂、拉霸、礦區、骰寶、爬塔、射龍門、麻將） | 大廳遊戲卡封面，由 `.game-art` 的現行圖片元件直接顯示；需後端白名單放行 `/assets/covers/` |
 | 遊戲零件 ×33 | static/assets/pieces/*.webp | 拉霸、骰面、礦區、人像牌、輪盤框／軸、莊家鈕、下注籌碼、21 點牌靴、麻將鳥與花牌插畫 |
@@ -21,19 +27,19 @@
 
 建築、遊戲封面與員工插畫的生成提示詞放在 [asset-prompts](design-proposals/asset-prompts/)。其他新增素材的用途與來源依 [設計交接](design-proposals/cream-theme/HANDOFF.md) 記錄；未隨程式庫提供的原始美術稿不宣稱可完整重現。本清單不推定生成工具的授權條款。
 
-麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。139 個實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
+麻將精靈圖由字形路徑與程式繪圖組成，字型來源標示為「全字庫正楷體」。出處保留在 SVG 與麻將規則頁，不將它列為 AI 圖片。全部實際素材檔的路徑、大小和 SHA256 均登錄於下方素材清單。
 
 | 素材 | 檔案 | 生成方式 |
 | --- | --- | --- |
 | 大廳主圖 | static/assets/poker-night.webp | `hero-lobby` 提示詞，裁成 3:2，1400×933（原本是 1400×600，比例從 7:3 改成 3:2；畫面用 cover 裁切，只是裁切位置不同，左側留白給標題）|
 | 遊戲封面 ×11 | static/assets/covers/*.webp | `cover-*` 提示詞，裁成 4:3，480×360 |
-| 會所四級（桌機＋手機） | static/assets/clubhouse/tier-1～4(-small).webp | 同一街角場景；第 1 級先畫，第 2～4 級各以前一級為參考圖逐級升級；桌機 1200×800，手機 600×400 |
+| 會所十級（桌機＋手機） | static/assets/clubhouse/tier-1～10(-small).webp | 同一街角場景；第 1 級先畫，第 2～4 級各以前一級為參考圖逐級升級；第 5～10 級以原第 4 級為參考分別畫出新外觀，見 [新六級提示詞](design-proposals/asset-prompts/clubhouse-levels-5-10.json)；桌機 1200×800，手機 600×400 |
 | 員工 3 人走路貼圖 | static/assets/staff/concierge.webp、host.webp、steward.webp（高 220，共用檔案） | `staff-*` 提示詞，純洋紅背景生成後色鍵去背；同一張圖也用在 profile.js 的員工卡半身像 |
 | 收藏牌背、絨布紋理 | night.css 內嵌 SVG；預設牌背另見下方朋友牌組 | 手寫 |
 | 拉霸符號、骰面、礦區寶石與地雷、狐狸、貓 | 現行 WebP 圖片與個人頭像元件 | 遊戲零件直接使用上方現行 WebP，已移除舊 SVG 備用畫法 |
 | favicon | static/favicon.svg | 手寫 |
 
-會所圖換了之後，員工走路起點在 clubhouse-scene.js 的 `routes` 重新對過。校準時可把四級圖輪流換上去、三位員工都顯示後截圖檢查。
+會所圖換了之後，員工走路起點在 clubhouse-scene.js 的 `routes` 重新對過。校準時可把十級圖輪流換上去、三位員工都顯示後截圖檢查。
 
 ## 程式生成視覺
 

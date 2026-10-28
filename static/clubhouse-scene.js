@@ -1,12 +1,8 @@
 'use strict';
 window.ClubhouseScene=(()=>{
- const names=['私人包廂','暖燈小館','尊爵會館','曜金行宮'];
- const routes=[
-  [[400,812,0],[860,852,1],[1130,832,2]],
-  [[400,812,0],[860,852,1],[1130,832,2]],
-  [[400,812,0],[860,852,1],[1130,832,2]],
-  [[400,812,0],[860,852,1],[1130,832,2]]
- ];
+ const names=['私人包廂','暖燈小館','尊爵會館','曜金行宮','翡翠御苑','星河城堡','雲頂王庭','天際皇宮','星耀帝城','楠團天宮'];
+ // Every scene keeps the same street foreground for these employee paths.
+ const routes=names.map(()=>[[400,812,0],[860,852,1],[1130,832,2]]);
  const employeeKeys=['concierge','host','steward'];let owned=new Set(['concierge']);
  const observed=new Map();let scheduled=false;
  const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{

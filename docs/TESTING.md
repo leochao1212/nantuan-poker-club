@@ -16,7 +16,7 @@ python -m unittest discover -s tests/python -t . -v
 | 21 點下注／多人 | test_blackjack_confirmation、test_gate_blackjack、test_arcade |
 | 房間推播、離線恢復 | test_realtime、test_presence、test_mobile_recovery、test_connection_review、test_push_views |
 | 遊戲設定 | test_game_settings、test_bet_limits、test_payouts、test_fairness |
-| 會所與員工 | test_income、test_upgrades、test_clubhouse_speed、test_staff |
+| 會所與員工 | test_income、test_upgrades、test_clubhouse_speed、test_clubhouse_ten_levels、test_staff |
 | 語音 | test_voice |
 | 個人資料／管理／轉帳 | test_profiles、test_admin、test_transfers |
 

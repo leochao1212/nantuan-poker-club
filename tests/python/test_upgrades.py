@@ -35,17 +35,18 @@ class UpgradeRules(unittest.TestCase):
         self.assertEqual(c.income_view(self.db,2,t+3600)['available'],1500)
         self.assertEqual(c.income_view(self.db,2,t+30*3600)['available'],1800)
     def test_all_levels_costs_caps_and_permanent_decor(self):
-        wallet.transfer(self.db,2,100000,'admin_adjustment','upgrade-fixture-credit',self.clock)
+        wallet.transfer(self.db,2,2000000,'admin_adjustment','upgrade-fixture-credit',self.clock)
         for track in ('production','storage','decor'):
-            for level in range(3):
+            for level in range(9):
                 v=c.income_view(self.db,2,self.clock);before=wallet.view(self.db,2,self.clock)['balance'];spec=c.UPGRADES[track]
                 result=self.upgrade(track,op=f'upgrade_{track}_{level:08d}')
                 self.assertEqual(result['cost'],spec['costs'][level]);self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],before-spec['costs'][level])
             with self.assertRaises(Exception):self.upgrade(track,op='upgrade_maxed_00001')
-        v=c.income_view(self.db,2,self.clock);self.assertEqual((v['rate'],v['cap_hours'],v['cap']),(450,48,21600))
-        public=c.public_profile(self.db,2,self.clock);self.assertEqual(public['person']['clubhouse'],dict(level=3,name='曜金行宮'))
+        v=c.income_view(self.db,2,self.clock);self.assertEqual((v['rate'],v['cap_hours'],v['cap']),(3300,144,475200))
+        self.assertTrue(all(u['level']==9 and u['max_level']==9 and u['next'] is None and u['cost'] is None for u in v['upgrades']))
+        public=c.public_profile(self.db,2,self.clock);self.assertEqual(public['person']['clubhouse'],dict(level=9,name='楠團天宮'))
         self.db.commit();wallet.initialize(self.db,self.clock+1)
-        self.assertEqual(c.income_view(self.db,2,self.clock+1)['decor_level'],3)
+        self.assertEqual(c.income_view(self.db,2,self.clock+1)['decor_level'],9)
     def test_retries_conflicts_stale_revision_and_per_user_isolation(self):
         req=self.upgrade_payload('decor');first=c.upgrade(self.db,{'id':2},req,self.clock)
         self.assertTrue(c.upgrade(self.db,{'id':2},req,self.clock+86400)['replayed'])

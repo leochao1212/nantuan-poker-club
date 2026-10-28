@@ -1,0 +1,64 @@
+{
+  "generator": "Built-in image_gen",
+  "intent": "New illustrations using the existing Level 4 picture as style and composition reference",
+  "reference": "static/assets/clubhouse/tier-4.webp",
+  "preparation": "Proportional downscale and WebP encoding only; no content retouching",
+  "desktop": [
+    1200,
+    800
+  ],
+  "mobile": [
+    600,
+    400
+  ],
+  "images": [
+    {
+      "tier": 5,
+      "name": "翡翠御苑",
+      "prompt": "Use case: stylized-concept. Asset type: production background illustration for a clubhouse upgrade game, landscape 3:2, ideally 1536x1024. Reference image role: architectural style and exact scene continuity reference, not a UI screenshot. Create a NEW distinct upgraded building scene based on the provided Level 4 illustration. Keep the SAME eye-level three-quarter street camera, sunset orange-pink sky, far-left black-and-brass street lamp, distant river/city/mountains at left, tree canopy at right, warm ivory stone, dark emerald doors, gilded trim, lit crystal chandeliers and rich planting. Match the polished semi-realistic architectural game illustration style. Keep the entire lower 24% as an empty broad walkable stone sidewalk and wet-road foreground, at the same height and perspective as the reference, for separate animated employee sprites. No people, no characters, no vehicles, no text, no numbers, no logos or watermarks, no UI or borders. Do not change to aerial/isometric camera, do not add floating islands. Center the main entrance around 60% of image width, keep the building on the right two-thirds and depth view on left. Make a visible architectural upgrade, not just a recolor. Distinct silhouette and facilities for this tier, readable at small mobile size. A premium emerald garden estate: expand the Level 4 residence with a prominent emerald-glass conservatory wing, tiered white rose gardens, elegant green arched canopy and an emerald-and-gold roof pavilion. Keep a refined two/three-storey boutique estate scale. More lush and expansive than the reference, still grounded in the same street.",
+      "asset": "static/assets/clubhouse/tier-5.webp",
+      "mobile_asset": "static/assets/clubhouse/tier-5-small.webp",
+      "source_id": "exec-e76b8ecf-fe72-42be-976f-d0d89b027de2.png"
+    },
+    {
+      "tier": 6,
+      "name": "星河城堡",
+      "prompt": "Use case: stylized-concept. Asset type: production background illustration for a clubhouse upgrade game, landscape 3:2, ideally 1536x1024. Reference image role: architectural style and exact scene continuity reference, not a UI screenshot. Create a NEW distinct upgraded building scene based on the provided Level 4 illustration. Keep the SAME eye-level three-quarter street camera, sunset orange-pink sky, far-left black-and-brass street lamp, distant river/city/mountains at left, tree canopy at right, warm ivory stone, dark emerald doors, gilded trim, lit crystal chandeliers and rich planting. Match the polished semi-realistic architectural game illustration style. Keep the entire lower 24% as an empty broad walkable stone sidewalk and wet-road foreground, at the same height and perspective as the reference, for separate animated employee sprites. No people, no characters, no vehicles, no text, no numbers, no logos or watermarks, no UI or borders. Do not change to aerial/isometric camera, do not add floating islands. Center the main entrance around 60% of image width, keep the building on the right two-thirds and depth view on left. Make a visible architectural upgrade, not just a recolor. Distinct silhouette and facilities for this tier, readable at small mobile size. A starry royal castle clubhouse: transform the residence into a three-storey ivory-and-gold chateau with a distinctive tall square clock tower capped by a dark emerald roof, illuminated upper library gallery and elegant twin narrow turrets, plus a grand garden fountain. More vertically elaborate than a garden estate, warm sunset scene.",
+      "asset": "static/assets/clubhouse/tier-6.webp",
+      "mobile_asset": "static/assets/clubhouse/tier-6-small.webp",
+      "source_id": "exec-b6a8a267-06f0-4e79-bc3e-c81537a3f5cc.png"
+    },
+    {
+      "tier": 7,
+      "name": "雲頂王庭",
+      "prompt": "Use case: stylized-concept. Asset type: production background illustration for a clubhouse upgrade game, landscape 3:2, ideally 1536x1024. Reference image role: architectural style and exact scene continuity reference, not a UI screenshot. Create a NEW distinct upgraded building scene based on the provided Level 4 illustration. Keep the SAME eye-level three-quarter street camera, sunset orange-pink sky, far-left black-and-brass street lamp, distant river/city/mountains at left, tree canopy at right, warm ivory stone, dark emerald doors, gilded trim, lit crystal chandeliers and rich planting. Match the polished semi-realistic architectural game illustration style. Keep the entire lower 24% as an empty broad walkable stone sidewalk and wet-road foreground, at the same height and perspective as the reference, for separate animated employee sprites. No people, no characters, no vehicles, no text, no numbers, no logos or watermarks, no UI or borders. Do not change to aerial/isometric camera, do not add floating islands. Center the main entrance around 60% of image width, keep the building on the right two-thirds and depth view on left. Make a visible architectural upgrade, not just a recolor. Distinct silhouette and facilities for this tier, readable at small mobile size. A majestic royal court clubhouse: a much taller four-storey ivory palace with a broad elevated columned terrace, symmetrical wing galleries, high mansard roof and two grand gold-trimmed towers rising above the tree line. Broad staircase and sculpted formal gardens ABOVE the unchanged street sidewalk. Substantial architectural growth from the clocktower chateau; sky remains warm sunset.",
+      "asset": "static/assets/clubhouse/tier-7.webp",
+      "mobile_asset": "static/assets/clubhouse/tier-7-small.webp",
+      "source_id": "exec-f85de046-d825-4e2b-b646-b310b8e43a76.png"
+    },
+    {
+      "tier": 8,
+      "name": "天際皇宮",
+      "prompt": "Use case: stylized-concept. Asset type: production background illustration for a clubhouse upgrade game, landscape 3:2, ideally 1536x1024. Reference image role: architectural style and exact scene continuity reference, not a UI screenshot. Create a NEW distinct upgraded building scene based on the provided Level 4 illustration. Keep the SAME eye-level three-quarter street camera, sunset orange-pink sky, far-left black-and-brass street lamp, distant river/city/mountains at left, tree canopy at right, warm ivory stone, dark emerald doors, gilded trim, lit crystal chandeliers and rich planting. Match the polished semi-realistic architectural game illustration style. Keep the entire lower 24% as an empty broad walkable stone sidewalk and wet-road foreground, at the same height and perspective as the reference, for separate animated employee sprites. No people, no characters, no vehicles, no text, no numbers, no logos or watermarks, no UI or borders. Do not change to aerial/isometric camera, do not add floating islands. Center the main entrance around 60% of image width, keep the building on the right two-thirds and depth view on left. Make a visible architectural upgrade, not just a recolor. Distinct silhouette and facilities for this tier, readable at small mobile size. A skyline imperial palace clubhouse: expansive five-storey ivory-and-gold architecture dominated by an enormous luminous emerald glass dome behind a richly ornamented columned entrance; long upper sky galleries and roof gardens, luxurious fountain basin and ornamental statues. Clearly larger than a royal court, while foreground pavement and far-left lamp remain at reference locations.",
+      "asset": "static/assets/clubhouse/tier-8.webp",
+      "mobile_asset": "static/assets/clubhouse/tier-8-small.webp",
+      "source_id": "exec-dd82844d-691a-45fb-a802-e4c933cd3b32.png"
+    },
+    {
+      "tier": 9,
+      "name": "星耀帝城",
+      "prompt": "Use case: stylized-concept. Asset type: production background illustration for a clubhouse upgrade game, landscape 3:2, ideally 1536x1024. Reference image role: architectural style and exact scene continuity reference, not a UI screenshot. Create a NEW distinct upgraded building scene based on the provided Level 4 illustration. Keep the SAME eye-level three-quarter street camera, sunset orange-pink sky, far-left black-and-brass street lamp, distant river/city/mountains at left, tree canopy at right, warm ivory stone, dark emerald doors, gilded trim, lit crystal chandeliers and rich planting. Match the polished semi-realistic architectural game illustration style. Keep the entire lower 24% as an empty broad walkable stone sidewalk and wet-road foreground, at the same height and perspective as the reference, for separate animated employee sprites. No people, no characters, no vehicles, no text, no numbers, no logos or watermarks, no UI or borders. Do not change to aerial/isometric camera, do not add floating islands. Center the main entrance around 60% of image width, keep the building on the right two-thirds and depth view on left. Make a visible architectural upgrade, not just a recolor. Distinct silhouette and facilities for this tier, readable at small mobile size. A spectacular imperial city clubhouse: a grand palace complex filling the right side with multiple gilded cupolas, connected arcade wings, a tall central crown-shaped architectural spire, layered terraces and several elegant garden fountains, sapphire-green glass accents. Not a distant city panorama: retain the same intimate street viewpoint and main entry position, but reveal monumental complex wings and a dramatic roof silhouette.",
+      "asset": "static/assets/clubhouse/tier-9.webp",
+      "mobile_asset": "static/assets/clubhouse/tier-9-small.webp",
+      "source_id": "exec-d82afaf0-465f-451c-9b48-52f568d79e86.png"
+    },
+    {
+      "tier": 10,
+      "name": "楠團天宮",
+      "prompt": "Use case: stylized-concept. Asset type: production background illustration for a clubhouse upgrade game, landscape 3:2, ideally 1536x1024. Reference image role: architectural style and exact scene continuity reference, not a UI screenshot. Create a NEW distinct upgraded building scene based on the provided Level 4 illustration. Keep the SAME eye-level three-quarter street camera, sunset orange-pink sky, far-left black-and-brass street lamp, distant river/city/mountains at left, tree canopy at right, warm ivory stone, dark emerald doors, gilded trim, lit crystal chandeliers and rich planting. Match the polished semi-realistic architectural game illustration style. Keep the entire lower 24% as an empty broad walkable stone sidewalk and wet-road foreground, at the same height and perspective as the reference, for separate animated employee sprites. No people, no characters, no vehicles, no text, no numbers, no logos or watermarks, no UI or borders. Do not change to aerial/isometric camera, do not add floating islands. Center the main entrance around 60% of image width, keep the building on the right two-thirds and depth view on left. Make a visible architectural upgrade, not just a recolor. Distinct silhouette and facilities for this tier, readable at small mobile size. The ultimate level ten celestial grand palace clubhouse, the unmistakable final upgrade: an extraordinary majestic ivory marble and gold grand palace with a towering luminous crystal-and-emerald central crown dome, tiered soaring spires, a sweeping multi-level glazed royal gallery, elaborate gilded roof finials, gemlike architectural accents, white rose terraces and a beautiful radiant fountain garden. Palace craftsmanship at its most opulent, still an elegant grounded building at the SAME street corner and camera. Sunset light softly luminous, NOT a fantasy floating island, NOT a sci-fi neon skyscraper. Leave the unchanged wide empty foreground sidewalk so employee sprites stay plausible.",
+      "asset": "static/assets/clubhouse/tier-10.webp",
+      "mobile_asset": "static/assets/clubhouse/tier-10-small.webp",
+      "source_id": "exec-c320b2a4-0c02-4c56-a421-d7475ee774a8.png"
+    }
+  ]
+}

@@ -12,14 +12,17 @@ CAP_HOURS = 24
 SECONDS_PER_POINT = 60
 CAP = RATE * CAP_HOURS
 UNIT = 3_600_000  # Exact point units: hourly rate times elapsed milliseconds.
-RATES = (60,90,120,180)
-HOURS = (24,30,36,48)
-DECOR = ('私人包廂','暖燈小館','尊爵會館','曜金行宮')
-SPEED_STEPS = (2,3,4,5)  # Half units: 1x, 1.5x, 2x, 2.5x; additive +50% per decor level.
+# Keep the original four tiers unchanged so saved income and active jobs retain
+# their rates. New tiers are opt-in upgrades, not a repricing/migration.
+RATES = (60,90,120,180,240,300,360,420,480,600)
+HOURS = (24,30,36,48,60,72,84,96,120,144)
+DECOR = ('私人包廂','暖燈小館','尊爵會館','曜金行宮','翡翠御苑',
+         '星河城堡','雲頂王庭','天際皇宮','星耀帝城','楠團天宮')
+SPEED_STEPS = tuple(range(2,12))  # Half units: 1x to 5.5x; additive +50% per tier.
 UPGRADES = {
-    'production':dict(name='營運團隊',levels=RATES,costs=(2000,5000,12000)),
-    'storage':dict(name='收益金庫',levels=HOURS,costs=(1000,2500,5000)),
-    'decor':dict(name='會所裝潢',levels=DECOR,costs=(800,2000,5000))}
+    'production':dict(name='營運團隊',levels=RATES,costs=(2000,5000,12000,24000,42000,70000,110000,165000,240000)),
+    'storage':dict(name='收益金庫',levels=HOURS,costs=(1000,2500,5000,9000,15000,24000,36000,52000,75000)),
+    'decor':dict(name='會所裝潢',levels=DECOR,costs=(800,2000,5000,10000,18000,30000,48000,75000,110000))}
 MOVES = {'initial', 'buy_in', 'rebuy', 'leave', 'bank_deposit', 'bank_withdraw', 'bank_loan', 'bank_repay_principal', 'market_reserve', 'market_refund', 'market_sale'}
 
 

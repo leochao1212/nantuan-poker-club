@@ -78,3 +78,7 @@
 
 
 ## 楠團漁港
+
+## 原創 3D 戰場
+
+荒島行動的地形、建築、植被、角色、武器、降落傘與特效由 `static/battle-scene.js` 建立，不使用 PUBG 素材。固定本機 `three@0.186.1` 的 module／core 位元組由 `scripts/vendor-assets.cjs` 驗證；MIT 授權在 `licenses/three-LICENSE.txt` 與公開 notices。圖形只在戰場頁載入，未加入牌桌圖片預載。見 [荒島行動](BATTLE.md)。

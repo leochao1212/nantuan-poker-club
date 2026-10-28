@@ -108,3 +108,6 @@ python -m unittest tests.python.test_transfers.TransferRules.test_conservation_r
 
 
 - `test_market.py`：點數現貨委託、下一筆報價成交、小數份額、資產守恆、取消／到期退款、私有資料與並行回執。
+
+- `test_battle.py`：原創生存戰的物理、命中、補給、縮圈、AI、房主、房間與快照界線。
+- `test_battle_http.py`：隔離帳號的 HTTP／WebSocket、認證／撤銷、Origin、租約替換、重送與錢包資料不變。

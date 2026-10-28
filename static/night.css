@@ -5237,3 +5237,163 @@ html.market-picker-open{overflow:hidden}
 }
 
 @media(prefers-reduced-motion:reduce){#market-console *,#market-console *::after{transition:none;animation:none;scroll-behavior:auto}}
+
+/* Original 3D survival mode: one scoped HUD; never skins card-table controls. */
+#app .battle-lobby-entry{display:flex;align-items:center;gap:24px;overflow:hidden;min-height:126px;margin:0 0 18px;padding:0 26px 0 0;border:1px solid #627565;border-radius:14px;background:#1d3331;color:#f4eedc;text-decoration:none}
+#app .battle-lobby-entry .battle-lobby-art{display:block;width:225px;align-self:stretch;background:#39564f;flex:0 0 auto}
+#app .battle-lobby-entry svg{display:block;width:100%;height:100%;min-height:126px}
+#app .battle-lobby-entry strong{display:block;color:#fff1cf;font-size:27px;letter-spacing:.06em}
+#app .battle-lobby-entry small{display:block;color:#d1dbcd;font-size:14px;margin-top:7px}
+#app .battle-lobby-entry b{margin-left:auto;white-space:nowrap;color:#f0d58c;font-size:16px}
+#app .battle-lobby-entry:focus-visible{outline:3px solid #caa86b;outline-offset:4px}
+#app #main:has(>#battle-console){max-width:none;padding:20px}
+#app #battle-console{--battle-bg:#172c2d;--battle-panel:#15292deb;--battle-ink:#f2efdd;--battle-muted:#c6d2c5;--battle-line:#697e72;--battle-accent:#e7c77b;--battle-cta:#edd28d;font-family:"Segoe UI","Microsoft JhengHei",sans-serif;color:var(--battle-ink);isolation:isolate}
+#app #battle-console :is(h1,h2,h3,h4,p,strong,b,small,label,span,a,button){color:inherit;text-shadow:none}
+#app #battle-console [hidden]{display:none!important}
+#app #battle-console .battle-stage{position:relative;min-height:720px;height:calc(100svh - 170px);overflow:hidden;border-radius:16px;background:#3f685d;isolation:isolate}
+#app #battle-console .battle-world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline-offset:-4px}
+#app #battle-console .battle-world:focus-visible{outline:2px solid var(--battle-accent)}
+#app #battle-console button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:44px;min-height:44px;padding:8px 12px;border:1px solid #87958188!important;border-radius:6px;background:#1b3437de!important;background-image:none!important;border-image:none!important;color:var(--battle-ink)!important;box-shadow:none!important;text-shadow:none!important;font:600 14px/1.2 "Segoe UI","Microsoft JhengHei",sans-serif;cursor:pointer;transition:background-color .15s,border-color .15s;touch-action:manipulation}
+#app #battle-console button::before,#app #battle-console button::after{display:none!important}
+#app #battle-console button:hover:not(:disabled){background:#38504be8!important;border-color:var(--battle-accent)!important}
+#app #battle-console button:focus-visible,#app #battle-console a:focus-visible{outline:3px solid var(--battle-accent);outline-offset:3px}
+#app #battle-console button:disabled{opacity:.5;cursor:default}
+#app #battle-console button.battle-primary{background:var(--battle-cta)!important;color:#203330!important;border-color:var(--battle-cta)!important;min-height:50px;font-size:17px;font-weight:800}
+#app #battle-console button.battle-primary:hover:not(:disabled){background:#ffe3a1!important}
+#app #battle-console input{min-height:46px;width:100%;box-sizing:border-box;margin:6px 0 0;padding:10px 12px;border:1px solid #788c7e;border-radius:6px;background:#11272c!important;color:var(--battle-ink)!important;font:400 16px/1.4 "Segoe UI","Microsoft JhengHei",sans-serif;box-shadow:none}
+#app #battle-console input::placeholder{color:#a8bdb3}
+#app #battle-console input:focus-visible{outline:2px solid var(--battle-accent);outline-offset:2px}
+#app #battle-console .battle-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(#102a32dc,#102a3238);z-index:8;pointer-events:none}
+#app #battle-console .battle-top>*{pointer-events:auto}
+#app #battle-console .battle-top>div{display:flex;gap:7px;margin-left:auto}
+#app #battle-console .battle-back{display:inline-flex;align-items:center;min-height:44px;color:#f3eedc;text-decoration:none;font-size:14px;font-weight:700;padding:0 10px;border:1px solid #a8b5a36b;border-radius:6px;background:#173136b8}
+#app #battle-console .battle-connection{font-size:12px;color:#d7e7db;line-height:1.3}
+#app #battle-console .is-error{color:#ffd6bb!important}
+#app #battle-console .battle-entry{position:absolute;inset:0;display:grid;grid-template-columns:minmax(200px,1fr) minmax(290px,350px);align-items:center;gap:40px;padding:88px clamp(24px,5vw,78px) 34px;background:linear-gradient(90deg,#102b31db,#14313917 57%,#122c3269)}
+#app #battle-console .battle-intro{align-self:center;max-width:420px}
+#app #battle-console .battle-brand{display:block;font-size:13px;color:#f3d997;letter-spacing:.08em;font-weight:700;margin-bottom:17px}
+#app #battle-console .battle-intro h1{font-size:clamp(60px,6vw,94px);font-weight:900;line-height:1.04;margin:0 0 20px;letter-spacing:.12em;color:#fff2d1}
+#app #battle-console .battle-intro h1 span{color:#e7c77b}
+#app #battle-console .battle-intro p{font-size:17px;line-height:1.8;color:#edf0db;margin:0 0 24px}
+#app #battle-console .battle-tags{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:18px}
+#app #battle-console .battle-tags span{padding:5px 10px;border:1px solid #a2b5a281;border-radius:4px;font-size:12px;background:#1c343a66}
+#app #battle-console .battle-how-link{display:inline-block;padding:12px 0;color:#e0e5d1;font-size:14px;text-underline-offset:4px}
+#app #battle-console .battle-room-panel{padding:23px;background:var(--battle-panel);border:1px solid #9cae9170;border-radius:10px;box-shadow:0 18px 50px #10242240;max-height:calc(100% - 20px);overflow-y:auto;scrollbar-width:thin}
+#app #battle-console .battle-room-panel h2{font-size:22px;margin:0 0 18px;color:#f4e7bd}
+#app #battle-console .battle-room-panel :is(label,p){font-size:14px;line-height:1.5}
+#app #battle-console .battle-check{display:flex;align-items:center;gap:10px;padding:10px 0;margin:5px 0;cursor:pointer;min-height:44px}
+#app #battle-console .battle-check input{width:20px;height:20px;min-height:20px;margin:0;accent-color:var(--battle-accent)}
+#app #battle-console [data-battle-create]>.battle-primary{width:100%}
+#app #battle-console .battle-join-row{display:flex;align-items:end;gap:10px;padding:16px 0;border-bottom:1px solid #60796b}
+#app #battle-console .battle-join-row label{flex:1;min-width:0}
+#app #battle-console .battle-join-row button{min-height:46px}
+#app #battle-console [name=code]{letter-spacing:.15em;text-transform:uppercase}
+#app #battle-console .battle-rooms-heading{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:8px}
+#app #battle-console .battle-rooms-heading h3{font-size:15px;margin:10px 0}
+#app #battle-console .battle-rooms-heading button{font-size:12px;background:transparent!important;border-color:transparent!important;padding:5px}
+#app #battle-console .battle-room-list{font-size:14px;color:var(--battle-muted);max-height:170px;overflow-y:auto}
+#app #battle-console .battle-room-row{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #748a6c50}
+#app #battle-console .battle-room-row>span{min-width:0}
+#app #battle-console .battle-room-row strong{display:block;font-size:14px;overflow-wrap:anywhere}
+#app #battle-console .battle-room-row small{display:block;font-size:12px;margin-top:5px;color:var(--battle-muted)}
+#app #battle-console .battle-message{font-size:12px!important;color:var(--battle-muted);min-height:36px;margin:12px 0 0}
+#app #battle-console .battle-resume{display:block;margin-top:10px;min-height:44px;color:var(--battle-accent)}
+#app #battle-console .battle-waiting{position:absolute;inset:80px 24px auto auto;width:min(360px,calc(100% - 48px));max-height:calc(100% - 110px);overflow-y:auto;box-sizing:border-box;padding:26px;background:var(--battle-panel);border:1px solid var(--battle-line);border-radius:12px}
+#app #battle-console .battle-waiting h2{font-size:25px;margin:0 0 16px;overflow-wrap:anywhere}
+#app #battle-console .battle-waiting p{font-size:14px;color:var(--battle-muted);line-height:1.6}
+#app #battle-console .battle-code{width:100%;justify-content:space-between;gap:12px;padding:14px 12px}
+#app #battle-console .battle-code strong{font-size:25px;letter-spacing:.12em;color:#ffe1a1}
+#app #battle-console .battle-code small{font-size:11px;color:var(--battle-muted)}
+#app #battle-console .battle-roster{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0;min-height:36px}
+#app #battle-console .battle-roster>span{display:flex;align-items:center;gap:7px;max-width:100%;overflow-wrap:anywhere;padding:6px 10px;border:1px solid #637b6e;border-radius:4px;font-size:14px}
+#app #battle-console .battle-roster i{display:block;width:6px;height:6px;background:#a5d5a7;border-radius:50%;flex-shrink:0}
+#app #battle-console .battle-roster i.offline{background:#ba9771}
+#app #battle-console .battle-roster small{font-size:11px;color:#f3d997}
+#app #battle-console .battle-waiting>button:not(.battle-code){width:100%;margin-top:9px}
+html.island-active,html.island-active body{overflow:hidden}
+html.island-active #app .club-main{container-type:normal}
+html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibility:hidden;pointer-events:none}
+#app #battle-console.battle-active{isolation:auto}
+#app #battle-console.battle-active .battle-stage{position:fixed;inset:0;width:100%;height:100dvh;min-height:0;border-radius:0;z-index:140}
+#app #battle-console .battle-stage:fullscreen{border-radius:0;height:100dvh;min-height:0;overflow-y:auto}
+#app #battle-console .battle-hud{position:absolute;inset:0;pointer-events:none;z-index:3}
+#app #battle-console .battle-match-stats{position:absolute;left:max(20px,env(safe-area-inset-left));top:78px;display:flex;gap:1px;background:#10282cc9;border-radius:5px;overflow:hidden;font-size:14px}
+#app #battle-console .battle-match-stats>span{padding:8px 11px;border-right:1px solid #6c887161}
+#app #battle-console .battle-match-stats b{color:#f5dda2;font-size:18px;padding-left:5px}
+#app #battle-console .battle-minimap{position:absolute;right:max(20px,env(safe-area-inset-right));top:76px;width:150px;height:150px;border:1px solid #bfd4b67a;border-radius:6px;background:#23414c;opacity:.94}
+#app #battle-console .battle-compass{position:absolute;top:78px;left:50%;transform:translateX(-50%);min-width:100px;text-align:center;font-size:17px;font-weight:700;letter-spacing:.1em;text-shadow:0 1px 4px #000!important;background:#17313696;padding:7px 12px;border-radius:4px}
+#app #battle-console .battle-crosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border:1px solid #f9edc9bc;border-radius:50%;box-shadow:0 0 2px #071e24}
+#app #battle-console .battle-crosshair i{position:absolute;left:9px;top:9px;width:2px;height:2px;background:#fff6c5;border-radius:50%}
+#app #battle-console .battle-phase-note{position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:24px;font-weight:800;text-align:center;text-shadow:0 2px 8px #051f27!important;max-width:80%;width:max-content;color:#fff1ba}
+#app #battle-console .battle-feed{position:absolute;top:135px;left:20px;font-size:12px;line-height:1.9;white-space:pre-line;text-shadow:0 1px 4px #071e24!important}
+#app #battle-console .battle-vitals{position:absolute;bottom:max(38px,env(safe-area-inset-bottom));left:50%;width:min(340px,70%);transform:translateX(-50%);padding:11px 14px 9px;background:#13282cdb;border:1px solid #c2c8a960;border-radius:6px}
+#app #battle-console .battle-health-label{display:flex;align-items:baseline;gap:8px;font-size:11px}
+#app #battle-console .battle-health-label strong{font-size:19px;font-weight:800}
+#app #battle-console [data-battle-armor]{margin-left:auto;color:#c4e0d7}
+#app #battle-console meter{display:block;appearance:none;width:100%;height:8px;margin:4px 0;background:#53635a;border:0;border-radius:0}
+#app #battle-console meter::-webkit-meter-bar{background:#53635a;border:0;border-radius:0}
+#app #battle-console meter::-webkit-meter-optimum-value{background:#d9e8bf}
+#app #battle-console meter::-moz-meter-bar{background:#d9e8bf}
+#app #battle-console meter[data-battle-stamina]{height:3px;opacity:.7}
+#app #battle-console .battle-weapon{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+#app #battle-console .battle-weapon strong{font-size:15px}
+#app #battle-console .battle-weapon b{font-size:25px;line-height:1}
+#app #battle-console .battle-weapon small{font-size:14px;color:#c8d8cb}
+#app #battle-console .battle-equipment{display:flex;gap:6px;pointer-events:auto;margin-top:7px}
+#app #battle-console .battle-equipment:empty{display:none}
+#app #battle-console .battle-equipment button{font-size:11px;min-height:44px;padding:6px 8px;flex:1}
+#app #battle-console button[aria-pressed=true]{border-color:#e6cd8b!important;background:#54716a!important}
+#app #battle-console .battle-progress{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);padding-bottom:8px;font-size:15px;font-weight:700;text-shadow:0 1px 4px #000!important;width:max-content}
+#app #battle-console .battle-pickup{position:absolute;left:50%;top:62%;transform:translateX(-50%);pointer-events:auto;background:#d9c18c!important;color:#263731!important;font-size:15px;min-height:48px}
+#app #battle-console .battle-desktop-hints{position:absolute;left:20px;right:20px;bottom:10px;text-align:center;font-size:11px;color:#eff1dc;text-shadow:0 1px 3px #000!important}
+#app #battle-console .battle-touch{display:none;position:absolute;inset:0;z-index:5;pointer-events:none}
+#app #battle-console .battle-stick{position:absolute;left:max(22px,env(safe-area-inset-left));bottom:max(172px,calc(152px + env(safe-area-inset-bottom)));width:124px;height:124px;border:1px solid #e2e9d968;border-radius:50%;background:#1d353835;pointer-events:auto;touch-action:none}
+#app #battle-console .battle-stick span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:50px;height:50px;border:1px solid #f0e3bdc4;border-radius:50%;background:#e7e7c56b;pointer-events:none}
+#app #battle-console .battle-touch-actions{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(172px,calc(152px + env(safe-area-inset-bottom)));display:grid;grid-template-columns:repeat(3,52px);gap:8px;pointer-events:auto}
+#app #battle-console .battle-touch-actions button{min-height:48px;min-width:48px;max-width:52px;padding:5px 3px;font-size:11px;border-radius:10px;background:#183c42b5!important;touch-action:none;user-select:none;-webkit-user-select:none}
+#app #battle-console .battle-touch-actions button.battle-fire{grid-column:span 2;max-width:none;border-color:#f7dd91ba!important;background:#c3aa6b8f!important;font-size:18px;min-height:60px}
+#app #battle-console .battle-touch-actions button.pressed{background:#f4d694!important;color:#253d3c!important}
+#app #battle-console .battle-pause,#app #battle-console .battle-result{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(370px,calc(100% - 32px));max-height:calc(100% - 130px);overflow-y:auto;box-sizing:border-box;padding:28px;border:1px solid #c8bb8f;border-radius:10px;background:#142c30f5;box-shadow:0 12px 100px 50vmax #0c263188;z-index:10;text-align:center}
+#app #battle-console :is(.battle-pause,.battle-result) h2{font-size:30px;color:#f2d38b;margin:0 0 16px}
+#app #battle-console :is(.battle-pause,.battle-result) p{font-size:14px;color:#d7e0ce;line-height:1.7;margin:12px 0}
+#app #battle-console :is(.battle-pause,.battle-result) button{display:flex;width:100%;margin-top:10px}
+#app #battle-console .battle-result .battle-brand{margin-bottom:10px}
+#app #battle-console .battle-instructions{margin-top:14px;padding:14px 18px;background:#20383b;border:1px solid #6a8171;border-radius:8px}
+#app #battle-console .battle-instructions summary{font-size:15px;min-height:44px;display:flex;align-items:center;cursor:pointer;color:#f4deae}
+#app #battle-console .battle-instructions p{max-width:80ch;font-size:14px;line-height:1.8;color:#d6dfcd;margin:12px 0}
+#app #battle-console .battle-instructions a{color:#ecd391;text-underline-offset:3px}
+#app #battle-console .battle-scene-note{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);max-width:80%;background:#172f35e8;color:#f4e6bb;font-size:15px;text-align:center;padding:10px 17px;border:1px solid #a5b28a88;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:7}
+#app #battle-console .battle-scene-note.show{opacity:1}
+#app #battle-console .battle-hit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:38px;color:#ffe6a1;opacity:0;line-height:1}
+#app #battle-console .battle-hit.show{animation:island-hit .3s ease-out}
+#app #battle-console.battle-damaged .battle-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;box-shadow:inset 0 0 100px #b2613370;animation:island-hit .3s ease-out}
+#app #battle-console.battle-outside-zone .battle-world{filter:saturate(.7) hue-rotate(8deg)}
+@keyframes island-hit{from{opacity:1}to{opacity:0}}
+@media(pointer:coarse){#app #battle-console .battle-touch:not([hidden]){display:block}#app #battle-console .battle-desktop-hints{display:none}#app #battle-console .battle-vitals{bottom:max(6px,env(safe-area-inset-bottom));width:290px;padding:7px 10px}#app #battle-console .battle-equipment{margin-top:4px}#app #battle-console .battle-equipment button{min-height:44px}}
+@media(max-width:1100px){#app #battle-console .battle-entry{gap:22px;padding-left:30px;padding-right:30px}#app #battle-console .battle-top{gap:7px}#app #battle-console .battle-top button{padding:7px 9px;font-size:12px}#app #battle-console .battle-top>div{gap:5px}#app #battle-console .battle-connection{max-width:150px}}
+@media(max-width:760px){
+ #app #main:has(>#battle-console){padding:12px 12px 96px}#app #battle-console .battle-stage{height:auto;min-height:1050px;border-radius:10px}
+ #app #battle-console .battle-entry{position:relative;grid-template-columns:1fr;gap:20px;padding:92px 18px 24px;background:linear-gradient(#0c303655,#102d39b8 40%,#132e34eb 70%)}
+ #app #battle-console .battle-intro h1{font-size:58px;line-height:1;margin-bottom:12px}#app #battle-console .battle-intro h1 br{display:none}#app #battle-console .battle-intro h1 span{margin-left:6px}
+ #app #battle-console .battle-brand{font-size:12px;margin-bottom:13px}#app #battle-console .battle-intro p{font-size:15px;margin:0 0 15px}#app #battle-console .battle-tags{margin-bottom:0}#app #battle-console .battle-how-link{padding-bottom:0}
+ #app #battle-console .battle-room-panel{padding:19px;max-height:none}#app #battle-console .battle-room-panel h2{font-size:21px}
+ #app #battle-console .battle-top{padding:10px;flex-wrap:wrap;gap:4px}#app #battle-console .battle-top>div{margin-left:auto;gap:4px}#app #battle-console .battle-top>div button{min-width:44px;padding:6px 8px;font-size:12px}
+ #app #battle-console .battle-top .battle-back{font-size:12px;padding:0 8px}#app #battle-console .battle-connection{position:absolute;top:60px;left:12px;max-width:75%;font-size:11px}
+ #app #battle-console .battle-waiting{inset:95px 14px auto;width:calc(100% - 28px);padding:22px;max-height:calc(100% - 125px)}
+ #app #battle-console.battle-active .battle-stage{height:100dvh;min-height:0}#app #battle-console.battle-active .battle-top{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+ #app #battle-console .battle-match-stats{top:83px;left:12px;font-size:12px}#app #battle-console .battle-match-stats>span{padding:6px 8px}#app #battle-console .battle-match-stats b{font-size:16px}
+ #app #battle-console .battle-compass{top:126px;font-size:13px;padding:5px 10px}#app #battle-console .battle-minimap{top:83px;right:12px;width:92px;height:92px}
+ #app #battle-console .battle-feed{top:124px;left:12px;max-width:115px;font-size:11px}#app #battle-console .battle-phase-note{top:25%;font-size:21px}
+ #app #battle-console .battle-pickup{top:54%;max-width:80%;width:max-content;white-space:normal;font-size:13px}
+ #app #battle-console .battle-vitals{width:min(290px,calc(100% - 42px))}#app #battle-console .battle-weapon strong{font-size:13px}#app #battle-console .battle-weapon b{font-size:23px}
+ #app .battle-lobby-entry{gap:12px;padding:0 16px 0 0;min-height:120px}#app .battle-lobby-entry .battle-lobby-art{width:104px}#app .battle-lobby-entry svg{min-height:120px}#app .battle-lobby-entry strong{font-size:22px}#app .battle-lobby-entry small{font-size:12px;max-width:170px;line-height:1.6}#app .battle-lobby-entry b{font-size:13px;margin-left:0;writing-mode:vertical-rl;letter-spacing:.1em}
+}
+@media(max-width:370px){#app #battle-console .battle-top>div button{padding:6px;font-size:11px}#app #battle-console .battle-back{max-width:80px;font-size:11px!important}#app #battle-console .battle-entry{padding-left:12px;padding-right:12px}#app #battle-console .battle-intro h1{font-size:49px}#app #battle-console .battle-stick{width:104px;height:104px;left:10px}#app #battle-console .battle-touch-actions{grid-template-columns:repeat(3,45px);gap:6px;right:8px}#app #battle-console .battle-touch-actions button{min-width:44px;max-width:45px;font-size:10px}}
+@media(max-height:550px) and (orientation:landscape){
+ #app #battle-console.battle-active .battle-top{padding:5px max(10px,env(safe-area-inset-right)) 5px max(10px,env(safe-area-inset-left))}#app #battle-console .battle-top button,#app #battle-console .battle-back{min-height:44px}
+ #app #battle-console.battle-active .battle-connection{position:static;max-width:220px}#app #battle-console .battle-match-stats{top:58px;left:max(12px,env(safe-area-inset-left));font-size:11px}#app #battle-console .battle-compass{top:58px;font-size:12px}#app #battle-console .battle-minimap{top:57px;width:82px;height:82px;right:max(12px,env(safe-area-inset-right))}
+ #app #battle-console .battle-stick{width:104px;height:104px;bottom:max(42px,env(safe-area-inset-bottom))}#app #battle-console .battle-touch-actions{grid-template-columns:repeat(4,48px);gap:6px;bottom:max(38px,env(safe-area-inset-bottom))}#app #battle-console .battle-touch-actions button{max-width:48px;min-height:44px}#app #battle-console .battle-touch-actions button.battle-fire{min-height:48px}
+ #app #battle-console .battle-vitals{left:calc(50% + 44px);width:240px;padding:5px 9px;bottom:max(5px,env(safe-area-inset-bottom))}#app #battle-console .battle-equipment button{font-size:10px;min-height:44px}#app #battle-console .battle-health-label{font-size:10px}#app #battle-console .battle-health-label strong{font-size:15px}#app #battle-console .battle-weapon{margin-top:3px}#app #battle-console .battle-weapon strong{font-size:12px}#app #battle-console .battle-weapon b{font-size:21px}
+ #app #battle-console .battle-phase-note{top:30%;font-size:20px}#app #battle-console .battle-feed{top:97px;left:12px;font-size:10px}#app #battle-console .battle-pickup{top:45%;font-size:13px}#app #battle-console :is(.battle-pause,.battle-result){max-height:calc(100% - 32px);padding:18px;width:320px}#app #battle-console .battle-scene-note{bottom:40%}
+}
+@media(prefers-reduced-motion:reduce){#app #battle-console *,#app #battle-console *::after{transition:none!important;animation:none!important}}

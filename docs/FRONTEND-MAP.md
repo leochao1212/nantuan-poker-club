@@ -84,3 +84,7 @@ round-presentation.js 只管理演出，game.js 仍立即處理伺服器回執�
 
 
 交易 UI 的入口在 `game.js` 導覽；表單、持倉、回執恢復在 `market.js`，時間軸、查價與自適應價格圖在 `market-chart.js`。兩個模組與主介面分開掛載，報價更新不重建整個頁面。
+
+## 荒島行動
+
+大廳入口 → `#battle`；`battle.js` 負責房間、HUD 與重連，`battle-scene.js` 延遲載入本機 Three.js 並管理 3D／輸入。`battle-console` 保留增量 DOM 身分，`unmount` 釋放 GPU／事件監聽。玩法、限制與驗證見 [荒島行動](BATTLE.md)。

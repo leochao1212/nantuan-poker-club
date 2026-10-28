@@ -48,7 +48,7 @@ result_stats.py           歷史結算統計投影
 backup.py                 SQLite Backup API
 manage_admin.py           由主機操作者建立獨立管理員
 static/                   不需打包的網站與素材；night.css 是唯一遊戲樣式，ui-art.js 管理現行圖片
-tests/python/test_*.py    後端回歸測試（46 檔，使用套件相對引用）
+tests/python/test_*.py    後端回歸測試（56 檔，使用套件相對引用）
 tests/browser/            瀏覽器互動與排版測試
 ~~~
 
@@ -140,3 +140,7 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 `bank.py` 共用既有 SQLite 與交易序列，`static/bank.js` 提供玩家與管理員介面。存款單利、新貸款條件快照、私人分頁明細及回執皆有界／可重送。查詢只投影利息、不增加背景寫入。銀行資產納入錢包、排行、個人資金圖及後台；本金移轉不記成獲利，全部還清以送達時計算並固定回執。完整規則見 [銀行規格](BANK.md)。
 
 點數交易由 `market.py` 整合總資產與舊持倉；`market_contracts.py` 負責逐倉合約原子記帳與風控，`market_catalog.py` 處理驗證搜尋／自選，`market_charts.py` 保存原幣與原始 OHLC；`market_data.py` 由獨立來源工作抓價。`static/market.js` 控制搜尋及共用回執，`static/market-contracts.js` 提供逐倉委託，`static/market-chart.js` 延遲載入固定本機 Lightweight Charts、分析與畫線。完整規則與資料限制見 [點數交易所](MARKET.md)。`schema_migrations.py` 只做一次性舊資料結清，不含已移除的遊戲引擎或 API；歷史帳本保留供核帳與部署回滾。
+
+## 即時 3D 生存戰
+
+`battle.py`／`battle_engine.py` 提供完全分離的記憶體戰場與 `/api/battle/socket`。高頻輸入不進 SQLite、FIFO 或 SSE；沿用網站登入及帳號資格。最多 3 房、32 條真人連線，每房最多 16 人含 AI；模擬固定 20Hz、每人只留最新快照，收發有界，慢連線不阻塞其他人。Three.js 只在 `#battle` 載入。戰局不收點數、重啟清除；完整範圍、協定與限制見 [荒島行動](BATTLE.md)。

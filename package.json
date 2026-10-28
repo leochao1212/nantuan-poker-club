@@ -16,7 +16,8 @@
     "test:journeys": "node tests/browser/table-journeys.cjs",
     "test:rewards": "node tests/browser/rewards.cjs",
     "test:contracts": "node tests/browser/market-contracts.cjs",
-    "test:clubhouse": "node tests/browser/clubhouse-levels.cjs"
+    "test:clubhouse": "node tests/browser/clubhouse-levels.cjs",
+    "test:battle": "node tests/browser/battle.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
@@ -25,6 +26,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "lightweight-charts": "5.2.1"
+    "lightweight-charts": "5.2.1",
+    "three": "0.186.1"
   }
 }

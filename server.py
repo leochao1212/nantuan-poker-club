@@ -27,6 +27,7 @@ import wallet
 import clubhouse
 import social
 import voice_transport
+import battle
 import club_admin
 import game_settings
 import transfers
@@ -294,6 +295,25 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/online/events":
                 return self.event_stream()
+            elif path == '/api/battle/socket':
+                query=parse_qs(urlsplit(self.path).query);code=query.get('room',[''])[0].upper()
+                origin=self.headers.get('Origin','');host=self.headers.get('Host','')
+                allowed={v for v in (PUBLIC_ORIGIN,'https://'+host,'http://'+host) if v}
+                if not origin or origin not in allowed:raise Problem('戰場連線來源無效。',403)
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);uid=user['id']
+                if battle.HUB.list(uid)['current']!=code:raise Problem('請先加入戰場。',403)
+                def authorize_battle():
+                    try:
+                        with connect() as db:
+                            db.execute('PRAGMA query_only=ON');db.execute('BEGIN');return self.user(db)['id']==uid
+                    except Exception:return False
+                try:return battle.serve(self,uid,code,authorize_battle)
+                except ValueError as ex:raise Problem(str(ex),400)
+            elif path == '/api/battle':
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                self.reply(200,battle.HUB.list(user['id']))
             elif path == '/api/social/voice/socket':
                 query=parse_qs(urlsplit(self.path).query)
                 rid=int(query.get('room',['0'])[0]);session=query.get('session',[''])[0]
@@ -435,7 +455,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/third-party-notices.txt", "/lightweight-charts.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/battle.js", "/battle-scene.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "txt":"text/plain"}
                 ext = name.rsplit(".",1)[-1]
@@ -588,6 +608,17 @@ class Handler(BaseHTTPRequestHandler):
                 self.timings['auth']=(time.monotonic()-started)*1000
             if self.path=='/api/profile/password':
                 self.prepare_profile_password(data)
+            if self.path in ('/api/battle/create','/api/battle/join','/api/battle/leave'):
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    if self.path!='/api/battle/leave' and online.deployment_paused(db,time.time()):
+                        raise Problem('伺服器更新中，請稍後再進入戰場。',503)
+                try:
+                    if self.path.endswith('/create'):value=battle.HUB.create(user['id'],user['nickname'],data.get('title',''),data.get('bots',True))
+                    elif self.path.endswith('/join'):value=battle.HUB.join(user['id'],user['nickname'],data.get('code'))
+                    else:value=battle.HUB.leave(user['id'])
+                except ValueError as ex:raise Problem(str(ex))
+                self.reply(200,value);return
             with WRITES.enter() as admission:
                 self.received_at = admission.received_at
                 self.timings["queue"] = admission.queue_ms
@@ -983,6 +1014,7 @@ def main():
     # Docker sends SIGTERM. Shutdown on a separate thread so serve_forever can exit.
     def shutdown(*_):
         EVENTS.stop()
+        battle.HUB.stop()
         threading.Thread(target=server.shutdown, daemon=True).start()
     signal.signal(signal.SIGTERM, shutdown)
     stopping = threading.Event()
@@ -1026,6 +1058,7 @@ def main():
     finally:
         stopping.set()
         EVENTS.stop()
+        battle.HUB.stop()
         server.server_close()
 
 

@@ -5297,6 +5297,7 @@ html.market-picker-open{overflow:hidden}
 #app #battle-console .battle-room-row strong{display:block;font-size:14px;overflow-wrap:anywhere}
 #app #battle-console .battle-room-row small{display:block;font-size:12px;margin-top:5px;color:var(--battle-muted)}
 #app #battle-console .battle-message{font-size:12px!important;color:var(--battle-muted);min-height:36px;margin:12px 0 0}
+#app #battle-console .battle-resume[aria-disabled=true]{pointer-events:none;opacity:.6}
 #app #battle-console .battle-resume{display:block;margin-top:10px;min-height:44px;color:var(--battle-accent)}
 #app #battle-console .battle-waiting{position:absolute;inset:80px 24px auto auto;width:min(360px,calc(100% - 48px));max-height:calc(100% - 110px);overflow-y:auto;box-sizing:border-box;padding:26px;background:var(--battle-panel);border:1px solid var(--battle-line);border-radius:12px}
 #app #battle-console .battle-waiting h2{font-size:25px;margin:0 0 16px;overflow-wrap:anywhere}

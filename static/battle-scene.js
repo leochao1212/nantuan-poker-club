@@ -111,7 +111,7 @@ export class IslandScene {
     const weapon=new T.Group();weapon.position.set(.26,1.39,-.48);const gunParts={};gunParts.receiver=part(this.geo.box,0x293d40,0,0,0,.12,.14,.43,weapon);gunParts.barrel=part(this.geo.cylinder,0x142c34,0,.01,-.37,.033,.36,.033,weapon);gunParts.barrel.rotation.x=Math.PI/2;gunParts.mag=part(this.geo.box,0x52625c,0,-.16,.05,.08,.24,.13,weapon);gunParts.stock=part(this.geo.box,0x637065,0,-.025,.28,.1,.16,.25,weapon);gunParts.scope=part(this.geo.cylinder,0x172f35,0,.13,-.03,.045,.21,.045,weapon);gunParts.scope.rotation.x=Math.PI/2;
     body.add(weapon);const flash=part(this.geo.cone,0xffe1a3,0,0,-.62,.15,.38,.15,weapon);flash.rotation.x=-Math.PI/2;flash.visible=false;
     const chute=new T.Group();group.add(chute);part(this.geo.sphere,0xb5b892,0,4.7,0,2.9,.7,2.3,chute);part(this.geo.box,0x506d65,0,4.92,0,.65,.3,4.15,chute);chute.visible=false;chute.userData.lines=[];for(const side of [-1,1])for(const front of [-1,1]){const line=part(this.geo.cylinder,0xe9dfbd,side*.95,3,front*.72,.012,3.5,.012,chute);line.rotation.set(front*-.3,0,side*.45);chute.userData.lines.push(line);}
-    for(const node of parts){for(let parent=node.parent;parent;parent=parent.parent)if(parent===weapon||elbows.includes(parent)){node.userData.firstPerson=true;break;}}
+    for(const node of parts){for(let parent=node.parent;parent;parent=parent.parent)if(parent===weapon||parent===elbows[0]){node.userData.firstPerson=true;break;}}
     return {group,body,limbs,knees,feet,arms,elbows,arm:arms[0],left:arms[1],weapon,gunParts,helmet,flash,chute,parts,id,name,target:null,from:new T.Vector3(),receivedAt:0,shotAt:-10,flashFrames:0,walk:0,crouch:0,chuteScale:0,gaitPhase:id,samples:[],renderAt:0};
   }
   pose(actor,p,controls,dt){

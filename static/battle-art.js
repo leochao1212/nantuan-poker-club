@@ -5,10 +5,10 @@ const TAU=Math.PI*2;
 const C={ink:0x233a40,metal:0x354b50,edge:0x748b8d,cloth:0x66796b,sand:0xc3ae7b,brass:0xc9a557,white:0xe8e5d5,teal:0x56867e};
 export const GUN_MUZZLES={pistol:-.24,smg:-.52,rifle:-.76,sniper:-.99};
 
-function bevel(){
+function bevel(detail=2){
   const shape=new T.Shape(),r=.10;
   shape.moveTo(-.4,-.5);shape.lineTo(.4,-.5);shape.quadraticCurveTo(.5,-.5,.5,-.4);shape.lineTo(.5,.4);shape.quadraticCurveTo(.5,.5,.4,.5);shape.lineTo(-.4,.5);shape.quadraticCurveTo(-.5,.5,-.5,.4);shape.lineTo(-.5,-.4);shape.quadraticCurveTo(-.5,-.5,-.4,-.5);
-  const g=new T.ExtrudeGeometry(shape,{depth:.8,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:r,bevelThickness:r,curveSegments:2});g.center();g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3());g.scale(1/size.x,1/size.y,1/size.z);return g;
+  const g=new T.ExtrudeGeometry(shape,{depth:.8,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:r,bevelThickness:r,curveSegments:detail});g.center();g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3());g.scale(1/size.x,1/size.y,1/size.z);return g;
 }
 
 /** Bake different primitives/material colours into one shareable geometry. */
@@ -89,14 +89,14 @@ function texture(kind){
 
 function radial(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,4,32,32,32);g.addColorStop(0,'rgba(15,34,29,.8)');g.addColorStop(.5,'rgba(15,34,29,.37)');g.addColorStop(1,'rgba(15,34,29,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new T.CanvasTexture(c);}
 
-export function createArtKit(){
-  const base={box:new T.BoxGeometry(1,1,1),bevel:bevel(),sphere:new T.SphereGeometry(1,14,10),ico:new T.IcosahedronGeometry(1,1),cylinder:new T.CylinderGeometry(1,1,1,9),cone:new T.ConeGeometry(1,1,9),limb:new T.CapsuleGeometry(1,2,3,8).scale(1,.25,1),hair:new T.SphereGeometry(1,12,6,0,TAU,0,Math.PI*.53)};
+export function createArtKit({mobile=false}={}){
+  const base={box:new T.BoxGeometry(1,1,1),bevel:bevel(mobile?1:2),sphere:new T.SphereGeometry(1,mobile?10:14,mobile?6:10),ico:new T.IcosahedronGeometry(1,mobile?0:1),cylinder:new T.CylinderGeometry(1,1,1,mobile?7:9),cone:new T.ConeGeometry(1,1,mobile?7:9),limb:new T.CapsuleGeometry(1,2,mobile?2:3,mobile?6:8).scale(1,.25,1),hair:new T.SphereGeometry(1,mobile?8:12,mobile?4:6,0,TAU,0,Math.PI*.53)};
   const colored=new Set(),guns={};for(const key of Object.keys(GUN_MUZZLES)){guns[key]=gun(base,key);base['gun-'+key]=guns[key];colored.add('gun-'+key);}
   base.gear=bodyGear(base);colored.add('gear');const boot=new ArtBuilder(base);boot.box(0x31463f,[0,.025,-.035],[.205,.15,.30]);boot.box(0x1d3333,[0,-.043,-.045],[.217,.035,.32]);boot.box(0x819184,[0,.065,-.075],[.15,.025,.12]);base.boot=boot.finish();colored.add('boot');
   for(const [key,pistol]of [['view-arms',false],['view-pistol-arms',true]]){base[key]=firstPersonArms(base,pistol);colored.add(key);}
   const items={};for(const kind of ['pistol','smg','rifle','sniper','ammo','medkit','armor','helmet','grenade'])items[kind]=item(base,kind,guns);
   const shrub=new ArtBuilder(base);for(const [x,y,z,s]of [[0,.40,0,.44],[-.24,.25,.12,.25],[.22,.24,-.11,.26],[.04,.15,.25,.22]])shrub.add('ico',y>.3?0x67825d:0x435f48,[x,y-.5,z],[s,s,s]);base.shrub=shrub.finish();base.shrub.center();base.shrub.computeBoundingBox();const shrubSize=base.shrub.boundingBox.getSize(new T.Vector3());base.shrub.scale(1/shrubSize.x,1/shrubSize.y,1/shrubSize.z);
-  return {base,colored,items,crate:crate(base),textures:Object.fromEntries(['grass','plaster','brick','road','wood','roof','water'].map(k=>[k,texture(k)])),shadow:radial()};
+  return {mobile,base,colored,items,crate:crate(base),textures:Object.fromEntries(['grass','plaster','brick','road','wood','roof','water'].map(k=>[k,texture(k)])),shadow:radial()};
 }
 
 export function buildSoldier(scene,id,name){
@@ -143,5 +143,5 @@ export function addWorldDetails(scene,map,rng){
   if(b.positions.length){const mesh=new T.Mesh(b.finish(),scene.material(0xffffff,{vertexColors:true}));scene.world.add(mesh);}
   if(shadows.length){const mesh=new T.InstancedMesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:scene.art.shadow,color:0xffffff,transparent:true,opacity:.34,depthWrite:false}),shadows.length);shadows.forEach((s,i)=>{scene.temp.position.set(s.x,.035,s.z);scene.temp.rotation.set(-Math.PI/2,0,0);scene.temp.scale.set(s.w,s.d,1);scene.temp.updateMatrix();mesh.setMatrixAt(i,scene.temp.matrix);});scene.world.add(mesh);}
   if(plates.length){const atlas=document.createElement('canvas');atlas.width=512;atlas.height=256;const c=atlas.getContext('2d');c.font='bold 23px sans-serif';c.textAlign='center';c.textBaseline='middle';for(let i=0;i<16;i++){const x=i%4*128,y=Math.floor(i/4)*64;c.fillStyle='#304b4e';c.fillRect(x,y,128,64);c.strokeStyle='#b4be9a';c.strokeRect(x+5,y+6,118,52);c.fillStyle='#e3d4a3';c.fillText('NT '+String(i+1).padStart(2,'0'),x+64,y+32);}const texture=new T.CanvasTexture(atlas);texture.colorSpace=T.SRGBColorSpace;scene.mapTextures??=[];scene.mapTextures.push(texture);const pos=[],uv=[];for(const p of plates){const x=p.x,y=p.y,z=p.z,w=.9,h=.32,u=(p.index%4)/4,v=1-Math.floor(p.index/4)/4;pos.push(x-w/2,y-h/2,z,x+w/2,y-h/2,z,x+w/2,y+h/2,z,x-w/2,y-h/2,z,x+w/2,y+h/2,z,x-w/2,y+h/2,z);uv.push(u,v-.25,u+.25,v-.25,u+.25,v,u,v-.25,u+.25,v,u,v);}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();scene.world.add(new T.Mesh(g,new T.MeshLambertMaterial({map:texture})));}
-  const grass=new ArtBuilder(scene.geo);for(let i=0;i<220;i++){const x=(rng()-.5)*map.radius*1.75,z=(rng()-.5)*map.radius*1.75;if(Math.hypot(x,z)>map.radius-12||Math.abs(x)<6||Math.abs(z)<6||map.structures.some(h=>Math.abs(x-h.x)<h.w/2+2&&Math.abs(z-h.z)<h.d/2+2))continue;for(let k=0;k<3;k++)grass.add('cone',[0x667f52,0x849369,0x70895e][k],[x+(k-1)*.12,.11,z],[.055,.22,.055],[0,rng()*TAU,(rng()-.5)*.35]);}if(grass.positions.length)scene.world.add(new T.Mesh(grass.finish(),scene.material(0xffffff,{vertexColors:true})));
+  const grass=new ArtBuilder(scene.geo);for(let i=0;i<(scene.touch?100:220);i++){const x=(rng()-.5)*map.radius*1.75,z=(rng()-.5)*map.radius*1.75;if(Math.hypot(x,z)>map.radius-12||Math.abs(x)<6||Math.abs(z)<6||map.structures.some(h=>Math.abs(x-h.x)<h.w/2+2&&Math.abs(z-h.z)<h.d/2+2))continue;for(let k=0;k<3;k++)grass.add('cone',[0x667f52,0x849369,0x70895e][k],[x+(k-1)*.12,.11,z],[.055,.22,.055],[0,rng()*TAU,(rng()-.5)*.35]);}if(grass.positions.length)scene.world.add(new T.Mesh(grass.finish(),scene.material(0xffffff,{vertexColors:true})));
 }

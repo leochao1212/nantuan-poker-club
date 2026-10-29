@@ -5324,6 +5324,7 @@ html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibili
 #app #battle-console .battle-minimap{position:absolute;right:max(20px,env(safe-area-inset-right));top:76px;width:150px;height:150px;border:1px solid #bfd4b67a;border-radius:6px;background:#23414c;opacity:.94}
 #app #battle-console .battle-compass{position:absolute;top:78px;left:50%;transform:translateX(-50%);min-width:100px;text-align:center;font-size:17px;font-weight:700;letter-spacing:.1em;text-shadow:0 1px 4px #000!important;background:#17313696;padding:7px 12px;border-radius:4px}
 #app #battle-console .battle-crosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border:1px solid #f9edc9bc;border-radius:50%;box-shadow:0 0 2px #071e24}
+#app #battle-console.battle-targeted .battle-crosshair{border-color:#ffe1a1;box-shadow:0 0 0 2px #ffe1a140}
 #app #battle-console .battle-crosshair i{position:absolute;left:9px;top:9px;width:2px;height:2px;background:#fff6c5;border-radius:50%}
 #app #battle-console .battle-phase-note{position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:24px;font-weight:800;text-align:center;text-shadow:0 2px 8px #051f27!important;max-width:80%;width:max-content;color:#fff1ba}
 #app #battle-console .battle-feed{position:absolute;top:135px;left:20px;font-size:12px;line-height:1.9;white-space:pre-line;text-shadow:0 1px 4px #071e24!important}
@@ -5352,7 +5353,7 @@ html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibili
 #app #battle-console .battle-stick span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:50px;height:50px;border:1px solid #f0e3bdc4;border-radius:50%;background:#e7e7c56b;pointer-events:none}
 #app #battle-console .battle-touch-actions{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(172px,calc(152px + env(safe-area-inset-bottom)));display:grid;grid-template-columns:repeat(3,52px);gap:8px;pointer-events:auto}
 #app #battle-console .battle-touch-actions button{min-height:48px;min-width:48px;max-width:52px;padding:5px 3px;font-size:11px;border-radius:10px;background:#183c42b5!important;touch-action:none;user-select:none;-webkit-user-select:none}
-#app #battle-console .battle-touch-actions button.battle-fire{grid-column:span 2;max-width:none;border-color:#f7dd91ba!important;background:#c3aa6b8f!important;font-size:18px;min-height:60px}
+#app #battle-console .battle-touch-actions button.battle-fire{grid-column:span 2;max-width:none;border-color:#f7dd91ba!important;background:#dfc788!important;color:#183035!important;font-size:14px;line-height:1.1;white-space:pre-line;min-height:60px}
 #app #battle-console .battle-touch-actions button.pressed{background:#f4d694!important;color:#253d3c!important}
 #app #battle-console .battle-pause,#app #battle-console .battle-result{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(370px,calc(100% - 32px));max-height:calc(100% - 130px);overflow-y:auto;box-sizing:border-box;padding:28px;border:1px solid #c8bb8f;border-radius:10px;background:#142c30f5;box-shadow:0 12px 100px 50vmax #0c263188;z-index:10;text-align:center}
 #app #battle-console :is(.battle-pause,.battle-result) h2{font-size:30px;color:#f2d38b;margin:0 0 16px}

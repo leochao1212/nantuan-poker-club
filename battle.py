@@ -15,7 +15,7 @@ import struct
 import threading
 import time
 
-from battle_engine import Match, STEP, CAPACITY, WEAPONS
+from battle_engine import Match, STEP, CAPACITY, WEAPONS, HITBOXES
 from voice_transport import read_frame
 
 MAX_ROOMS=3
@@ -38,7 +38,7 @@ class Peer:
     def __init__(self,uid,code,sock):
         self.uid=uid;self.code=code;self.sock=sock
         self.snapshots=queue.Queue(maxsize=1);self.controls=queue.Queue(maxsize=8)
-        self.stopped=threading.Event()
+        self.stopped=threading.Event();self.sent_states=deque(maxlen=8)
 
     def control(self,payload,opcode=1):
         try:self.controls.put_nowait((opcode,payload))
@@ -139,7 +139,7 @@ class BattleHub:
             if old:old.close(4001)
             self.peers[peer.uid]=peer;p=r.match.players[peer.uid];p.connected=True;p.gone_at=None;p.seq=-1;p.intent={};p.fire_pending=False
             peer.control(dict(type='welcome',room=peer.code,title=r.title,host=r.host,bots=r.bots,
-                              map=r.match.map,weapons=WEAPONS,roster=[dict(id=p.id,name=p.name,bot=p.bot) for p in r.match.players.values()]))
+                              map=r.match.map,weapons=WEAPONS,hitboxes=HITBOXES,roster=[dict(id=p.id,name=p.name,bot=p.bot) for p in r.match.players.values()]))
             peer.snapshot(self.view(r,peer.uid));self.ensure_worker()
 
     def detach(self,peer):
@@ -158,7 +158,7 @@ class BattleHub:
             if not r or self.members.get(peer.uid)!=r.code:raise ValueError('你已離開這個戰場。')
             now=time.monotonic()
             if data.get('type')!='ping':r.touched=now
-            if data.get('type')=='input':r.match.input(peer.uid,data,now)
+            if data.get('type')=='input':r.match.input(peer.uid,data,now,tuple(peer.sent_states))
             elif data.get('type')=='ping':peer.control(dict(type='pong',echo=data.get('echo') if isinstance(data.get('echo'),(int,float)) else 0))
             elif data.get('type')=='action':
                 if set(data)-{'type','action','value'}:raise ValueError('無效的戰場動作。')
@@ -172,7 +172,7 @@ class BattleHub:
                     r.match=Match(secrets.randbits(31),now)
                     for p in humans:r.match.add(p.id,p.name).connected=p.id in self.peers
                     for p in self.peers.values():
-                        if p.code==r.code:p.control(dict(type='map',map=r.match.map))
+                        if p.code==r.code:p.sent_states.clear();p.control(dict(type='map',map=r.match.map))
                 else:r.match.action(peer.uid,kind,data.get('value'))
             else:raise ValueError('不支援的戰場訊息。')
 
@@ -260,6 +260,7 @@ def serve(handler,uid,code,authorize):
                 except queue.Empty:pass
                 try:state=peer.snapshots.get(timeout=.05)
                 except queue.Empty:continue
+                peer.sent_states.append((state['round_id'],state['tick'],state['clock']))
                 peer.sock.sendall(pack(state))
         except (OSError,ValueError):pass
         finally:peer.stop()

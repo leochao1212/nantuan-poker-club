@@ -41,6 +41,18 @@ try{
  for(let i=0;i<70&&states.get(b).tick<released.tick+8;i++)await sleep(100);assert.equal(states.get(b).self.weapons.pistol+states.get(b).self.reserve,remaining,'Released fire must stop spending ammo');await b.locator('[data-battle-action=reload]').click();for(let i=0;i<70&&(states.get(b).self.weapons.pistol!==12||states.get(b).self.reload);i++)await sleep(100);assert.equal(states.get(b).self.weapons.pistol,12);
 
  checks.push('Holding fire spends authoritative ammo at weapon cadence; reload uses reserve once');
+ // Two thumbs must move and aim/fire together: no third finger on the empty canvas.
+ const twoJoy=await b.locator('[data-battle-stick]').boundingBox(),twoFire=await b.locator('[data-battle-hold=fire]').boundingBox(),twoLeft={x:twoJoy.x+twoJoy.width*.5,y:twoJoy.y+twoJoy.height*.1,id:1},twoRight={x:twoFire.x+twoFire.width*.5,y:twoFire.y+twoFire.height*.5,id:2},twoYaw=inputs.get(b).yaw;
+ await b.locator('[data-battle-hold=fire]').evaluate(el=>el.addEventListener('pointerdown',e=>window.__twoThumbId=e.pointerId,{once:true}));
+ await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[twoLeft]});await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[twoLeft,twoRight]});twoRight.x+=40;twoRight.y-=12;await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[twoLeft,twoRight]});
+ for(let i=0;i<100&&!(inputs.get(b)?.fire&&inputs.get(b).forward>.3&&Math.abs(inputs.get(b).yaw-twoYaw)>.1);i++)await sleep(100);
+ assert.ok(inputs.get(b).fire&&inputs.get(b).forward>.3&&Math.abs(inputs.get(b).yaw-twoYaw)>.1,'Two native thumbs must move, turn and fire');
+ await b.locator('[data-battle-hold=fire]').evaluate(el=>el.dispatchEvent(new PointerEvent('pointercancel',{pointerId:99999,pointerType:'touch',bubbles:true})));await sleep(150);assert.ok(inputs.get(b).fire,'An unrelated finger cannot release the held trigger');
+ await b.locator('[data-battle-hold=fire]').evaluate(el=>el.dispatchEvent(new PointerEvent('pointercancel',{pointerId:window.__twoThumbId,pointerType:'touch',bubbles:true})));
+ for(let i=0;i<70&&inputs.get(b)?.fire;i++)await sleep(100);assert.ok(!inputs.get(b).fire&&inputs.get(b).forward>.3,'Cancelling the trigger must leave the movement thumb active');await touchUp();
+ for(let i=0;i<70&&Math.abs(inputs.get(b).forward)>.01;i++)await sleep(100);assert.ok(Math.abs(inputs.get(b).forward)<.01);
+ assert.ok(Number.isFinite(inputs.get(b).view_at)&&Number.isInteger(inputs.get(b).view_tick),'Real inputs must carry the viewed server snapshot');checks.push('Two native thumbs move, aim and shoot together; trigger cancellation is isolated and viewed snapshots are acknowledged');
+ await b.locator('[data-battle-action=reload]').click();for(let i=0;i<70&&(states.get(b).self.weapons.pistol!==12||states.get(b).self.reload);i++)await sleep(100);
  const joy=await b.locator('[data-battle-stick]').boundingBox(),fire=await b.locator('[data-battle-hold=fire]').boundingBox(),left={x:joy.x+joy.width*.5,y:joy.y+joy.height*.1,id:1},right={x:570,y:150,id:2},trigger={x:fire.x+fire.width*.5,y:fire.y+fire.height*.5,id:3},turnBefore=inputs.get(b).yaw;
  await b.locator('.battle-world').evaluate(el=>el.addEventListener('pointerdown',e=>{window.__lookPointer=e.pointerId;},{once:true}));
  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[left]});await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[left,right]});right.x+=40;await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[left,right]});await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[left,right,trigger]});

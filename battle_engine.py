@@ -197,7 +197,7 @@ class Match:
 
     def input(self, uid, data, clock):
         p=self.players[uid]
-        if set(data)-{'type','seq','forward','strafe','yaw','pitch','fire','aim','sprint','crouch','jump'}:
+        if set(data)-{'type','seq','forward','strafe','yaw','pitch','fire','aim','sprint','crouch','jump','aim_x','aim_y','aim_z'}:
             raise ValueError('不支援的控制欄位。')
         seq=number(data.get('seq'),0,2147483647)
         if seq!=int(seq):raise ValueError('操作序號需為整數。')
@@ -207,6 +207,15 @@ class Match:
         for k in ('fire','aim','sprint','crouch','jump'):
             if not isinstance(data.get(k,False),bool):raise ValueError('無效的按鍵狀態。')
             values[k]=data.get(k,False)
+        aim_keys={'aim_x','aim_y','aim_z'}
+        if aim_keys & set(data):
+            if not aim_keys <= set(data):raise ValueError('瞄準座標不完整。')
+            point=tuple(number(data[k],-500 if k=='aim_y' else -1000,500 if k=='aim_y' else 1000) for k in ('aim_x','aim_y','aim_z'))
+            origin=(p.x,p.y+(1.13 if values['crouch'] else 1.55),p.z)
+            delta=tuple(point[i]-origin[i] for i in range(3));length=math.sqrt(sum(v*v for v in delta))
+            view=(math.sin(values['yaw'])*math.cos(values['pitch']),math.sin(values['pitch']),-math.cos(values['yaw'])*math.cos(values['pitch']))
+            if length<.25 or length>1000 or sum(delta[i]*view[i] for i in range(3))/length<.5:raise ValueError('瞄準位置超出視野。')
+            values['aim_point']=point
         # Preserve a trigger edge when down/up packets arrive between two ticks.
         if values['fire'] and not p.intent.get('fire') and self.phase=='playing' and p.hp>0:
             p.fire_pending=True
@@ -278,9 +287,16 @@ class Match:
         p.weapons[p.slot]-=1;p.next_fire=self.clock+w['interval']
         spread=w['spread']*(.4 if p.intent.get('aim') else 1)*(1.7 if abs(p.vx)+abs(p.vz)>1 else 1)*(.7 if p.intent.get('crouch') else 1)
         if p.bot:spread+=.05
-        yaw=p.yaw+self.rng.gauss(0,spread);pitch=p.pitch+self.rng.gauss(0,spread)
         eye=1.13 if p.intent.get('crouch') else 1.55
-        origin=(p.x,p.y+eye,p.z);direction=(math.sin(yaw)*math.cos(pitch),math.sin(pitch),-math.cos(yaw)*math.cos(pitch))
+        origin=(p.x,p.y+eye,p.z);yaw=p.yaw;pitch=p.pitch
+        point=p.intent.get('aim_point')
+        if point:
+            delta=tuple(point[i]-origin[i] for i in range(3));length=math.sqrt(sum(v*v for v in delta))
+            view=(math.sin(yaw)*math.cos(pitch),math.sin(pitch),-math.cos(yaw)*math.cos(pitch))
+            if length>=.25 and sum(delta[i]*view[i] for i in range(3))/length>=.5:
+                yaw=math.atan2(delta[0],-delta[2]);pitch=math.atan2(delta[1],math.hypot(delta[0],delta[2]))
+        yaw+=self.rng.gauss(0,spread);pitch+=self.rng.gauss(0,spread)
+        direction=(math.sin(yaw)*math.cos(pitch),math.sin(pitch),-math.cos(yaw)*math.cos(pitch))
         nearest=w['range'];victim=None;headshot=False
         for box in self.map['cover']:
             d=ray_box(origin,direction,box,nearest)

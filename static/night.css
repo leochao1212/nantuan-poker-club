@@ -5365,7 +5365,13 @@ html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibili
 #app #battle-console .battle-instructions a{color:#ecd391;text-underline-offset:3px}
 #app #battle-console .battle-scene-note{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);max-width:80%;background:#172f35e8;color:#f4e6bb;font-size:15px;text-align:center;padding:10px 17px;border:1px solid #a5b28a88;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:7}
 #app #battle-console .battle-scene-note.show{opacity:1}
-#app #battle-console .battle-hit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:38px;color:#ffe6a1;opacity:0;line-height:1}
+#app #battle-console .battle-hit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:18px;font-weight:800;color:#eaf4e2;opacity:0;line-height:1;white-space:nowrap;margin-top:-30px;text-shadow:0 1px 4px #10252d!important}
+#app #battle-console .battle-hit.headshot{color:#ffce79}
+#app #battle-console .battle-settings{display:grid;gap:14px;border-top:1px solid #6b8173;margin-top:18px;padding-top:16px;text-align:left}
+#app #battle-console .battle-settings label{display:block;font-size:14px;color:#d7e0ce}
+#app #battle-console .battle-settings select{display:block;width:100%;min-height:44px;margin-top:6px;padding:8px 10px;border:1px solid #788c7e;border-radius:5px;background:#11272c;color:#f3eedc;font:inherit}
+#app #battle-console .battle-settings input[type=range]{padding:0;accent-color:#f2d38b;min-height:44px;box-shadow:none}
+#app #battle-console .battle-settings output{float:right;color:#f2d38b}
 #app #battle-console .battle-hit.show{animation:island-hit .3s ease-out}
 #app #battle-console .battle-damage{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;background:radial-gradient(ellipse at center,transparent 55%,#b2613370)}
 #app #battle-console.battle-outside-zone .battle-stage::before{content:"";position:absolute;inset:0;background:#469fcb20;pointer-events:none;z-index:1}

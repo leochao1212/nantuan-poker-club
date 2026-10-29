@@ -63,6 +63,37 @@ class IslandRules(unittest.TestCase):
         m.map['cover']=[];m.clock+=1;m.shoot(p);self.assertLess(q.hp,100)
         old=q.hp;q.z=-200;m.clock+=1;m.shoot(p);self.assertEqual(q.hp,old)
 
+    def test_shoulder_aim_converges_at_near_far_and_crouched_targets(self):
+        for distance,crouch in ((6,False),(90,False),(18,True)):
+            with self.subTest(distance=distance,crouch=crouch):
+                m=self.match();m.rng.gauss=lambda *_:0;p=m.players[1];q=m.players[2]
+                p.slot='rifle';p.weapons={'rifle':30};q.x=1.05;q.z=-distance
+                self.intent(m,aim_x=q.x,aim_y=1.55,aim_z=q.z,crouch=crouch)
+                m.shoot(p);self.assertLess(q.hp,100);self.assertEqual(p.weapons['rifle'],29)
+                m.shoot(p);self.assertEqual(p.weapons['rifle'],29,'Aim cannot bypass cooldown')
+                self.assertEqual(p.intent['yaw'],0,'Movement keeps the look direction')
+
+    def test_aim_target_cannot_bypass_cover_or_range(self):
+        m=self.match();m.rng.gauss=lambda *_:0;p=m.players[1];q=m.players[2]
+        p.slot='pistol';p.weapons={'pistol':12};q.x=1;q.z=-20
+        self.intent(m,aim_x=1,aim_y=1.55,aim_z=-20)
+        m.map['cover']=[dict(x=.5,y=1.5,z=-5,w=4,h=3,d=.4)]
+        m.shoot(p);self.assertEqual(q.hp,100)
+        m.clock+=1;m.map['cover']=[];q.z=-200
+        self.intent(m,aim_x=1,aim_y=1.55,aim_z=-200)
+        m.shoot(p);self.assertEqual(q.hp,100)
+
+    def test_aim_rejects_partial_nonfinite_backward_and_out_of_bounds(self):
+        m=self.match()
+        for point in ({'aim_x':0},{'aim_x':float('nan'),'aim_y':1,'aim_z':-10},
+                      {'aim_x':0,'aim_y':1.55,'aim_z':10},
+                      {'aim_x':0,'aim_y':1.55,'aim_z':0},
+                      {'aim_x':1001,'aim_y':1,'aim_z':-10},{'aim_x':0,'aim_y':501,'aim_z':-10}):
+            with self.subTest(point=point),self.assertRaises(ValueError):self.intent(m,**point)
+        self.assertEqual(m.players[1].seq,-1,'Rejected aims must not consume a sequence')
+        self.intent(m,pitch=1.2,aim_x=0,aim_y=280,aim_z=-110)
+        self.assertIn('aim_point',m.players[1].intent,'Looking up with a long-range weapon remains valid')
+
     def test_helmet_and_armor_reduce_only_real_hits(self):
         m=self.match();p=m.players[2];p.helmet=True;p.armor=20
         m.damage(p,100,1,head=True)

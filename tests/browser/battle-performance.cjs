@@ -15,9 +15,9 @@ cases=[dict(origin=o,direction=d,expected=ray_capsule(o,d,0,-10,.35,1.25,.34)) f
 rng=random.Random(27)
 for _ in range(100):
  o=[rng.uniform(-2,2),rng.uniform(-1,3),rng.uniform(-15,1)];d=[rng.uniform(-1,1) for _ in range(3)];n=math.sqrt(sum(v*v for v in d));d=[v/n for v in d];cases.append(dict(origin=o,direction=d,expected=ray_capsule(o,d,0,-10,.35,1.25,.34)))
-print(json.dumps(dict(map=m.map,state=m.snapshot(1),weapons=WEAPONS,hitboxes=HITBOXES,capsule_cases=cases)))`],{cwd:root,encoding:'utf8',env:{...process.env,PYTHONUTF8:'1'}});assert.equal(fixture.status,0,fixture.stderr);const data=JSON.parse(fixture.stdout);
+print(json.dumps(dict(map=m.map,state=m.snapshot(1),weapons=WEAPONS,hitboxes=HITBOXES,capsule_cases=cases)))`],{cwd:root,encoding:'utf8',env:{...process.env,POKER_BATTLE_ENABLED:'1',PYTHONUTF8:'1'}});assert.equal(fixture.status,0,fixture.stderr);const data=JSON.parse(fixture.stdout);
  const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));const base='http://127.0.0.1:'+port,tmp=fs.mkdtempSync(path.join(os.tmpdir(),'battle-perf-'));
- const server=spawn(process.env.PYTHON||'python',['server.py','--host','127.0.0.1','--port',String(port)],{cwd:root,windowsHide:true,env:{...process.env,POKER_DB:path.join(tmp,'test.sqlite3'),POKER_MARKET_DATA:'0',PYTHONUTF8:'1'}});let logs='';server.stderr.on('data',d=>logs+=d);server.stdout.on('data',d=>logs+=d);let browser;
+ const server=spawn(process.env.PYTHON||'python',['server.py','--host','127.0.0.1','--port',String(port)],{cwd:root,windowsHide:true,env:{...process.env,POKER_BATTLE_ENABLED:'1',POKER_DB:path.join(tmp,'test.sqlite3'),POKER_MARKET_DATA:'0',PYTHONUTF8:'1'}});let logs='';server.stderr.on('data',d=>logs+=d);server.stdout.on('data',d=>logs+=d);let browser;
  try{
   browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});const results=[];
   for(const [device,viewport,touch]of [['desktop',{width:1280,height:720},false],['phone',{width:393,height:852},true]]){

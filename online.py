@@ -210,6 +210,7 @@ def lobby_fingerprint(room):
 
 
 def lobby(db, user, clock, *, touch_presence=True):
+    import battle
     if touch_presence:presence(db, user["id"], None, clock)
     rooms = []
     for row in db.execute("SELECT * FROM poker_rooms WHERE status!='closed' ORDER BY id DESC"):
@@ -243,7 +244,7 @@ def lobby(db, user, clock, *, touch_presence=True):
     own=next((u for u in people if u['id']==user['id']),None)
     people=people[:100]
     if own and own not in people:people.append(own)
-    return {"club":rewards.view(db,user['id'],clock,profiles=profiles,appearances=cosmetics),"total_members":member_count,"online_count":online_count,"wallet":wallet.view(db,user['id'],clock,totals),"me": {**{k: user[k] for k in ("id", "username", "nickname")},**profiles.get(user['id'],{}),"cosmetics":cosmetics.get(user["id"],{}),**club_admin.identity(db,user['id'])}, "users": people,
+    return {"battle_enabled":battle.enabled(),"club":rewards.view(db,user['id'],clock,profiles=profiles,appearances=cosmetics),"total_members":member_count,"online_count":online_count,"wallet":wallet.view(db,user['id'],clock,totals),"me": {**{k: user[k] for k in ("id", "username", "nickname")},**profiles.get(user['id'],{}),"cosmetics":cosmetics.get(user["id"],{}),**club_admin.identity(db,user['id'])}, "users": people,
         "betting_limits":game_settings.current(db,'limits'),"rooms": rooms, "current_room_id": current_room(db, user["id"]), "server_time": clock,
         "invite_code": db.execute("SELECT value FROM settings WHERE key='invite_code'").fetchone()[0],
         "total_hands": db.execute("SELECT count(*) FROM poker_hands").fetchone()[0]}

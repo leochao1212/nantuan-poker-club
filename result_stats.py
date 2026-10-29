@@ -56,6 +56,8 @@ def initialize(db):
             db.execute('INSERT INTO result_facts '+FACTS)
             db.execute('INSERT INTO result_projection_state VALUES(1)')
 
+    initialize_game_totals(db)
+
 
 def players(db):
     return {r['user_id']:dict(r) for r in db.execute('SELECT * FROM player_result_totals')}
@@ -66,3 +68,27 @@ def progress(db,uid,start):
         COALESCE(sum(profit>0),0) AS win1 FROM result_facts
         WHERE user_id=? AND finished_at>=? AND finished_at<? AND qualified=1''',(uid,start,start+86400)).fetchone()
     return dict(row)
+
+
+def initialize_game_totals(db):
+    db.executescript("""
+    CREATE TABLE IF NOT EXISTS player_game_totals(user_id INTEGER NOT NULL,game_type TEXT NOT NULL,
+        hands INTEGER NOT NULL CHECK(hands>=0),PRIMARY KEY(user_id,game_type));
+    CREATE TRIGGER IF NOT EXISTS project_game_insert AFTER INSERT ON result_facts WHEN NEW.qualified=1 BEGIN
+        INSERT INTO player_game_totals VALUES(NEW.user_id,NEW.game_type,1)
+        ON CONFLICT(user_id,game_type) DO UPDATE SET hands=hands+1;
+    END;
+    CREATE TRIGGER IF NOT EXISTS project_game_delete AFTER DELETE ON result_facts WHEN OLD.qualified=1 BEGIN
+        UPDATE player_game_totals SET hands=hands-1 WHERE user_id=OLD.user_id AND game_type=OLD.game_type;
+        DELETE FROM player_game_totals WHERE user_id=OLD.user_id AND game_type=OLD.game_type AND hands=0;
+    END;
+    """)
+    if not db.execute('SELECT 1 FROM result_projection_state WHERE version=2').fetchone():
+        with db:
+            db.execute('DELETE FROM player_game_totals')
+            db.execute('INSERT INTO player_game_totals SELECT user_id,game_type,count(*) FROM result_facts WHERE qualified=1 GROUP BY user_id,game_type')
+            db.execute('INSERT INTO result_projection_state VALUES(2)')
+
+
+def game_counts(db,uid):
+    return {r['game_type']:r['hands'] for r in db.execute('SELECT game_type,hands FROM player_game_totals WHERE user_id=?',(uid,))}

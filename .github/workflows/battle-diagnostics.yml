@@ -35,6 +35,8 @@ jobs:
           print('Return codes:',codes)
           raise SystemExit(any(codes))
           PY
+      - name: Actual rendering animation lifecycle
+        run: node tests/browser/battle-accuracy.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

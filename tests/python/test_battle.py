@@ -5,7 +5,7 @@ import time
 import unittest
 
 import battle
-from battle_engine import Match, Player, STEP, WEAPONS, ray_box, ray_sphere
+from battle_engine import Match, Player, STEP, WEAPONS, ray_box, ray_sphere, ray_capsule
 
 
 class IslandRules(unittest.TestCase):
@@ -93,6 +93,59 @@ class IslandRules(unittest.TestCase):
         self.assertEqual(m.players[1].seq,-1,'Rejected aims must not consume a sequence')
         self.intent(m,pitch=1.2,aim_x=0,aim_y=280,aim_z=-110)
         self.assertIn('aim_point',m.players[1].intent,'Looking up with a long-range weapon remains valid')
+
+    def test_continuous_body_hits_upper_chest_legs_and_crouched_body(self):
+        for height,crouch in ((.2,False),(.85,False),(1.34,False),(1.0,True)):
+            with self.subTest(height=height,crouch=crouch):
+                m=self.match();m.rng.gauss=lambda *_:0;p=m.players[1];q=m.players[2]
+                p.slot='pistol';p.weapons={'pistol':12};q.animation='crouch' if crouch else 'idle'
+                self.intent(m,aim_x=0,aim_y=height,aim_z=-10);m.shoot(p)
+                self.assertLess(q.hp,100,'Visible body regions must not contain a hitbox gap')
+                self.assertEqual(p.weapons['pistol'],11)
+        self.assertAlmostEqual(ray_capsule((0,3,0),(0,-1,0),0,0,.35,1.25,.34),1.41)
+        self.assertIsNone(ray_capsule((2,1,0),(0,0,-1),0,-10,.35,1.25,.34))
+
+    def moving_fixture(self):
+        m=self.match();m.rng.gauss=lambda *_:0;p=m.players[1];q=m.players[2]
+        p.slot='pistol';p.weapons={'pistol':12}
+        for at,x in ((12.,-.9),(12.15,0),(12.30,.9)):
+            m.clock=at;q.x=x;m.remember_positions()
+        return m,p,q
+
+    def view_intent(self,m,*,at=12.15,tick=123,receipts=True,**kwargs):
+        packet=dict(type='input',seq=m.players[1].seq+1,fire=True,aim_x=0,aim_y=1.34,aim_z=-10,view_at=at,view_tick=tick,**kwargs)
+        m.input(1,packet,m.clock,[(m.seed,123,12.15)] if receipts else ())
+
+    def test_moving_target_hits_the_issued_rendered_position_without_relocating_it(self):
+        m,p,q=self.moving_fixture();self.view_intent(m);m.shoot(p)
+        self.assertEqual(q.hp,76);self.assertEqual(q.x,.9,'Rewind must never move a live actor')
+        self.assertEqual(p.weapons['pistol'],11)
+        m.shoot(p);self.assertEqual(p.weapons['pistol'],11,'Lag compensation must preserve cooldown')
+
+    def test_rewind_needs_this_connections_round_and_a_recent_issued_view(self):
+        for changes in ({'receipts':False},{'tick':999},{'at':11.5},{'at':12.29}):
+            with self.subTest(changes=changes):
+                m,p,q=self.moving_fixture();self.view_intent(m,**changes);m.shoot(p)
+                self.assertEqual(q.hp,100);self.assertNotIn('view_at',p.intent)
+        m,p,q=self.moving_fixture()
+        packet=dict(type='input',seq=0,aim_x=0,aim_y=1.34,aim_z=-10,view_at=12.15,view_tick=123)
+        m.input(1,packet,m.clock,[(m.seed+1,123,12.15)])
+        self.assertNotIn('view_at',p.intent,'A prior round receipt cannot authorize a shot')
+
+    def test_rewind_still_respects_cover_and_does_not_extend_its_window(self):
+        m,p,q=self.moving_fixture();self.view_intent(m)
+        m.map['cover']=[dict(x=0,y=1.5,z=-5,w=5,h=3,d=.3)];m.shoot(p);self.assertEqual(q.hp,100)
+        m.map['cover']=[];m.clock=12.7;m.shoot(p);self.assertEqual(q.hp,100,'An old held intent cannot keep rewinding')
+        for i in range(25):m.clock+=STEP;m.remember_positions()
+        self.assertEqual(len(m.history),12,'History must remain bounded')
+
+    def test_rewind_invalid_clock_metadata_is_rejected_without_consuming_input(self):
+        for metadata in ({'view_at':12.15},{'view_at':float('nan'),'view_tick':123},
+                         {'view_at':13,'view_tick':123},{'view_at':12.15,'view_tick':1.5}):
+            m,p,q=self.moving_fixture()
+            with self.subTest(metadata=metadata),self.assertRaises(ValueError):
+                m.input(1,dict(type='input',seq=0,aim_x=0,aim_y=1.34,aim_z=-10,**metadata),m.clock,[(m.seed,123,12.15)])
+            self.assertEqual(p.seq,-1)
 
     def test_helmet_and_armor_reduce_only_real_hits(self):
         m=self.match();p=m.players[2];p.helmet=True;p.armor=20

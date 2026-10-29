@@ -4,6 +4,7 @@ Coordinates are metres, +Y up, yaw 0 looks towards -Z. Only input intent crosses
 the network: positions, ammo, loot, damage and results belong to this simulation.
 """
 from dataclasses import dataclass, field
+from collections import deque
 import math
 import random
 
@@ -12,6 +13,8 @@ CAPACITY = 16
 WORLD_RADIUS = 355
 DROP_SECONDS = 7
 ROUND_SECONDS = 330
+MAX_REWIND = .40
+HITBOXES = dict(radius=.34,bottom=.35,top=1.25,crouch_bottom=.34,crouch_top=.78,head=1.65,crouch_head=1.17,head_radius=.25)
 WEAPONS = {
     'pistol': dict(name='9mm 手槍', damage=24, interval=.34, magazine=12, reload=1.35, range=95, spread=.014),
     'smg': dict(name='疾風衝鋒槍', damage=17, interval=.11, magazine=30, reload=1.8, range=110, spread=.026),
@@ -57,6 +60,26 @@ def ray_sphere(origin, direction, center, radius):
         return None
     distance = -b-math.sqrt(disc)
     return distance if distance >= 0 else None
+
+
+def ray_capsule(origin,direction,x,z,bottom,top,radius):
+    """Continuous torso/legs; no empty upper-chest strip between two spheres."""
+    ox,oz=origin[0]-x,origin[2]-z
+    if ox*ox+oz*oz<=radius*radius and bottom<=origin[1]<=top:return 0.
+    nearest=None;a=direction[0]**2+direction[2]**2
+    if a>1e-10:
+        b=ox*direction[0]+oz*direction[2];c=ox*ox+oz*oz-radius*radius;disc=b*b-a*c
+        if disc<0:return None
+        root=math.sqrt(disc)
+        if -b+root<0:return None
+        for t in ((-b-root)/a,(-b+root)/a):
+            if t>=0 and bottom<=origin[1]+direction[1]*t<=top and (nearest is None or t<nearest):nearest=t
+    if a<=1e-10 and ox*ox+oz*oz>radius*radius:return None
+    for y in (bottom,top):
+        if ox*ox+oz*oz+(origin[1]-y)**2<=radius*radius:return 0.
+        t=ray_sphere(origin,direction,(x,y,z),radius)
+        if t is not None and (nearest is None or t<nearest):nearest=t
+    return nearest
 
 
 def make_map(seed):
@@ -134,7 +157,7 @@ class Match:
     def __init__(self, seed, clock=0):
         self.seed=seed;self.rng=random.Random(seed ^ 0xA93B21)
         self.map=make_map(seed);self.players={};self.phase='waiting';self.started=0
-        self.clock=clock;self.events=[];self.event_id=0;self.tick=0
+        self.clock=clock;self.events=[];self.event_id=0;self.tick=0;self.history=deque(maxlen=12)
         self.zone=dict(x=0.,z=0.,r=340.,next_x=0.,next_z=0.,next_r=300.,stage=0,seconds=45)
         self.loot={};self.grenades=[];self.winner=None;self.ended=0
 
@@ -195,9 +218,9 @@ class Match:
         i=max(self.loot,default=0)+1
         self.loot[i]=dict(id=i,x=round(x,2),z=round(z,2),kind=kind)
 
-    def input(self, uid, data, clock):
+    def input(self, uid, data, clock, snapshots=()):
         p=self.players[uid]
-        if set(data)-{'type','seq','forward','strafe','yaw','pitch','fire','aim','sprint','crouch','jump','aim_x','aim_y','aim_z'}:
+        if set(data)-{'type','seq','forward','strafe','yaw','pitch','fire','aim','sprint','crouch','jump','aim_x','aim_y','aim_z','view_at','view_tick'}:
             raise ValueError('不支援的控制欄位。')
         seq=number(data.get('seq'),0,2147483647)
         if seq!=int(seq):raise ValueError('操作序號需為整數。')
@@ -216,6 +239,14 @@ class Match:
             view=(math.sin(values['yaw'])*math.cos(values['pitch']),math.sin(values['pitch']),-math.cos(values['yaw'])*math.cos(values['pitch']))
             if length<.25 or length>1000 or sum(delta[i]*view[i] for i in range(3))/length<.5:raise ValueError('瞄準位置超出視野。')
             values['aim_point']=point
+        if {'view_at','view_tick'} & set(data):
+            if not {'view_at','view_tick'} <= set(data) or not aim_keys <= set(data):raise ValueError('畫面時間不完整。')
+            view_at=number(data['view_at'],0,clock+.05);view_tick=number(data['view_tick'],0,2147483647)
+            if view_tick!=int(view_tick):raise ValueError('畫面序號無效。')
+            # Only a snapshot issued to this connection/round can authorize rewind.
+            stamp=next((at for seed,tick,at in snapshots if seed==self.seed and tick==view_tick),None)
+            if stamp is not None and stamp-.15<=view_at<=stamp+.08 and clock-MAX_REWIND<=view_at<=clock:
+                values['view_at']=view_at
         # Preserve a trigger edge when down/up packets arrive between two ticks.
         if values['fire'] and not p.intent.get('fire') and self.phase=='playing' and p.hp>0:
             p.fire_pending=True
@@ -279,6 +310,25 @@ class Match:
             if p.slot:self.spawn_loot(p.x,p.z,p.slot)
             self.event('eliminated',player=p.id,by=attacker,rank=p.rank,source=source)
 
+    def remember_positions(self):
+        self.history.append((self.clock,{p.id:(p.x,p.y,p.z,p.animation=='crouch') for p in self.players.values() if p.hp>0}))
+
+    def target_pose(self,p,at):
+        current=(p.x,p.y,p.z,p.animation=='crouch')
+        if at is None or not self.clock-MAX_REWIND<=at<=self.clock:return current
+        before=None
+        for stamp,poses in self.history:
+            if p.id not in poses:continue
+            pose=poses[p.id]
+            if abs(stamp-at)<.001:return pose
+            if stamp>at:
+                if before is None:return current
+                previous,old=before;mix=(at-previous)/(stamp-previous)
+                if math.dist(old[:3],pose[:3])>4:return current
+                return (*(old[i]+(pose[i]-old[i])*mix for i in range(3)),old[3] if mix<.5 else pose[3])
+            before=(stamp,pose)
+        return current
+
     def shoot(self,p,pending=None):
         if not p.slot or p.reload_at or p.heal_at or self.clock<p.next_fire:return
         w=WEAPONS[p.slot]
@@ -303,12 +353,13 @@ class Match:
             if d is not None:nearest=d
         for q in self.players.values():
             if q.id==p.id or q.hp<=0:continue
-            crouch=q.intent.get('crouch',False)
-            for height,radius,head in ((.5 if crouch else .85,.44,False),(1.17 if crouch else 1.65,.25,True)):
-                d=ray_sphere(origin,direction,(q.x,q.y+height,q.z),radius)
-                if d is not None and d<nearest:nearest=d;victim=q;headshot=head
+            x,y,z,crouch=self.target_pose(q,p.intent.get('view_at'))
+            body=ray_capsule(origin,direction,x,z,y+HITBOXES['crouch_bottom' if crouch else 'bottom'],y+HITBOXES['crouch_top' if crouch else 'top'],HITBOXES['radius'])
+            head=ray_sphere(origin,direction,(x,y+HITBOXES['crouch_head' if crouch else 'head'],z),HITBOXES['head_radius'])
+            for d,is_head in ((body,False),(head,True)):
+                if d is not None and d<nearest:nearest=d;victim=q;headshot=is_head
         end=[round(origin[i]+direction[i]*nearest,2) for i in range(3)]
-        self.event('shot',player=p.id,start=[round(v,2) for v in origin],end=end)
+        self.event('shot',player=p.id,start=[round(v,2) for v in origin],end=end,impact='body' if victim else 'cover' if nearest<w['range'] else 'none')
         if victim:
             hit=(victim,w['damage']*(1.8 if headshot else 1),p.id,headshot)
             if pending is None:self.damage(*hit)
@@ -404,6 +455,7 @@ class Match:
                 self.damage(p,(2+self.zone['stage']*1.2)*STEP,source='zone')
             if p.hp>0 and (intent.get('fire') or p.fire_pending and clock-p.input_at<.7):shooters.append(p)
             p.fire_pending=False
+        self.remember_positions()
         for p in shooters:self.shoot(p,pending)
         # Resolve shots from this tick together: insertion order / room ownership
         # must not prevent an already-fired opponent from trading an elimination.

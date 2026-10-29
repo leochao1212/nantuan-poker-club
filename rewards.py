@@ -1,7 +1,6 @@
 """Daily missions and fixed-price cosmetic collection. No random paid drops."""
 from datetime import datetime
 import sqlite3
-import clubhouse
 import wallet
 import result_stats
 from poker_engine import RuleError
@@ -9,8 +8,8 @@ from poker_engine import RuleError
 ITEMS = {
  'frame_brass':dict(name='黃銅徽章',slot='frame',cost=300,style='brass'),
  'frame_ruby':dict(name='紅寶石光環',slot='frame',cost=600,style='ruby'),
- 'title_night':dict(name='深夜常客',slot='title',cost=8000,style='night',storage_bps=100),
- 'title_ace':dict(name='王牌收藏家',slot='title',cost=20000,style='ace',production_bps=25),
+ 'title_night':dict(name='深夜常客',slot='title',cost=8000,style='night',hourly_bps=100),
+ 'title_ace':dict(name='王牌收藏家',slot='title',cost=20000,style='ace',daily_bps=25),
  'back_crimson':dict(name='緋紅牌背',slot='back',cost=400,style='crimson'),
  'back_jade':dict(name='墨玉牌背',slot='back',cost=400,style='jade'),
  'effect_spark':dict(name='流金星芒',slot='effect',cost=600,style='spark'),
@@ -19,17 +18,17 @@ ITEMS = {
  'effect_inferno':dict(name='赤焰核心',slot='effect',cost=1000,style='inferno'),
  'effect_frost':dict(name='極寒結晶',slot='effect',cost=900,style='frost'),
  'effect_crown':dict(name='王者聖域',slot='effect',cost=1200,style='crown'),
- 'title_sovereign':dict(name='夜幕主宰',slot='title',cost=60000,style='sovereign',production_bps=50),
- 'title_legend':dict(name='全桌焦點',slot='title',cost=120000,style='legend',production_bps=75,storage_bps=100),
+ 'title_sovereign':dict(name='夜幕主宰',slot='title',cost=60000,style='sovereign',daily_bps=50),
+ 'title_legend':dict(name='全桌焦點',slot='title',cost=120000,style='legend',daily_bps=75,hourly_bps=100),
 }
-# Single equipped title only. Basis points keep all authoritative accrual integral.
+# Single equipped title only. Basis points keep authoritative supply amounts integral.
 ITEMS.update({
- 'title_curator':dict(name='楠團鑑藏家',slot='title',cost=25000,style='ace',storage_bps=200),
- 'title_patron':dict(name='鎏金贊助人',slot='title',cost=80000,style='sovereign',production_bps=75,storage_bps=200),
- 'title_architect':dict(name='翡翠築夢師',slot='title',cost=180000,style='legend',production_bps=100,storage_bps=400),
- 'title_mogul':dict(name='黑金大亨',slot='title',cost=350000,style='sovereign',production_bps=125,storage_bps=600),
- 'title_celestial':dict(name='星穹領主',slot='title',cost=750000,style='legend',production_bps=150,storage_bps=800),
- 'title_treasury':dict(name='楠團典藏王',slot='title',cost=1500000,style='sovereign',production_bps=200,storage_bps=1000),
+ 'title_curator':dict(name='楠團鑑藏家',slot='title',cost=25000,style='ace',hourly_bps=200),
+ 'title_patron':dict(name='鎏金贊助人',slot='title',cost=80000,style='sovereign',daily_bps=75,hourly_bps=200),
+ 'title_architect':dict(name='翡翠築夢師',slot='title',cost=180000,style='legend',daily_bps=100,hourly_bps=400),
+ 'title_mogul':dict(name='黑金大亨',slot='title',cost=350000,style='sovereign',daily_bps=125,hourly_bps=600),
+ 'title_celestial':dict(name='星穹領主',slot='title',cost=750000,style='legend',daily_bps=150,hourly_bps=800),
+ 'title_treasury':dict(name='楠團典藏王',slot='title',cost=1500000,style='sovereign',daily_bps=200,hourly_bps=1000),
 })
 GAMES={
  'holdem':('德州撲克','讀牌者',(50,250,1000)),
@@ -48,17 +47,17 @@ MILESTONES={}
 for game,(game_name,title,targets) in GAMES.items():
  for tier,target in enumerate(targets,1):
     key=f'{game}_{target}';ident='title_ms_'+key
-    production=(0,25,50)[tier-1];storage=(100,200,300)[tier-1]
+    daily=(0,25,50)[tier-1];hourly=(100,200,300)[tier-1]
     name=(f'{game_name}新秀',f'{game_name}熟手',title)[tier-1]
     MILESTONES[key]=dict(game=game,target=target,title_id=ident,tier=tier)
     ITEMS[ident]=dict(name=name,slot='title',cost=None,style=('night','ace','legend')[tier-1],
-                     source='milestone',milestone_id=key,production_bps=production,storage_bps=storage)
+                     source='milestone',milestone_id=key,daily_bps=daily,hourly_bps=hourly)
 
 
 def bonus_label(item):
     parts=[]
-    if item.get('production_bps'):parts.append(f"會所產速 +{item['production_bps']/100:g}%")
-    if item.get('storage_bps'):parts.append(f"收益容量 +{item['storage_bps']/100:g}%")
+    if item.get('daily_bps'):parts.append(f"每日補給 +{item['daily_bps']/100:g}%")
+    if item.get('hourly_bps'):parts.append(f"每小時補給 +{item['hourly_bps']/100:g}%")
     return ' · '.join(parts)
 
 
@@ -73,7 +72,7 @@ def equipped_bonus(db,uid):
         if 'no such table' not in str(ex):raise
         row=None
     item=ITEMS.get(row[0],{}) if row else {}
-    return dict(production_bps=min(200,item.get('production_bps',0)),storage_bps=min(1000,item.get('storage_bps',0)),
+    return dict(daily_bps=min(200,item.get('daily_bps',0)),hourly_bps=min(1000,item.get('hourly_bps',0)),
                 title_id=row[0] if row else None,name=item.get('name'),label=item.get('bonus_label',''))
 
 
@@ -179,7 +178,6 @@ def mutate(db,path,data,user,clock):
     current=db.execute('SELECT item_id FROM cosmetic_equipped WHERE user_id=? AND slot=?',(uid,item['slot'])).fetchone()
     if data.get('remove') is True and (not current or current[0]!=ident):return dict(ok=True,message='此收藏品目前未裝備，未變更其他裝備。')
     if data.get('remove') is not True and current and current[0]==ident:return dict(ok=True,message='目前已裝備此收藏品。')
-    if item['slot']=='title':clubhouse.settle_title_change(db,uid,clock)
     if data.get('remove') is True:db.execute('DELETE FROM cosmetic_equipped WHERE user_id=? AND slot=?',(uid,item['slot']))
     else:db.execute('INSERT INTO cosmetic_equipped VALUES(?,?,?) ON CONFLICT(user_id,slot) DO UPDATE SET item_id=excluded.item_id',(uid,item['slot'],ident))
     return {'ok':True,'message':'外觀已更新。'}

@@ -77,10 +77,12 @@ def schema(db,clock=None):
         clock=time.time() if clock is None else clock
         # Existing equipped titles start earning their new bonus only from deployment.
         for row in db.execute('SELECT * FROM club_income').fetchall():
-            _,_,_,units=income_state(db,row['user_id'],clock,row,use_title=False)
+            _,_,_,units=income_state(db,row['user_id'],clock,row)
             db.execute('UPDATE club_income SET stored_units=?,last_at=?,revision=revision+1 WHERE user_id=?',
                        (units,max(int(row['last_at']*1000),int(clock*1000))/1000,row['user_id']))
         db.execute("INSERT INTO wallet_meta VALUES('title_perks_v1','single-equipped-basis-points')")
+    import schema_migrations
+    schema_migrations.close_title_income(db,time.time() if clock is None else clock,RATES,HOURS,SPEED_STEPS,UNIT)
 
 
 
@@ -117,29 +119,14 @@ def record(db,uid,amount,kind,key,clock,*,game=False):
                (uid,amount,amount if game else 0,0 if game else amount,kind,key,clock))
 
 
-def income_state(db,uid,clock,row=None,*,use_title=True):
+def income_state(db,uid,clock,row=None):
     row=row if row is not None else db.execute('SELECT * FROM club_income WHERE user_id=?',(uid,)).fetchone()
     if not row:raise RuleError('會所尚未啟用，請重新登入。')
-    base=RATES[row['production_level']]*SPEED_STEPS[row['decor_level']]//2;hours=HOURS[row['storage_level']]
-    if use_title:
-        import rewards
-        bonus=rewards.equipped_bonus(db,uid);production=bonus['production_bps'];storage=bonus['storage_bps']
-    else:production=storage=0
-    rate=base*(10000+production)/10000 if production else base
-    cap=base*hours*UNIT*(10000+production)*(10000+storage)//100000000
+    rate=RATES[row['production_level']]*SPEED_STEPS[row['decor_level']]//2;hours=HOURS[row['storage_level']]
     elapsed=max(0,int(clock*1000)-int(row['last_at']*1000))
-    earned=elapsed*base*(10000+production)//10000
-    # Unequipping a capacity title stops accrual above the lower cap, never burns saved points.
-    units=max(row['stored_units'],min(cap,row['stored_units']+earned))
-    return row,rate,hours*(10000+storage)/10000 if storage else hours,units
-
-
-def settle_title_change(db,uid,clock):
-    row=db.execute('SELECT * FROM club_income WHERE user_id=?',(uid,)).fetchone()
-    if not row:return
-    row,_,_,units=income_state(db,uid,clock,row)
-    db.execute('UPDATE club_income SET stored_units=?,last_at=?,revision=revision+1 WHERE user_id=?',
-               (units,max(int(row['last_at']*1000),int(clock*1000))/1000,uid))
+    # Previously earned points above the new cap remain claimable.
+    units=max(row['stored_units'],min(rate*hours*UNIT,row['stored_units']+elapsed*rate))
+    return row,rate,hours,units
 
 
 def income_view(db,uid,clock):
@@ -149,8 +136,6 @@ def income_view(db,uid,clock):
         return dict(rate=RATE,cap_hours=CAP_HOURS,cap=CAP,available=0,last_at=clock,
                     seconds_per_point=60,stored_units=0,units_per_point=UNIT,full=False,upgrades=[])
     row,rate,hours,units=income_state(db,uid,clock,row)
-    import rewards
-    title_bonus=rewards.equipped_bonus(db,uid)
     upgrades=[]
     for key,spec in UPGRADES.items():
         level=row[key+'_level'];next_level=level+1
@@ -158,17 +143,12 @@ def income_view(db,uid,clock):
         if key=='production':
             current=current*SPEED_STEPS[row['decor_level']]//2
             following=following*SPEED_STEPS[row['decor_level']]//2 if following is not None else None
-            current=current*(10000+title_bonus['production_bps'])/10000
-            following=following*(10000+title_bonus['production_bps'])/10000 if following is not None else None
-        if key=='storage':
-            current=current*(10000+title_bonus['storage_bps'])/10000
-            following=following*(10000+title_bonus['storage_bps'])/10000 if following is not None else None
         upgrades.append(dict(track=key,name=spec['name'],level=level,max_level=len(spec['levels'])-1,
                              cost=spec['costs'][level] if next_level<len(spec['levels']) else None,
                              current=current,next=following,
                              speed=SPEED_STEPS[level]/2 if key=='decor' else None,
                              next_speed=SPEED_STEPS[next_level]/2 if key=='decor' and next_level<len(SPEED_STEPS) else None))
-    return dict(rate=rate,cap_hours=hours,cap=int(rate*hours),title_bonus=title_bonus,available=units//UNIT,
+    return dict(rate=rate,cap_hours=hours,cap=int(rate*hours),available=units//UNIT,
                 last_at=row['last_at'],stored_units=row['stored_units'],units_per_point=UNIT,
                 seconds_per_point=3600/rate,full=units>=rate*hours*UNIT,
                 revision=row['revision'],decor_level=row['decor_level'],decor_name=DECOR[row['decor_level']],

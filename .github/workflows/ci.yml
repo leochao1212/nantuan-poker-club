@@ -68,6 +68,7 @@ jobs:
             artifacts/browser
             artifacts/table-ux
             artifacts/rewards
+            artifacts/milestones/browser
             artifacts/market/browser
             artifacts/market/contracts-browser
             artifacts/bank/browser

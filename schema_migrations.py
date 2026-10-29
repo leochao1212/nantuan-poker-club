@@ -44,3 +44,38 @@ def apply(db,clock):
         db.execute('RELEASE SAVEPOINT close_retired_content')
     except Exception:
         db.execute('ROLLBACK TO SAVEPOINT close_retired_content');db.execute('RELEASE SAVEPOINT close_retired_content');raise
+
+
+def close_title_income(db,clock,rates,hours,speeds,unit):
+    """Freeze retired title income once; supply perks never reprice saved income."""
+    key='title_supply_perks_v2'
+    if db.execute('SELECT 1 FROM wallet_meta WHERE key=?',(key,)).fetchone():return
+    # Historical v1 catalog, retained only to settle earned points at migration.
+    legacy={'title_night':(0,100),'title_ace':(25,0),'title_sovereign':(50,0),
+            'title_legend':(75,100),'title_curator':(0,200),'title_patron':(75,200),
+            'title_architect':(100,400),'title_mogul':(125,600),
+            'title_celestial':(150,800),'title_treasury':(200,1000)}
+    tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    equipped={}
+    if {'cosmetic_equipped','cosmetic_items'}<=tables:
+        equipped=dict(db.execute("SELECT e.user_id,e.item_id FROM cosmetic_equipped e JOIN cosmetic_items o ON o.user_id=e.user_id AND o.item_id=e.item_id WHERE e.slot='title'"))
+    db.execute('SAVEPOINT close_title_income')
+    try:
+        for row in db.execute('SELECT * FROM club_income').fetchall():
+            ident=equipped.get(row['user_id'],'');production,storage=legacy.get(ident,(0,0))
+            if ident.startswith('title_ms_'):
+                import rewards
+                milestone=rewards.MILESTONES.get(ident.removeprefix('title_ms_'))
+                if milestone:
+                    tier=milestone['tier']-1;production=(0,25,50)[tier];storage=(100,200,300)[tier]
+            base=rates[row['production_level']]*speeds[row['decor_level']]//2
+            cap=base*hours[row['storage_level']]*unit*(10000+production)*(10000+storage)//100000000
+            anchor=max(int(row['last_at']*1000),int(clock*1000))
+            earned=(anchor-int(row['last_at']*1000))*base*(10000+production)//10000
+            units=max(row['stored_units'],min(cap,row['stored_units']+earned))
+            db.execute('UPDATE club_income SET stored_units=?,last_at=?,revision=revision+1 WHERE user_id=?',
+                       (units,anchor/1000,row['user_id']))
+        db.execute('INSERT INTO wallet_meta VALUES(?,?)',(key,'daily-hourly-single-title'))
+        db.execute('RELEASE SAVEPOINT close_title_income')
+    except Exception:
+        db.execute('ROLLBACK TO SAVEPOINT close_title_income');db.execute('RELEASE SAVEPOINT close_title_income');raise

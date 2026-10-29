@@ -1,4 +1,4 @@
-# Python 回歸測試（46 個檔案）
+# Python 回歸測試（58 個檔案）
 
 這裡集中所有 Python 測試。整理時移動前後均為 386 個測試案例，案例名稱及次數一致；後續數量以當次 CI 為準。
 
@@ -111,3 +111,5 @@ python -m unittest tests.python.test_transfers.TransferRules.test_conservation_r
 
 - `test_battle.py`：原創生存戰的物理、命中、補給、縮圈、AI、房主、房間與快照界線。
 - `test_battle_http.py`：隔離帳號的 HTTP／WebSocket、認證／撤銷、Origin、租約替換、重送與錢包資料不變。
+
+- `test_title_supplies.py`：實際 HTTP 並行領取每日／每小時補給，只入帳一次；換裝與重送不重領。

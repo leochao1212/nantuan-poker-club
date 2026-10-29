@@ -78,14 +78,23 @@ def transfer(db,uid,amount,kind,key,clock,*,game=False):
     clubhouse.record(db,uid,amount,kind,key,clock,game=game)
 
 
+def supply_amounts(db,uid):
+    import rewards
+    bonus=rewards.equipped_bonus(db,uid)
+    return dict(daily_amount=DAILY+DAILY*bonus['daily_bps']//10000,
+                hourly_amount=HOURLY+HOURLY*bonus['hourly_bps']//10000,
+                daily_base=DAILY,hourly_base=HOURLY,title_bonus=bonus)
+
+
 def claim(db,uid,clock):
     if not active(db):raise engine.RuleError('目前手牌結束後將啟用帳號籌碼，請稍候。')
     create(db,uid,clock)
     key='daily:'+day(clock)
     if db.execute('SELECT 1 FROM wallet_ledger WHERE user_id=? AND event_key=?',(uid,key)).fetchone():
         return {'claimed':False,'message':'今天已領取，台灣時間午夜後可再領。'}
-    transfer(db,uid,DAILY,'daily',key,clock)
-    return {'claimed':True,'message':f'已領取今日 {DAILY:,} 點。'}
+    amount=supply_amounts(db,uid)['daily_amount']
+    transfer(db,uid,amount,'daily',key,clock)
+    return {'claimed':True,'amount':amount,'message':f'已領取今日 {amount:,} 點。'}
 
 
 
@@ -105,8 +114,9 @@ def claim_hourly(db,uid,clock,operation_id=None):
         return {'claimed':False,'replayed':True,'message':'這筆每小時補給已領取，不會重複入帳。'}
     if clock<hourly_next_at(db,uid):
         return {'claimed':False,'message':'每小時補給尚在冷卻中，領取後需等待 60 分鐘。'}
-    transfer(db,uid,HOURLY,'hourly',key,clock)
-    return {'claimed':True,'message':f'已領取每小時補給 {HOURLY:,} 點，60 分鐘後可再領。'}
+    amount=supply_amounts(db,uid)['hourly_amount']
+    transfer(db,uid,amount,'hourly',key,clock)
+    return {'claimed':True,'amount':amount,'message':f'已領取每小時補給 {amount:,} 點，60 分鐘後可再領。'}
 
 
 def _in_play(db):
@@ -134,6 +144,6 @@ def view(db,uid,clock,totals=None):
     next_at=hourly_next_at(db,uid)
     banking=bank.summary(db,uid,clock)
     investing=market.assets(db).get(uid,0)
-    return {'investments':investing,'bank':banking,'income':clubhouse.income_view(db,uid,clock),'hourly_amount':HOURLY,'hourly_next_at':next_at,'hourly_available':enabled and clock>=next_at,'hourly_interval':HOURLY_SECONDS,
+    return {'investments':investing,'bank':banking,'income':clubhouse.income_view(db,uid,clock),**supply_amounts(db,uid),'hourly_next_at':next_at,'hourly_available':enabled and clock>=next_at,'hourly_interval':HOURLY_SECONDS,
             'enabled':enabled,'migration_pending':not enabled,'balance':balance,'in_play':table,'total':balance+table+banking['savings']-banking['debt']+investing,
-            'daily_amount':DAILY,'daily_claimed':claimed,'day':day(clock),'initial':INITIAL}
+            'daily_claimed':claimed,'day':day(clock),'initial':INITIAL}

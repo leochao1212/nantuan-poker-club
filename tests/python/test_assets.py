@@ -43,7 +43,7 @@ class StaticImages(unittest.TestCase):
         self.assertRegex(styles[0],r'^/night\.css\?v=[a-z0-9-]+$')
         self.assertIn('/ui-art.js?v=clubhouse-ten-20261028',html)
         self.assertIn('/clubhouse-scene.js?v=clubhouse-ten-20261028',html)
-        self.assertIn('/profile.js?v=clubhouse-ten-20261028',html)
+        self.assertIn('/profile.js?v=milestones-20261029',html)
         self.assertIn('/round-presentation.js',html)
         for name in ('casino','ui','arcade','mahjong','profile','effects','features','transfers','clubhouse-scene','game-settings'):
             self.assertEqual(self.get('/'+name+'.css')[0],404,name)

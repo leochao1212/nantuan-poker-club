@@ -206,7 +206,7 @@ class Storage(unittest.TestCase):
         self.assertEqual(wallet.view(self.db,1,clock)['balance'],3350)
         self.assertEqual(self.db.execute('SELECT sum(profit) FROM poker_results').fetchone()[0],0)
         self.assertEqual(rewards.progress(self.db,1,clock+86400)['play3'],0)
-        self.assertEqual(len(rewards.view(self.db,1,clock)['items']),14)
+        self.assertEqual(len(rewards.view(self.db,1,clock)['items']),20)
 
 class API(ServerTestCase):
     def test_bonus_games_shop_auth_and_history(self):
@@ -222,7 +222,9 @@ class API(ServerTestCase):
             if kind in ('mines','tower'):self.assertNotIn('hazards',r['hand'])
             status,res=c.call(base+'/leave',dict(revision=r['revision'],operation_id='leave_'+kind+'_00001'));self.assertEqual(status,200,res)
             self.assertEqual(len(c.call(base)[1]['history']),1)
-        status,res=c.call('/api/club/buy',dict(item_id='title_night',operation_id='buy_title_night_0001'));self.assertEqual(status,200,res)
+        with sqlite3.connect(self.db_path) as db:db.execute('UPDATE wallets SET balance=balance+10000 WHERE user_id=(SELECT id FROM users WHERE username=?)',('newgames',))
+        db.close()
+        status,res=c.call('/api/club/buy',dict(item_id='title_night',expected_cost=8000,operation_id='buy_title_night_0001'));self.assertEqual(status,200,res)
         self.assertTrue(next(i for i in res['club']['items'] if i['id']=='title_night')['owned'])
         self.assertEqual(c.call('/api/club/equip',dict(item_id='title_night',operation_id='equip_title_night_001'))[0],200)
         self.assertEqual(c.call('/api/online/lobby')[1]['users'][0]['cosmetics']['title']['name'],'深夜常客')

@@ -14,7 +14,7 @@
     "test:market": "node tests/browser/market.cjs",
     "test:bank": "node tests/browser/bank.cjs",
     "test:journeys": "node tests/browser/table-journeys.cjs",
-    "test:rewards": "node tests/browser/rewards.cjs",
+    "test:rewards": "node tests/browser/rewards.cjs && node tests/browser/milestones.cjs",
     "test:contracts": "node tests/browser/market-contracts.cjs",
     "test:clubhouse": "node tests/browser/clubhouse-levels.cjs",
     "test:battle": "node tests/browser/battle-disabled.cjs && node tests/browser/battle.cjs && node tests/browser/battle-accuracy.cjs",

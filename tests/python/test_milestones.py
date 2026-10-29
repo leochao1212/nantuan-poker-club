@@ -1,4 +1,4 @@
-"""Milestone eligibility, exclusive ownership and single-title exact accrual."""
+"""Milestone eligibility, exclusive ownership and single-title supply bonuses."""
 import json,unittest
 import rewards,result_stats,clubhouse as c,wallet,online
 from member_accounts import AccountError
@@ -50,31 +50,65 @@ class Milestones(unittest.TestCase):
         data=dict(item_id='title_sovereign',expected_cost=60000,operation_id='title_purchase_000001')
         online.mutate(self.db,'/api/club/buy',data,self.user,self.clock);online.mutate(self.db,'/api/club/buy',data,self.user,self.clock+1)
         self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],before-60000)
-    def test_bonus_is_single_equipped_title_and_new_income_only(self):
+    def test_bonus_is_only_single_equipped_title_and_integer_supplies(self):
         self.own('title_treasury');self.own('title_ace')
+        self.assertEqual(wallet.supply_amounts(self.db,2)['daily_amount'],1000)
+        self.equip('title_treasury')
+        v=wallet.view(self.db,2,self.clock)
+        self.assertEqual((v['daily_amount'],v['hourly_amount']),(1020,220))
         self.assertEqual(c.income_view(self.db,2,self.clock+3600)['available'],60)
-        self.equip('title_treasury',self.clock+3600)
-        at_switch=c.income_view(self.db,2,self.clock+3600);self.assertEqual(at_switch['available'],60);self.assertAlmostEqual(at_switch['rate'],61.2)
-        self.assertAlmostEqual(at_switch['cap_hours'],26.4)
-        self.assertEqual(c.income_view(self.db,2,self.clock+7200)['available'],121)
-        self.equip('title_ace',self.clock+7200)
-        self.assertEqual(rewards.equipped_bonus(self.db,2)['production_bps'],25)
-        self.assertAlmostEqual(c.income_view(self.db,2,self.clock+7200)['rate'],60.15)
-        self.assertEqual(c.income_view(self.db,2,self.clock+10800)['available'],181)
-    def test_unequipping_preserves_over_capacity_income_and_receipt(self):
-        self.own('title_treasury');self.equip('title_treasury');later=self.clock+30*3600
-        before=c.income_view(self.db,2,later)['available'];self.assertEqual(before,1615)
-        self.equip('title_treasury',later,remove=True)
-        self.assertEqual(c.income_view(self.db,2,later+3600)['available'],before)
-        result=c.claim(self.db,self.user,dict(operation_id='title_income_claim_0001'),later+3600)
-        self.assertEqual(result['amount'],before)
-        self.assertTrue(c.claim(self.db,self.user,dict(operation_id='title_income_claim_0001'),later+3601)['replayed'])
-    def test_existing_equipped_titles_migrate_once_without_retroactive_bonus(self):
-        self.own('title_ace');self.db.execute("INSERT INTO cosmetic_equipped VALUES(2,'title','title_ace')")
-        self.db.execute("DELETE FROM wallet_meta WHERE key='title_perks_v1'");self.db.commit()
-        c.schema(self.db,self.clock+3600);self.assertEqual(c.income_view(self.db,2,self.clock+3600)['available'],60)
-        old=c.income_view(self.db,2,self.clock+3600);c.schema(self.db,self.clock+3600);self.assertEqual(c.income_view(self.db,2,self.clock+3600),old)
-        self.assertAlmostEqual(c.income_view(self.db,2,self.clock+7200)['rate'],60.15)
+        self.assertEqual(c.income_view(self.db,2,self.clock)['cap_hours'],24)
+        self.equip('title_ace')
+        self.assertEqual(wallet.supply_amounts(self.db,2)['daily_amount'],1002)
+        self.assertEqual(wallet.supply_amounts(self.db,2)['hourly_amount'],200)
+        self.equip('title_ace',remove=True)
+        self.assertEqual(wallet.supply_amounts(self.db,2)['daily_amount'],1000)
+    def test_change_title_never_reopens_daily_or_hourly_or_reprices_claim(self):
+        wallet.claim(self.db,2,self.clock)
+        wallet.claim_hourly(self.db,2,self.clock,'supply_original_0001')
+        self.own('title_treasury');self.equip('title_treasury')
+        self.assertFalse(wallet.claim(self.db,2,self.clock+1)['claimed'])
+        self.assertFalse(wallet.claim_hourly(self.db,2,self.clock+1,'supply_changed_0001')['claimed'])
+        self.assertTrue(wallet.claim_hourly(self.db,2,self.clock+7200,'supply_original_0001')['replayed'])
+        self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],4200)
+        self.assertEqual(wallet.claim_hourly(self.db,2,self.clock+7200,'supply_new_0000001')['amount'],220)
+        self.assertEqual(wallet.claim(self.db,2,self.clock+86400)['amount'],1020)
+        self.assertEqual([r[0] for r in self.db.execute("SELECT amount FROM wallet_ledger WHERE user_id=2 AND kind IN ('daily','hourly') ORDER BY id")],[1000,200,220,1020])
+    def test_all_catalog_supply_bonus_amounts_are_capped_and_integral(self):
+        for ident,item in rewards.ITEMS.items():
+            if item['slot']!='title':continue
+            self.own(ident);self.equip(ident)
+            v=wallet.supply_amounts(self.db,2)
+            self.assertIs(type(v['daily_amount']),int);self.assertIs(type(v['hourly_amount']),int)
+            self.assertLessEqual(v['daily_amount'],1020);self.assertLessEqual(v['hourly_amount'],220)
+            self.assertIn('補給',v['title_bonus']['label'])
+    def test_retired_title_income_migration_preserves_accrual_once(self):
+        self.own('title_ace');self.equip('title_ace')
+        self.db.execute("DELETE FROM wallet_meta WHERE key='title_supply_perks_v2'");self.db.commit()
+        later=self.clock+3600;c.schema(self.db,later)
+        row=self.db.execute('SELECT * FROM club_income WHERE user_id=2').fetchone()
+        self.assertEqual(row['stored_units'],3600000*60*10025//10000)
+        self.assertEqual(c.income_view(self.db,2,later+3600)['available'],120)
+        old=dict(row);c.schema(self.db,later+3600)
+        self.assertEqual(dict(self.db.execute('SELECT * FROM club_income WHERE user_id=2').fetchone()),old)
+        self.assertEqual(wallet.view(self.db,2,later)['balance'],3000)
+    def test_retired_capacity_income_stays_claimable_above_new_cap(self):
+        self.own('title_treasury');self.equip('title_treasury')
+        self.db.execute("DELETE FROM wallet_meta WHERE key='title_supply_perks_v2'");self.db.commit()
+        later=self.clock+30*3600;c.schema(self.db,later)
+        v=c.income_view(self.db,2,later+3600)
+        self.assertEqual(v['cap'],1440);self.assertEqual(v['available'],1615)
+        self.equip('title_treasury',later+3600,remove=True)
+        self.assertEqual(c.income_view(self.db,2,later+7200)['available'],1615)
+        result=c.claim(self.db,self.user,dict(operation_id='title_income_claim_0001'),later+7200)
+        self.assertEqual(result['amount'],1615)
+        self.assertTrue(c.claim(self.db,self.user,dict(operation_id='title_income_claim_0001'),later+7201)['replayed'])
+    def test_pre_title_install_does_not_receive_retroactive_club_bonus(self):
+        self.own('title_ace');self.equip('title_ace')
+        self.db.execute("DELETE FROM wallet_meta WHERE key IN ('title_perks_v1','title_supply_perks_v2')");self.db.commit()
+        c.schema(self.db,self.clock+3600)
+        self.assertEqual(c.income_view(self.db,2,self.clock+3600)['available'],60)
+        self.assertEqual(c.income_view(self.db,2,self.clock+7200)['available'],120)
     def test_stale_remove_does_not_unequip_a_newer_title(self):
         self.own('title_treasury');self.own('title_ace');self.equip('title_treasury');self.equip('title_ace')
         self.equip('title_treasury',remove=True)

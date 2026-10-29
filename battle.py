@@ -8,6 +8,7 @@ from collections import deque
 from dataclasses import dataclass, field
 import hashlib
 import json
+import os
 import queue
 import secrets
 import socket
@@ -17,6 +18,13 @@ import time
 
 from battle_engine import Match, STEP, CAPACITY, WEAPONS, HITBOXES
 from voice_transport import read_frame
+
+# Disabled in production; isolated development/tests must opt in explicitly.
+ENABLED=os.environ.get('POKER_BATTLE_ENABLED','0')=='1'
+
+def enabled():
+    return ENABLED
+
 
 MAX_ROOMS=3
 MAX_PEERS=32

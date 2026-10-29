@@ -21,7 +21,7 @@ if os.environ.get('BATTLE_ACCURACY_DIAGNOSTIC'):
   if ammo!=p.weapons.get(p.slot):print('accuracy_shot '+json.dumps(dict(clock=self.clock,view=p.intent.get('view_at'),age=self.clock-p.intent.get('view_at',self.clock),point=p.intent.get('aim_point'),origin=(p.x,p.y,p.z),target=self.target_pose(target,p.intent.get('view_at')),current=(target.x,target.y,target.z),hit=target.hp<health)),flush=True)
  battle_engine.Match.shoot=diagnostic
 runpy.run_path('server.py',run_name='__main__')`;
- const proc=spawn(process.env.PYTHON||'python',['-c',driver,'--host','127.0.0.1','--port',String(port)],{cwd:root,windowsHide:true,env:{...process.env,BATTLE_ACCURACY_DIAGNOSTIC:'1',PYTHONUTF8:'1',POKER_DB:path.join(tmp,'isolated.sqlite3'),POKER_REQUIRE_INVITE:'0',POKER_SECURE_COOKIE:'0',POKER_MARKET_DATA:'0',POKER_PUBLIC_ORIGIN:''}});let logs='',browser;proc.stdout.on('data',d=>logs+=d);proc.stderr.on('data',d=>logs+=d);
+ const proc=spawn(process.env.PYTHON||'python',['-c',driver,'--host','127.0.0.1','--port',String(port)],{cwd:root,windowsHide:true,env:{...process.env,POKER_BATTLE_ENABLED:'1',BATTLE_ACCURACY_DIAGNOSTIC:'1',PYTHONUTF8:'1',POKER_DB:path.join(tmp,'isolated.sqlite3'),POKER_REQUIRE_INVITE:'0',POKER_SECURE_COOKIE:'0',POKER_MARKET_DATA:'0',POKER_PUBLIC_ORIGIN:''}});let logs='',browser;proc.stdout.on('data',d=>logs+=d);proc.stderr.on('data',d=>logs+=d);
  try{
   browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});const results=[];let rootInvite='';
   for(const compensation of (process.env.BATTLE_ACCURACY_DIAGNOSTIC?[true]:[true,false])){

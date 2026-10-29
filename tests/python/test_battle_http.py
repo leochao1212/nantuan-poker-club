@@ -19,6 +19,7 @@ from voice_transport import read_exact
 class IslandHTTP(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.enable_patch=patch.object(battle,'ENABLED',True);cls.enable_patch.start()
         cls.tmp=tempfile.TemporaryDirectory();cls.db_patch=patch.object(server,'DB_PATH',Path(cls.tmp.name)/'island.sqlite3');cls.db_patch.start()
         cls.invite_patch=patch.object(server,'REQUIRE_INVITE',False);cls.invite_patch.start();server.initialize()
         cls.http=ThreadingHTTPServer(('127.0.0.1',0),server.Handler);cls.http.daemon_threads=True
@@ -36,7 +37,7 @@ class IslandHTTP(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.http.shutdown();cls.http.server_close();cls.thread.join(2);cls.invite_patch.stop();cls.db_patch.stop();cls.tmp.cleanup()
+        cls.http.shutdown();cls.http.server_close();cls.thread.join(2);cls.invite_patch.stop();cls.db_patch.stop();cls.tmp.cleanup();cls.enable_patch.stop()
 
     def setUp(self):
         self.hub=battle.BattleHub();self.hub_patch=patch.object(battle,'HUB',self.hub);self.hub_patch.start()
@@ -111,6 +112,17 @@ class IslandHTTP(unittest.TestCase):
         self.send(replacement,{'type':'input','seq':0,'x':999,'hp':999})
         error=self.until(rr,lambda p:p['type']=='error');self.assertIn('欄位',error['message'])
         self.assertNotEqual(self.hub.rooms[code].match.players[first['self']['id']].x,999)
+
+    def test_disabled_mode_blocks_all_entry_points_without_starting_simulation(self):
+        with patch.object(battle,'ENABLED',False):
+            self.assertEqual(self.request('/api/battle')[0],410)
+            for path in ('create','join','leave'):
+                self.assertEqual(self.request('/api/battle/'+path,{'code':'ABCDEF'})[0],410)
+            self.assertEqual(self.request('/api/battle/socket?room=ABCDEF')[0],410)
+            value=self.request('/api/online/lobby')[1]
+            self.assertFalse(value.get('state',value)['battle_enabled'])
+            self.assertIsNone(self.hub.thread)
+            self.assertFalse(self.hub.rooms)
 
     def test_pinned_vendor_assets_revalidate_and_unknown_paths_stay_private(self):
         for path in ('/battle.js','/battle-scene.js','/battle-art.js','/battle-motion.js','/three.module.js','/three.core.js'):

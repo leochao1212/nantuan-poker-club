@@ -302,6 +302,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not origin or origin not in allowed:raise Problem('戰場連線來源無效。',403)
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);uid=user['id']
+                if not battle.enabled():raise Problem('射擊遊戲已停用。',410)
                 if battle.HUB.list(uid)['current']!=code:raise Problem('請先加入戰場。',403)
                 def authorize_battle():
                     try:
@@ -313,6 +314,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == '/api/battle':
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                if not battle.enabled():raise Problem('射擊遊戲已停用。',410)
                 self.reply(200,battle.HUB.list(user['id']))
             elif path == '/api/social/voice/socket':
                 query=parse_qs(urlsplit(self.path).query)
@@ -611,6 +613,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.path in ('/api/battle/create','/api/battle/join','/api/battle/leave'):
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    if not battle.enabled():raise Problem('射擊遊戲已停用。',410)
                     if self.path!='/api/battle/leave' and online.deployment_paused(db,time.time()):
                         raise Problem('伺服器更新中，請稍後再進入戰場。',503)
                 try:

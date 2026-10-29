@@ -41,5 +41,5 @@ jobs:
         if: always()
         with:
           name: island-animation-diagnostics
-          path: artifacts/battle/performance
+          path: artifacts/battle
           retention-days: 7

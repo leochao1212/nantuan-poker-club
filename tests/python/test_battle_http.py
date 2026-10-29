@@ -113,7 +113,7 @@ class IslandHTTP(unittest.TestCase):
         self.assertNotEqual(self.hub.rooms[code].match.players[first['self']['id']].x,999)
 
     def test_pinned_vendor_assets_revalidate_and_unknown_paths_stay_private(self):
-        for path in ('/battle.js','/battle-scene.js','/battle-art.js','/three.module.js','/three.core.js'):
+        for path in ('/battle.js','/battle-scene.js','/battle-art.js','/battle-motion.js','/three.module.js','/three.core.js'):
             status,body,headers=self.request(path);self.assertEqual(status,200,path);self.assertEqual(headers['Cache-Control'],'no-cache');self.assertIn('javascript',headers['Content-Type'])
             self.assertEqual(self.request(path,extra={'If-None-Match':headers['ETag']})[0],304)
         self.assertEqual(self.request('/battle.py')[0],404);self.assertEqual(self.request('/static/battle.js')[0],404)

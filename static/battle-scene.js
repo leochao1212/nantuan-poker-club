@@ -1,5 +1,6 @@
 import * as T from './three.module.js?v=0-186-1';
-import {createArtKit,buildSoldier,buildViewModel,addSky,addWorldDetails,GUN_MUZZLES} from './battle-art.js?v=mobile-budget-20261029';
+import {createArtKit,buildSoldier,buildViewModel,addSky,addWorldDetails,GUN_MUZZLES} from './battle-art.js?v=motion-budget-20261029';
+import {createMotion,poseSoldier} from './battle-motion.js?v=motion-budget-20261029';
 
 const RAY_AXES=[['x','w'],['y','h'],['z','d']];
 const TAU=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -29,7 +30,7 @@ export class IslandScene {
     this.sun=new T.DirectionalLight(0xffe7b7,2.15);this.sun.position.set(-70,110,45);this.scene.add(this.sun,this.sun.target);
     this.geo={...this.art.base,roof:gable(),crate:this.art.crate};this.materials=new Map();this.world=new T.Group();this.scene.add(this.world);addSky(this);
     this.effectsGroup=new T.Group();this.scene.add(this.effectsGroup);this.temp=new T.Object3D();this.ray=new T.Raycaster();
-    this.actorBatches=new Map();for(const key of ['box','sphere','cylinder','cone','bevel','limb','hair','gear','boot',...Object.keys(GUN_MUZZLES).map(k=>'gun-'+k),'view-arms','view-pistol-arms']){const capacity=key.startsWith('gun-')?16:key.startsWith('view-')?1:512,material=key.startsWith('gun-')&&!this.touch?new T.MeshPhongMaterial({color:0xffffff,vertexColors:true,shininess:28,specular:0x536e70}):this.material(0xffffff,{vertexColors:this.art.colored.has(key)}),mesh=new T.InstancedMesh(this.geo[key],material,capacity);mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.count=0;mesh.frustumCulled=false;mesh.userData.capacity=capacity;this.actorBatches.set(key,mesh);this.scene.add(mesh);}this.viewModel=buildViewModel(this);
+    this.actorBatches=new Map();for(const key of ['box','sphere','cylinder','cone','bevel','limb','hair','gear','boot',...Object.keys(GUN_MUZZLES).map(k=>'gun-'+k),'view-arms','view-pistol-arms']){const capacity=key.startsWith('gun-')?16:key.startsWith('view-')?1:512,material=key.startsWith('gun-')&&!this.touch?new T.MeshPhongMaterial({color:0xffffff,vertexColors:true,shininess:28,specular:0x536e70}):this.material(0xffffff,{vertexColors:this.art.colored.has(key)}),mesh=new T.InstancedMesh(this.geo[key],material,capacity);mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.count=0;mesh.frustumCulled=false;mesh.userData.capacity=capacity;mesh.userData.colors=new Uint32Array(capacity).fill(0xffffffff);mesh.instanceColor=new T.InstancedBufferAttribute(new Float32Array(capacity*3).fill(1),3).setUsage(T.DynamicDrawUsage);this.actorBatches.set(key,mesh);this.scene.add(mesh);}this.viewModel=buildViewModel(this);this.work={poses:0,colorWrites:0,matrixFloats:0,lootBuilds:0,lootSkips:0};
     this.actorShadows=new T.InstancedMesh(new T.PlaneGeometry(1.7,1.7),new T.MeshBasicMaterial({map:this.art.shadow,color:0xffffff,transparent:true,opacity:.34,depthWrite:false}),16);this.actorShadows.count=0;this.actorShadows.frustumCulled=false;this.actorShadows.instanceMatrix.setUsage(T.DynamicDrawUsage);this.scene.add(this.actorShadows);this.batchWhite=new T.Color(0xffffff);
     this.lootBatches=new Map();for(const [kind,geometry]of Object.entries(this.art.items)){const mesh=new T.InstancedMesh(geometry,this.material(0xffffff,{vertexColors:true}),256);mesh.count=0;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.lootBatches.set(kind,mesh);this.scene.add(mesh);}
     this.warmBatches=[...this.actorBatches.values(),...this.lootBatches.values()];
@@ -91,29 +92,45 @@ export class IslandScene {
     const foam=new T.Mesh(new T.RingGeometry(r+22,r+26,96),new T.MeshBasicMaterial({color:0xdbe7cf,transparent:true,opacity:.26,side:T.DoubleSide,depthWrite:false}));foam.rotation.x=-Math.PI/2;foam.position.y=-1.97;this.world.add(foam);
     this.updateActorBatches();this.world.traverse(o=>{if(o.isMesh)o.frustumCulled=true;});this.zoneWall.visible=false;this.zoneRing.visible=false;
   }
-  actor(id,name){return buildSoldier(this,id,name);}
-  pose(actor,p,controls,dt){
-    const local=p.id===this.state.self.id,dropping=p.animation==='drop',crouch=local?controls.crouch:p.animation==='crouch',pitch=local?this.pitch:p.pitch;
-    const inputLength=Math.hypot(controls.forward,controls.strafe),speed=local?(this.state.phase==='playing'?Math.min(1,inputLength)*(controls.sprint&&!controls.aim&&!crouch?7.5:crouch?2.2:4.5)*(this.state.self.heal?.35:1):0):Math.hypot(p.vx,p.vz),moving=speed>.08;
-    const forward=local?controls.forward:Math.sin(p.yaw)*p.vx-Math.cos(p.yaw)*p.vz,side=local?controls.strafe:Math.cos(p.yaw)*p.vx+Math.sin(p.yaw)*p.vz,n=Math.max(.001,Math.hypot(forward,side));
-    actor.walk=approach(actor.walk,moving?Math.min(1,speed/3):0,dt*14);actor.crouch=approach(actor.crouch,crouch?1:0,dt*15);actor.gaitPhase+=dt*speed*2.4;const c=actor.crouch,phase=actor.gaitPhase,stride=crouch?.15:speed>6?.32:.24;
-    actor.body.position.y=-.48*c+(this.reduced?0:Math.sin(phase*2)*.012*actor.walk+Math.sin(this.elapsed*2+p.id)*.005*(1-actor.walk));
-    actor.limbs.forEach((leg,i)=>{const step=phase+i*Math.PI,z=-Math.sin(step)*stride*actor.walk*forward/n,lift=Math.max(0,Math.cos(step))*.085*actor.walk,vertical=.8-.33*c-lift,distance=clamp(Math.hypot(vertical,z),.1,.819),alpha=Math.atan2(-z,vertical),beta=Math.acos(distance/.82);leg.position.y=.88+.15*c;leg.rotation.x=alpha+beta;leg.rotation.z=Math.sin(step)*.23*actor.walk*side/n;actor.knees[i].rotation.x=-2*beta;actor.feet[i].rotation.set(-leg.rotation.x+2*beta,0,-leg.rotation.z);});
-    const reload=local?this.state.self.reload:0;actor.reloadBlend=approach(actor.reloadBlend||0,reload?1:0,dt*15);const cycling=Math.sin(this.elapsed*7)*.2*actor.reloadBlend;actor.arms.forEach((arm,i)=>{arm.rotation.x=dropping?-2.7:(i===0?1.05:1.4)+pitch*.65+cycling*(i?-1:1);arm.rotation.z=i===0?-.1:.35;actor.elbows[i].rotation.x=dropping?.2:i===0?1.15:.45+cycling;});
-    const kick=.045*Math.exp(-Math.max(0,this.elapsed-actor.shotAt)*35);actor.weapon.rotation.set(pitch+actor.reloadBlend*.3+kick*.7,0,Math.sin(phase)*.012*actor.walk*(controls.aim&&local?.3:1));actor.weapon.position.z=-.48+kick;actor.flash.visible=actor.flashFrames>0||this.elapsed-actor.shotAt<.06;if(actor.flashFrames>0)actor.flashFrames--;
-    actor.chuteScale=approach(actor.chuteScale,dropping?1:0,dt*(dropping?18:12));actor.chute.visible=actor.chuteScale>.015;actor.chute.scale.setScalar(Math.max(.001,actor.chuteScale));actor.chute.rotation.z=this.reduced?0:Math.sin(this.elapsed*1.5+p.id)*.045;
+  actor(id,name){const actor=buildSoldier(this,id,name);actor.motion=createMotion(actor);return actor;}
+  pose(actor,p,controls,dt){poseSoldier(this,actor,p,controls,dt);}
+  actorPart(parts,geometry,color,x,y,z,sx=1,sy=1,sz=1,parent){const node=new T.Object3D();node.position.set(x,y,z);node.scale.set(sx,sy,sz);const key=Object.keys(this.geo).find(key=>this.geo[key]===geometry);node.userData.part={key,color:new T.Color(color),hex:color,batch:this.actorBatches.get(key)};parent.add(node);parts.push(node);return node;}
+  writeActorPart(part){
+    const {batch:mesh,color,hex}=part.userData.part,data=mesh.userData,i=data.written++;if(i>=data.capacity)return;
+    mesh.setMatrixAt(i,part.matrixWorld);
+    if(data.colors[i]!==hex){mesh.setColorAt(i,color);data.colors[i]=hex;data.colorStart=Math.min(data.colorStart,i);data.colorEnd=i+1;this.work.colorWrites++;}
   }
-  actorPart(parts,geometry,color,x,y,z,sx=1,sy=1,sz=1,parent){const node=new T.Object3D();node.position.set(x,y,z);node.scale.set(sx,sy,sz);node.userData.part={key:Object.keys(this.geo).find(key=>this.geo[key]===geometry),color:new T.Color(color)};parent.add(node);parts.push(node);return node;}
-  updateActorBatches(){
-    const counts=Object.fromEntries([...this.actorBatches.keys()].map(k=>[k,0]));this.camera.updateMatrixWorld(true);this.actorFrustum.setFromProjectionMatrix(this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix,this.camera.matrixWorldInverse));
-    const write=(part)=>{const {key,color}=part.userData.part,mesh=this.actorBatches.get(key),i=counts[key]++;if(i>=mesh.userData.capacity)return;mesh.setMatrixAt(i,part.matrixWorld);mesh.setColorAt(i,color);};
-    for(const actor of this.actors.values()){this.actorBounds.center.copy(actor.group.position);this.actorBounds.center.y+=2.5;actor.inFrustum=actor.group.visible&&(actor.id===this.state.self.id||this.actorFrustum.intersectsSphere(this.actorBounds));if(!actor.inFrustum)continue;actor.group.updateMatrixWorld(true);if(actor.id===this.state.self.id&&this.closeCamera)continue;for(const part of actor.parts){let shown=true;for(let node=part;node&&node!==actor.group;node=node.parent)if(!node.visible){shown=false;break;}if(shown)write(part);}}
-    if(this.closeCamera&&this.state?.self.hp>0){const own=this.actors.get(this.state.self.id),slot=this.state.self.slot,view=this.viewModel,kick=own?.shotAt!=null?.045*Math.exp(-Math.max(0,this.elapsed-own.shotAt)*35):0;view.group.position.copy(this.camera.position);view.group.quaternion.copy(this.camera.quaternion);view.group.translateX(.045);view.group.translateY(-.16-(own?.reloadBlend||0)*.10);view.group.translateZ(-.68+kick);view.group.rotateX((own?.reloadBlend||0)*-.3+kick*.3);for(const [key,node]of Object.entries(view.variants))node.visible=key===slot;view.rifleArms.visible=slot!=='pistol';view.pistolArms.visible=slot==='pistol';view.flash.position.z=(GUN_MUZZLES[slot]||-.76)-.04;view.flash.visible=!!own?.flash.visible;view.group.updateMatrixWorld(true);for(const part of view.parts)if(part.visible)write(part);}
-    for(const [key,mesh]of this.actorBatches){mesh.count=Math.min(mesh.userData.capacity,counts[key]);mesh.userData.warmDummy=!mesh.count&&!mesh.userData.warmed;if(mesh.userData.warmDummy){this.temp.position.set(0,-10000,0);this.temp.rotation.set(0,0,0);this.temp.scale.set(1,1,1);this.temp.updateMatrix();mesh.setMatrixAt(0,this.temp.matrix);mesh.setColorAt(0,this.batchWhite);mesh.count=1;}mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor){mesh.instanceColor.setUsage(T.DynamicDrawUsage);mesh.instanceColor.needsUpdate=true;}}
-    let shadows=0;for(const actor of this.actors.values()){if(!actor.inFrustum||shadows>=16)continue;const p=actor.group.position,scale=1/(1+Math.max(0,p.y)*.03);this.temp.position.set(p.x,.035,p.z);this.temp.rotation.set(-Math.PI/2,0,0);this.temp.scale.set(scale,scale,1);this.temp.updateMatrix();this.actorShadows.setMatrixAt(shadows++,this.temp.matrix);}this.actorShadows.count=shadows;this.actorShadows.instanceMatrix.needsUpdate=true;
+  updateActorBatches(dt=0,controls=null){
+    for(const mesh of this.actorBatches.values()){mesh.userData.written=0;mesh.userData.colorStart=Infinity;mesh.userData.colorEnd=0;}
+    this.camera.updateMatrixWorld(true);this.actorFrustum.setFromProjectionMatrix(this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix,this.camera.matrixWorldInverse));
+    const own=this.actors.get(this.state?.self.id),origin=own?.group.position;
+    for(const actor of this.actors.values()){
+      this.actorBounds.center.copy(actor.group.position);this.actorBounds.center.y+=2.5;
+      actor.inFrustum=actor.group.visible&&(actor.id===this.state?.self.id||this.actorFrustum.intersectsSphere(this.actorBounds));if(!actor.inFrustum)continue;
+      if(controls){
+        const local=actor===own,distance=origin?actor.group.position.distanceToSquared(origin):0,interval=local?0:this.touch?(distance>8100?.1:distance>1600?1/15:0):distance>14400?1/20:0;
+        if(local||!actor.poseAt||this.elapsed-actor.poseAt>=interval||actor.flashFrames>0||actor.flash.visible){this.pose(actor,actor.target,controls,Math.min(.15,actor.poseAt?this.elapsed-actor.poseAt:dt));actor.poseAt=this.elapsed;this.work.poses++;}
+      }
+      if(actor===own&&this.closeCamera)continue;
+      actor.group.updateMatrixWorld(true);
+      for(const part of actor.parts){let shown=true;for(let node=part;node&&node!==actor.group;node=node.parent)if(!node.visible){shown=false;break;}if(shown)this.writeActorPart(part);}
+    }
+    if(this.closeCamera&&this.state?.self.hp>0){
+      const slot=this.state.self.slot,view=this.viewModel,m=own?.motion,kick=own?.shotAt!=null?.045*Math.exp(-Math.max(0,this.elapsed-own.shotAt)*35):0,reload=m?.reload||0;
+      view.group.position.copy(this.camera.position);view.group.quaternion.copy(this.camera.quaternion);view.group.translateX(.045-reload*.08);view.group.translateY(-.16-reload*.15+(this.reduced?0:Math.sin((own?.gaitPhase||0)*2)*.005*(own?.walk||0)*(1-this.aimBlend)));view.group.translateZ(-.68+kick);view.group.rotateX(-reload*.36+kick*.3);view.group.rotateZ(reload*.22);
+      for(const [key,node]of Object.entries(view.variants))node.visible=key===slot;view.rifleArms.visible=slot!=='pistol';view.pistolArms.visible=slot==='pistol';view.flash.position.z=(GUN_MUZZLES[slot]||-.76)-.04;view.flash.visible=!!own?.flash.visible;view.group.updateMatrixWorld(true);for(const part of view.parts)if(part.visible)this.writeActorPart(part);
+    }
+    for(const mesh of this.actorBatches.values()){
+      const data=mesh.userData;mesh.count=Math.min(data.capacity,data.written);data.warmDummy=!mesh.count&&!data.warmed;
+      if(data.warmDummy){this.temp.position.set(0,-10000,0);this.temp.rotation.set(0,0,0);this.temp.scale.set(1,1,1);this.temp.updateMatrix();mesh.setMatrixAt(0,this.temp.matrix);mesh.count=1;}
+      if(mesh.count){mesh.instanceMatrix.clearUpdateRanges();mesh.instanceMatrix.addUpdateRange(0,mesh.count*16);mesh.instanceMatrix.needsUpdate=true;this.work.matrixFloats+=mesh.count*16;}
+      if(data.colorEnd){mesh.instanceColor.clearUpdateRanges();mesh.instanceColor.addUpdateRange(data.colorStart*3,(data.colorEnd-data.colorStart)*3);mesh.instanceColor.needsUpdate=true;}
+    }
+    let shadows=0;for(const actor of this.actors.values()){if(!actor.inFrustum||shadows>=16)continue;const p=actor.group.position,scale=1/(1+Math.max(0,p.y)*.03);this.temp.position.set(p.x,.035,p.z);this.temp.rotation.set(-Math.PI/2,0,0);this.temp.scale.set(scale,scale,1);this.temp.updateMatrix();this.actorShadows.setMatrixAt(shadows++,this.temp.matrix);}this.actorShadows.count=shadows;if(shadows){this.actorShadows.instanceMatrix.clearUpdateRanges();this.actorShadows.instanceMatrix.addUpdateRange(0,shadows*16);this.actorShadows.instanceMatrix.needsUpdate=true;}
   }
   updateLoot(items){
-    this.items.clear();this.lootColorCache??=new Map();const counts=Object.fromEntries([...this.lootBatches.keys()].map(k=>[k,0]));let index=0;
+    if(this.lootReady&&items.length===this.items.size&&items.every(item=>{const old=this.items.get(item.id);return old&&old.kind===item.kind&&old.x===item.x&&old.z===item.z;})){this.work.lootSkips++;return;}
+    this.lootReady=true;this.work.lootBuilds++;this.items.clear();this.lootColorCache??=new Map();const counts=Object.fromEntries([...this.lootBatches.keys()].map(k=>[k,0]));let index=0;
     for(const item of items){if(index>=256||!this.lootBatches.has(item.kind))continue;this.items.set(item.id,item);if(!this.lootColorCache.has(item.kind))this.lootColorCache.set(item.kind,new T.Color(lootColors[item.kind]||0xe7c57a));const color=this.lootColorCache.get(item.kind),mesh=this.lootBatches.get(item.kind);this.temp.position.set(item.x,.07,item.z);this.temp.rotation.set(0,(item.id%5)*.38,0);this.temp.scale.set(1,1,1);this.temp.updateMatrix();mesh.setMatrixAt(counts[item.kind]++,this.temp.matrix);this.temp.position.y=.055;this.temp.rotation.set(-Math.PI/2,0,0);this.temp.updateMatrix();this.lootPads.setMatrixAt(index,this.temp.matrix);this.lootPads.setColorAt(index,color);this.temp.position.y=.53;this.temp.rotation.set(0,0,0);this.temp.scale.set(.025,.95,.025);this.temp.updateMatrix();this.lootBeams.setMatrixAt(index,this.temp.matrix);this.lootBeams.setColorAt(index,color);index++;}
     for(const [key,mesh]of this.lootBatches){mesh.count=counts[key];mesh.userData.warmDummy=!mesh.count&&!mesh.userData.warmed;if(mesh.userData.warmDummy){this.temp.position.set(0,-10000,0);this.temp.rotation.set(0,0,0);this.temp.scale.set(1,1,1);this.temp.updateMatrix();mesh.setMatrixAt(0,this.temp.matrix);mesh.count=1;}mesh.instanceMatrix.needsUpdate=true;}
     for(const mesh of [this.lootPads,this.lootBeams]){mesh.count=index;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}
@@ -203,7 +220,7 @@ export class IslandScene {
         }else{
           this.interpolate(actor,clamp(s.clock+snapshotAge-INTERPOLATION,s.clock-INTERPOLATION,s.clock+.08));
         }
-        const local=p.id===s.self.id,turn=-p.yaw-actor.body.rotation.y;actor.body.rotation.y=local?-this.yaw:actor.body.rotation.y+Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-dt*16));this.pose(actor,p,controls,dt);
+        const local=p.id===s.self.id,turn=-p.yaw-actor.body.rotation.y;actor.body.rotation.y=local?-this.yaw:actor.body.rotation.y+Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-dt*16));
       }
       const follow=s.self.hp>0?this.actors.get(s.self.id):[...this.actors.values()].find(a=>a.target?.hp>0&&a.group.visible);
       if(follow){
@@ -216,7 +233,7 @@ export class IslandScene {
 
         if(time-this.miniAt>200){const outside=Math.hypot(pos.x-s.zone.x,pos.z-s.zone.z)>s.zone.r;if(outside!==this.outside){this.root.classList.toggle('battle-outside-zone',outside);this.outside=outside;}const text=['北','東北','東','東南','南','西南','西','西北'][Math.round(((yaw/TAU*8)%8+8)%8)%8]+' '+Math.round(((yaw/TAU*360)%360+360)%360)+'°';if(this.compass.textContent!==text)this.compass.textContent=text;this.minimapDraw(pos,yaw);this.miniAt=time;}
       }
-      this.updateActorBatches();
+      this.updateActorBatches(dt,controls);
     }
     if(!this.reduced){this.textures.water.offset.set(this.elapsed*.002,this.elapsed*.001);this.lootBeams.material.opacity=.13+Math.sin(this.elapsed*1.6)*.025;}this.updateEffects();if(this.elapsed>this.toastUntil)this.toast.classList.remove('show');this.renderer.render(this.scene,this.camera);
     // Empty batches only draw once to initialize their GPU buffers, never every frame.

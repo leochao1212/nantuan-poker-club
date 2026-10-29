@@ -20,7 +20,7 @@ assert all(Path('/app/'+name+'.py').is_file() for name in ('market_catalog','mar
 assert Path('/app/market.py').is_file() and Path('/app/market_data.py').is_file() and Path('/app/static/market.js').is_file()
 assert Path('/app/bank.py').is_file() and Path('/app/static/bank.js').is_file()
 assert all(Path('/app/'+name+'.py').is_file() for name in ('battle','battle_engine'))
-assert all(Path('/app/static/'+name+'.js').is_file() for name in ('battle','battle-scene','three.module','three.core'))
+assert all(Path('/app/static/'+name+'.js').is_file() for name in ('battle','battle-scene','battle-motion','three.module','three.core'))
 with sqlite3.connect('file:/data/poker.sqlite3?mode=ro',uri=True) as db:
     assert db.execute('SELECT count(*) FROM market_shorts').fetchone()[0]==0
     assert db.execute('SELECT count(*) FROM market_orders').fetchone()[0]==0

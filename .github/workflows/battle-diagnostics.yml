@@ -1,0 +1,43 @@
+name: Island animation diagnostics
+on:
+  push:
+    branches: [diagnostic/island-animation-timeline]
+permissions:
+  contents: read
+jobs:
+  timeline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Observe actual animation timeline
+        env:
+          POKER_MARKET_DATA: '0'
+        run: |
+          python - <<'PY'
+          import subprocess,os
+          codes=[]
+          for i in range(3):
+              print('Diagnostic run',i+1,flush=True)
+              result=subprocess.run(['npm','run','test:battle-perf'],env={**os.environ,'BATTLE_PROFILE_LABEL':'diagnostic-'+str(i)})
+              codes.append(result.returncode)
+          print('Return codes:',codes)
+          raise SystemExit(any(codes))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: island-animation-diagnostics
+          path: artifacts/battle/performance
+          retention-days: 7

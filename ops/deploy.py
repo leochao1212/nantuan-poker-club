@@ -20,6 +20,7 @@ import tarfile
 import tempfile
 import time
 import threading
+import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 import zipfile
@@ -70,26 +71,47 @@ class GitHub:
 
     def open(self, path):
         require(path.startswith('/') and not path.startswith('//'), 'Invalid API path')
-        request = urllib.request.Request('https://api.github.com/repos/' + REPO + path,
-            headers={'Authorization': 'Bearer ' + self.token,
-                     'Accept': 'application/vnd.github+json', 'User-Agent': 'nantuan-deploy'})
-        return self.opener.open(request, timeout=60)
+        for attempt in range(4):
+            request = urllib.request.Request('https://api.github.com/repos/' + REPO + path,
+                headers={'Authorization': 'Bearer ' + self.token,
+                         'Accept': 'application/vnd.github+json', 'User-Agent': 'nantuan-deploy',
+                         'Cache-Control': 'no-cache'})
+            try:
+                return self.opener.open(request, timeout=30)
+            except urllib.error.HTTPError as error:
+                retry = error.code in (429, 500, 502, 503, 504)
+                error.close()
+                if not retry or attempt == 3:
+                    raise Refused('GitHub API unavailable (HTTP ' + str(error.code) + ')') from None
+            except (urllib.error.URLError, TimeoutError):
+                if attempt == 3:
+                    raise Refused('GitHub API unavailable after retries') from None
+            time.sleep(2 ** (attempt + 1))
 
     def api(self, path):
         with self.open(path) as response:
             return json.load(response)
 
 
-def validate_request(request, api):
+def validate_request(request, api, *, status_attempts=31):
     require(set(request) == {'token', 'run_id', 'ci_run_id', 'sha'}, 'Invalid request fields')
     for field in ['run_id', 'ci_run_id']:
         require(isinstance(request[field], str) and re.fullmatch(r'[0-9]{1,20}', request[field]), 'Invalid run ID')
     sha = request['sha']
     require(isinstance(sha, str) and re.fullmatch(r'[0-9a-f]{40}', sha), 'Expected full commit SHA')
-    deploy = api('/actions/runs/' + request['run_id'])
-    require(deploy['path'] == '.github/workflows/deploy.yml' and deploy['event'] == 'workflow_dispatch'
-            and deploy['head_branch'] == 'main' and deploy['head_sha'] == sha
-            and deploy['status'] == 'in_progress', 'Only a running manual main deployment is allowed')
+    for attempt in range(status_attempts):
+        deploy = api('/actions/runs/' + request['run_id'])
+        require(deploy['path'] == '.github/workflows/deploy.yml' and deploy['event'] == 'workflow_dispatch'
+                and deploy['head_branch'] == 'main' and deploy['head_sha'] == sha,
+                'Only a manual main deployment for this commit is allowed')
+        if deploy['status'] == 'in_progress':
+            break
+        require(deploy['status'] in ('queued', 'requested', 'waiting', 'pending'),
+                'Only a running manual main deployment is allowed')
+        require(attempt + 1 < status_attempts, 'Timed out waiting for GitHub deployment status to synchronize')
+        if attempt == 0:
+            print('Waiting for GitHub deployment status to synchronize', flush=True)
+        time.sleep(10)
     require(api('/commits/main')['sha'] == sha, 'main moved; start a new deployment')
     ci = api('/actions/runs/' + request['ci_run_id'])
     require(ci['path'] == '.github/workflows/ci.yml' and ci['head_branch'] == 'main'

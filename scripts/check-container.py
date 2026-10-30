@@ -16,7 +16,7 @@ assert os.geteuid()==10001
 with urllib.request.urlopen('http://127.0.0.1:8765/api/bootstrap',timeout=2) as r:
     assert json.load(r)['capacity']==6
 assert Path('/app/schema_migrations.py').is_file() and Path('/app/static/market-chart.js').is_file()
-assert all(Path('/app/'+name+'.py').is_file() for name in ('market_catalog','market_contracts','market_charts'))
+assert all(Path('/app/'+name+'.py').is_file() for name in ('market_catalog','market_contracts','market_charts','market_review'))
 assert Path('/app/market.py').is_file() and Path('/app/market_data.py').is_file() and Path('/app/static/market.js').is_file()
 assert Path('/app/bank.py').is_file() and Path('/app/static/bank.js').is_file()
 assert all(Path('/app/'+name+'.py').is_file() for name in ('battle','battle_engine'))

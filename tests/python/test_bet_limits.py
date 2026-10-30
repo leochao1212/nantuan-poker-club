@@ -85,10 +85,21 @@ class BetLimits(unittest.TestCase):
   settled=deepcopy(online.get_room(self.db,rid));online.mutate(self.db,path,payload,user,self.t+4)
   self.assertEqual(online.get_room(self.db,rid),settled);self.assertEqual(settled['hand']['players'][0]['contribution'],5000)
  def test_house_reserve_upgrade_is_only_between_rounds_at_a_new_high(self):
-  r=self.room('dice');players=deepcopy(r['seats']);r.pop('bet_limit_funded');r['bank']=1000000
+  r=self.room('dice');players=deepcopy(r['seats']);r.pop('bet_limit_funded');r.pop('house_risk_funded');r['bank']=1000000
   g.fund_bet_limit(r,g.current(self.db,'dice'));self.assertEqual(r['bank'],9060000);self.assertEqual(r['seats'],players)
   r['bank']-=123;g.fund_bet_limit(r,g.current(self.db,'dice'));self.assertEqual(r['bank'],9060000-123)
   self.update('limits',{'max_bet':2000});g.fund_bet_limit(r,g.current(self.db,'dice'));self.update('limits',{'max_bet':10000});g.fund_bet_limit(r,g.current(self.db,'dice'));self.assertEqual(r['bank'],9060000-123)
+
+ def test_payout_increase_funds_only_added_risk_at_the_same_limit(self):
+  for kind,changes in [('slot',{'triples':[500,32,20,14,10,7]}),('roulette',{'number_bp':1000000}),('dice',{'triple':500})]:
+   with self.subTest(kind=kind):
+    r=self.room(kind);before=deepcopy(r['seats']);peak=r['house_risk_funded'];r['bank']-=123
+    self.update(kind,changes);cfg=g.current(self.db,kind);g.fund_bet_limit(r,cfg)
+    self.assertGreater(r['house_risk_funded'],peak)
+    self.assertEqual(r['bank'],r['house_risk_funded']-123);self.assertEqual(r['seats'],before)
+    after=deepcopy(r);g.fund_bet_limit(r,cfg);self.assertEqual(r,after)
+    r['status']='playing';self.update('limits',{'max_bet':20000});g.fund_bet_limit(r,g.current(self.db,kind));self.assertEqual(r['bank'],after['bank'])
+    self.update('limits',{'max_bet':10000})
 
  def test_holdem_does_not_receive_house_credit_or_an_artificial_all_in_cap(self):
   r=p.new_room('Holdem',2,buy_in=50000);before=deepcopy(r)

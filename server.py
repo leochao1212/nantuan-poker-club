@@ -36,6 +36,7 @@ import market
 import market_data
 import market_catalog
 import market_contracts
+import market_review
 import member_accounts
 from realtime import Hub, WriteQueue
 from dataclasses import dataclass
@@ -45,6 +46,7 @@ from poker_engine import RuleError
 ROOT = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("POKER_DB", ROOT / "data" / "poker.sqlite3"))
 AUTH_LOCK = threading.Lock()
+AUTH_WORK = threading.BoundedSemaphore(2)
 ATTEMPTS: dict[str, list[float]] = {}
 CLIENT_EVENT_AT = {}
 CLIENT_EVENT_BUDGET = {}
@@ -385,6 +387,11 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);clock=time.time()
                     value=dict(market=market.view(db,user['id'],clock,query.get('symbol',[None])[0],query.get('period',[None])[0],query.get('interval',[None])[0]),wallet=wallet.view(db,user['id'],clock))
                 self.reply(200,value)
+            elif path=='/api/admin/market-halts':
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
+                    value=market_review.view(db,user,time.time())
+                self.reply(200,value)
             elif path in ('/api/bank','/api/admin/bank-settings'):
                 query=parse_qs(urlsplit(self.path).query)
                 with connect() as db:
@@ -457,7 +464,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/battle.js", "/battle-scene.js", "/battle-art.js", "/battle-motion.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/battle.js", "/battle-scene.js", "/battle-art.js", "/battle-motion.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-review.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "txt":"text/plain"}
                 ext = name.rsplit(".",1)[-1]
@@ -669,23 +676,22 @@ class Handler(BaseHTTPRequestHandler):
         """
         username=clean(data.get('username'),'账号',24);password=data.get('password')
         if not isinstance(password,str) or not 8<=len(password)<=128:raise Problem('密码需为 8–128 个字元。')
-        ip=self.client_address[0];self.auth_attempt_key=f'user:{ip}:{username.casefold()}'
-        with AUTH_LOCK:
-            clock=time.time()
-            for key,limit in ((self.auth_attempt_key,12),(f'ip:{ip}',120)):
-                attempts=[t for t in ATTEMPTS.get(key,[]) if t>clock-600]
-                ATTEMPTS[key]=attempts
-                if len(attempts)>=limit:raise Problem('尝试次数太多，请 10 分钟后再试。',429)
-            ATTEMPTS[self.auth_attempt_key].append(clock);ATTEMPTS[f'ip:{ip}'].append(clock)
-            # Discard expired buckets instead of retaining arbitrary usernames forever.
-            for key in list(ATTEMPTS):
-                if not ATTEMPTS[key] or ATTEMPTS[key][-1]<=clock-600:del ATTEMPTS[key]
         with connect() as db:
             if self.path=='/api/register':
                 if not re.fullmatch(r'[A-Za-z0-9_]{3,24}',username):raise Problem('账号请使用 3–24 位英文字母、数字或底线。')
                 count=db.execute('SELECT count(*) FROM users').fetchone()[0]
                 code=db.execute("SELECT value FROM settings WHERE key='invite_code'").fetchone()[0]
-                if (count or REQUIRE_INVITE) and not hmac.compare_digest(str(data.get('invite_code','')).strip().upper(),code):raise Problem('邀请码不正确，请向已加入的室友索取。',403)
+                if (count or REQUIRE_INVITE) and not hmac.compare_digest(str(data.get('invite_code','')).strip().upper(),code):
+                    # Preserve invite-code probing protection without sharing
+                    # its cooldown with valid logins or valid invitations.
+                    with AUTH_LOCK:
+                        clock=time.time();key='invite:'+self.client_address[0]
+                        for expired in [k for k,v in ATTEMPTS.items() if not v or v[-1]<=clock-600]:del ATTEMPTS[expired]
+                        attempts=[t for t in ATTEMPTS.get(key,[]) if t>clock-600]
+                        if len(attempts)>=120:raise Problem('邀請碼嘗試過多，請稍後再試。',429)
+                        if key not in ATTEMPTS and len(ATTEMPTS)>=4096:raise Problem('登入驗證忙碌，請稍後重試。',503)
+                        ATTEMPTS[key]=[*attempts,clock]
+                    raise Problem('邀请码不正确，请向已加入的室友索取。',403)
                 clean(data.get('nickname'),'昵称',16)
                 if db.execute('SELECT 1 FROM users WHERE username=?',(username,)).fetchone():raise Problem('这个账号已被使用。',409)
                 salt=secrets.token_hex(16)
@@ -693,7 +699,27 @@ class Handler(BaseHTTPRequestHandler):
                 candidate=db.execute('SELECT id,salt,password_hash FROM users WHERE username=?',(username,)).fetchone()
                 candidate=dict(candidate) if candidate else None
                 salt=candidate['salt'] if candidate else '00'*16
-        digest=pass_hash(password,salt)
+        # Existing accounts never share the proxy's failed-login cooldown.
+        # Unknown-name abuse retains a peer budget; forwarded headers are not trusted.
+        self.auth_attempt_key=('register:'+username.casefold() if self.path=='/api/register' else
+                               'user:'+username.casefold() if candidate else 'unknown:'+self.client_address[0])
+        with AUTH_LOCK:
+            clock=time.time()
+            for key in [k for k,v in ATTEMPTS.items() if not v or v[-1]<=clock-600]:del ATTEMPTS[key]
+            attempts=[t for t in ATTEMPTS.get(self.auth_attempt_key,[]) if t>clock-600]
+            if len(attempts)>=(120 if self.auth_attempt_key.startswith('unknown:') else 12):
+                raise Problem('尝试次数太多，请 10 分钟后再试。',429)
+            if self.auth_attempt_key not in ATTEMPTS and len(ATTEMPTS)>=4096:
+                raise Problem('登入驗證忙碌，請稍後重試。',503)
+        if not AUTH_WORK.acquire(timeout=1):raise Problem('登入驗證忙碌，請稍後重試。',503)
+        try:
+            with AUTH_LOCK:
+                clock=time.time();attempts=[t for t in ATTEMPTS.get(self.auth_attempt_key,[]) if t>clock-600]
+                if len(attempts)>=(120 if self.auth_attempt_key.startswith('unknown:') else 12):
+                    raise Problem('尝试次数太多，请 10 分钟后再试。',429)
+                ATTEMPTS[self.auth_attempt_key]=[*attempts,clock]
+            digest=pass_hash(password,salt)
+        finally:AUTH_WORK.release()
         if self.path=='/api/login' and (not candidate or not hmac.compare_digest(digest,candidate['password_hash'])):raise Problem('账号或密码不正确。',401)
         self.auth_prepared={'salt':salt,'digest':digest,'user_id':candidate['id'] if self.path=='/api/login' else None}
 
@@ -778,6 +804,7 @@ class Handler(BaseHTTPRequestHandler):
                 fields['attempt_id']=attempt
             allowed={'reason':('channel','reconnect','state_error','stream_error','stream_stale','heartbeat_probe','offline','online','hidden','visible','freeze','resume','pagehide','pageshow','focus'),
                      'delivery':('push','snapshot','http','ping'),'visibility':('visible','hidden','prerender')}
+            if data.get('reason')=='android_resume':data={**data,'reason':'resume'}  # Older installed APKs.
             for key,values in allowed.items():
                 if key in data:
                     if not isinstance(data[key],str) or data[key] not in values:raise Problem('連線回報欄位無效。')
@@ -810,6 +837,10 @@ class Handler(BaseHTTPRequestHandler):
         if path in ('/api/market/order','/api/market/cancel'):
             clock=time.time();result=market.mutate(db,user,path.rsplit('/',1)[1],data,clock)
             result.update(market=market.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+            db.commit();EVENTS.publish()
+            return Reply(200,result)
+        if path=='/api/admin/market-halts':
+            result=market_review.resolve(db,user,data,time.time())
             db.commit();EVENTS.publish()
             return Reply(200,result)
         if path=='/api/admin/bank-settings':
@@ -976,6 +1007,12 @@ class Handler(BaseHTTPRequestHandler):
         return Reply(200, {"ok": True})
 
 
+def stop_transports():
+    EVENTS.stop()
+    battle.HUB.stop()
+    voice_transport.HUB.stop()
+
+
 def main():
     parser = argparse.ArgumentParser(description="楠團牌室 · 私人線上牌室")
     parser.add_argument("--host", default="0.0.0.0")
@@ -1016,8 +1053,7 @@ def main():
         threading.Timer(0.5, lambda: webbrowser.open(f"http://localhost:{args.port}")).start()
     # Docker sends SIGTERM. Shutdown on a separate thread so serve_forever can exit.
     def shutdown(*_):
-        EVENTS.stop()
-        battle.HUB.stop()
+        stop_transports()
         threading.Thread(target=server.shutdown, daemon=True).start()
     signal.signal(signal.SIGTERM, shutdown)
     stopping = threading.Event()
@@ -1060,8 +1096,7 @@ def main():
         pass
     finally:
         stopping.set()
-        EVENTS.stop()
-        battle.HUB.stop()
+        stop_transports()
         server.server_close()
 
 

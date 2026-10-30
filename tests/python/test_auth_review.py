@@ -62,6 +62,36 @@ class AuthenticationReview(unittest.TestCase):
         self.assertEqual(stranger.call('/api/login',dict(username='alice',password='incorrect123'))[0],429)
         self.assertEqual(stranger.call('/api/login',dict(username='bob',password='password123'))[0],200)
 
+    def test_proxy_abuse_cannot_exhaust_another_registered_account(self):
+        c=fixtures.Client(self.base)
+        for i in range(120):
+            self.assertEqual(c.call('/api/register',dict(username=f'bad_registration_{i}',nickname='Test',password='password123',invite_code='WRONG'))[0],403)
+        self.assertEqual(c.call('/api/register',dict(username='invite_overflow',nickname='Test',password='password123',invite_code='WRONG'))[0],429)
+        invite=self.alice.call('/api/state')[1]['invite_code']
+        self.assertEqual(c.call('/api/register',dict(username='valid_new_guest',nickname='Test',password='password123',invite_code=invite))[0],200)
+        original=app.pass_hash
+        with patch.object(app,'pass_hash',side_effect=lambda password,salt:'fake' if salt=='00'*16 else original(password,salt)):
+            for i in range(120):self.assertEqual(c.call('/api/login',dict(username=f'absent_{i}',password='password123'))[0],401)
+        self.assertEqual(c.call('/api/login',dict(username='absent_overflow',password='password123'))[0],429)
+        self.assertEqual(c.call('/api/login',dict(username='bob',password='password123'))[0],200)
+
+    def test_auth_hash_admission_does_not_hold_the_game_write_queue(self):
+        self.assertTrue(app.AUTH_WORK.acquire(timeout=1));self.assertTrue(app.AUTH_WORK.acquire(timeout=1))
+        try:
+            started=time.monotonic()
+            self.assertEqual(fixtures.Client(self.base).call('/api/login',dict(username='bob',password='password123'))[0],503)
+            self.assertLess(time.monotonic()-started,2)
+            self.assertEqual(self.bob.call('/api/wallet/claim',{})[0],200)
+        finally:app.AUTH_WORK.release();app.AUTH_WORK.release()
+
+    def test_existing_apk_resume_events_are_accepted_and_normalized(self):
+        from pathlib import Path
+        for reason in ('android_resume','resume'):
+            status,_=self.alice.call('/api/online/client-event',dict(kind='recovery_started',client='android_contract_0001',attempt_id='resume_contract_00001',reason=reason))
+            self.assertEqual(status,200)
+        source=(Path(app.ROOT)/'mobile/nantuan_app/lib/main.dart').read_text(encoding='utf-8')
+        self.assertIn("resumeConnections('resume')",source)
+
 class RouletteReview(unittest.TestCase):
     def test_selected_chip_amount_does_not_require_the_original_room_denomination(self):
         for amount in (1,5,10):

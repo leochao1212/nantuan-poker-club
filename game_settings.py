@@ -99,14 +99,14 @@ def room_bet_limit(room):
  return bet_limit(room['hand'].get('game_settings',{})) if room.get('status')=='playing' else bet_limit(room.get('next_game_settings'))
 
 def fund_bet_limit(room,snapshot):
- """Fund virtual house reserves only when the configured ceiling reaches a new high.
+ """Fund only the increase in peak liability, between rounds.
 
  This never moves player/wallet points or changes outcomes, and is called only
  between hands in the same transaction as opening/starting a table.
  """
  if room.get('status')!='waiting':return
  kind=room.get('game_type','holdem');limit=bet_limit(snapshot)
- if kind in ('holdem','mahjong','big2') or limit<=room.get('bet_limit_funded',1000):return
+ if kind in ('holdem','mahjong','big2'):return
  p=snapshot['params'];cap=room.get('capacity',6)
  if kind=='roulette':multiple=Fraction(max(p[k] for k in ('number_bp','even_bp','group_bp')),10000)+1
  elif kind=='dice':multiple=max(p['even'],*p['faces'],*p['totals'],p['any_triple'],p['triple'])+1
@@ -118,7 +118,12 @@ def fund_bet_limit(room,snapshot):
   multiple=max(Fraction(bonus_engine.risk_return(kind,limit,5 if kind=='mines' else 6,mode=m,settings=p),limit) for m in ('fixed','progressive'))
  else:multiple=500
  reserve=max(1000000,(limit*multiple*cap).__ceil__())
- room['bank']=max(room['bank'],reserve);room['bet_limit_funded']=limit
+ # Legacy tables are upgraded once at their next intermission. Afterwards
+ # only additional liability is funded; retries never refill house losses.
+ old=room.get('house_risk_funded')
+ room['bank']+=max(0,reserve-room['bank']) if old is None else max(0,reserve-old)
+ room['house_risk_funded']=max(old or 0,reserve)
+ room['bet_limit_funded']=max(limit,room.get('bet_limit_funded',1000))
 def params(hand,game):return hand.get('game_settings',{}).get('params',DEFAULTS[game])
 
 def validate(game,value):

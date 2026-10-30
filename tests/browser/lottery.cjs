@@ -29,11 +29,13 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/lottery
    assert.equal((await api('/api/lottery')).wallet.balance,before.wallet.balance-200);
    assert.equal((await api('/api/lottery')).lottery.bought,2);
    assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
+   await p.evaluate(()=>scrollTo(0,0));
    await p.screenshot({path:path.join(out,`${width}.png`),fullPage:true});
    const settle=spawnSync('python',['-c',"import sqlite3,sys,time,lottery; d=sqlite3.connect(sys.argv[1]);d.row_factory=sqlite3.Row;d.execute('BEGIN IMMEDIATE');at=d.execute('SELECT max(draw_at) FROM lottery_draws').fetchone()[0];lottery.maintenance(d,max(at+1,lottery.upcoming(time.time())[1]+1));d.commit()",db],{cwd:root});assert.equal(settle.status,0);
    await p.reload();await p.locator('[data-lottery-results] article').first().waitFor();
    const after=await api('/api/lottery');assert.ok(after.lottery.results[0].seed);assert.ok(after.lottery.tickets.every(t=>t.prize!==null));
    await p.locator('[data-lottery-results] summary').first().click();
+   await p.evaluate(()=>scrollTo(0,0));
    await p.screenshot({path:path.join(out,`${width}-results.png`),fullPage:true});await c.close();
   }
   assert.deepEqual(errors,[]);console.log('Lottery UI: mobile + desktop purchases, reload receipts, balance checks, no overflow/errors passed.');

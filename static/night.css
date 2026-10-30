@@ -5437,3 +5437,121 @@ html.island-active #app :is(.sidebar,.topbar,.play-reminder,.page-foot){visibili
 .lottery-entry{display:grid;gap:8px;margin-bottom:24px;padding:22px;text-decoration:none;color:inherit}.lottery-entry strong{font-size:22px;color:var(--gold,#e7c67e)}
 #lottery-console{display:grid;gap:24px;min-width:0}#lottery-console .panel{padding:24px;min-width:0}.lottery-hero{display:flex;justify-content:space-between;gap:24px;align-items:center;background:radial-gradient(ellipse at right top,#423720,transparent 65%)}.lottery-hero h2{font-size:clamp(28px,4vw,44px);line-height:1.2}.lottery-jackpot{display:grid;gap:10px;text-align:right}.lottery-jackpot strong{font-size:clamp(40px,6vw,64px);color:var(--gold,#e7c67e);font-variant-numeric:tabular-nums}.lottery-layout{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.3fr);gap:24px}.lottery-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:24px 0}.lottery-grid button{min-width:44px;min-height:48px;border:1px solid #665d4e;border-radius:12px;background:#201f1c;color:#f7eee0;font:inherit;font-size:18px;font-weight:600;cursor:pointer}.lottery-grid button[aria-pressed=true]{background:#e7c67e;color:#191710;border-color:#e7c67e}.lottery-grid button:focus-visible{outline:3px solid #fff;outline-offset:3px}.lottery-grid button:disabled{cursor:default;opacity:.55}.lottery-selection{min-height:30px;font-size:22px;font-variant-numeric:tabular-nums;color:#e7c67e}.lottery-table{overflow:auto}#lottery-console table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}#lottery-console td,#lottery-console th{padding:12px 6px;border-bottom:1px solid #494236}#lottery-console p{line-height:1.7}#lottery-console summary{cursor:pointer;min-height:44px;padding:12px 0}#lottery-console code{overflow-wrap:anywhere;font-size:12px}.lottery-balls{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0;align-items:center}.lottery-ball{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#ead5a6;color:#201b12;font-weight:700}.lottery-special{display:flex;gap:8px;align-items:center;margin-left:6px}.lottery-special .lottery-ball{background:#c7d6c3}.lottery-history ul{list-style:none;padding:0}.lottery-history li{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid #494236;padding:16px 0}.lottery-history article{border-top:1px solid #494236;padding:14px 0}#lottery-console [data-lottery-message]{min-height:28px;color:#ead5a6}
 @media(max-width:850px){.lottery-layout{grid-template-columns:1fr}.lottery-hero{align-items:flex-start;flex-direction:column}.lottery-jackpot{text-align:left}#lottery-console .panel{padding:18px}.lottery-history li{align-items:flex-start;flex-direction:column}.lottery-entry strong{font-size:18px}}
+
+/* Club navigation: keep play first and supporting services easy to scan. */
+#app .sidebar .account{gap:6px;min-width:0;max-width:100%;}
+#app .sidebar .profile-account-button{flex:1 1 0;min-width:0;max-width:100%;padding:0;gap:7px;}
+#app .sidebar .profile-user-text{flex:1;min-width:0;overflow:hidden;}
+#app .sidebar .profile-user-text :is(strong,small){display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#app .sidebar #logout{flex:0 0 36px;width:36px;min-width:36px;padding:6px;}
+#app .lobby-services{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:12px;margin:18px 0 24px;}
+#app .lobby-services>a{display:flex;align-items:center;gap:12px;min-width:0;min-height:78px;padding:15px 18px;margin:0;border:1px solid var(--gold-line);border-radius:12px;background:var(--cream-panel);color:var(--ink-deep);box-shadow:none;}
+#app .lobby-services>a>span:nth-child(2){display:grid;gap:5px;flex:1;min-width:0;}
+#app .lobby-services strong{font-size:16px;color:var(--ink-deep);}
+#app .lobby-services small{font-size:12px;color:var(--ink-2);line-height:1.5;}
+#app .lobby-services .service-icon{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:10px;background:#e9e2cc;color:var(--emerald);}
+#app .lobby-services svg{width:21px;height:21px;}
+#app .lobby-services>a:hover{border-color:var(--emerald);background:#fffaf0;}
+html[data-ui=current] #app #main :is(.page-heading,.bank-hero-links,.rewards-links) .button.ghost,
+html[data-ui=current] #app #main #lottery-console .button.ghost{background:transparent;border:1px solid var(--gold-line);border-radius:9px;box-shadow:none;text-shadow:none;color:var(--ink-deep);min-height:44px;}
+html[data-ui=current] #app #main .night-hero-actions .button.ghost{background:#143b32b8;border:1px solid #d7c8a8;border-radius:9px;box-shadow:none;color:#fff7e6;text-shadow:none;}
+#app #lottery-console .lottery-hero{background:#183e33;border-color:#456353;color:#fff7e7;box-shadow:none;}
+#app #lottery-console .lottery-hero :is(h2,p,span){color:#fff7e7;}
+#app #lottery-console .lottery-hero h2{font-size:clamp(24px,3vw,36px);margin:12px 0;}
+#app #lottery-console .lottery-jackpot strong{color:#f2d58f;font-size:clamp(36px,4.5vw,56px);}
+.lottery-picker-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.lottery-picker-heading h2{margin:0;font-size:21px;}
+.lottery-picker-heading>span{color:#285b48;background:#e5eddf;border-radius:20px;padding:6px 10px;font-size:13px;white-space:nowrap;}
+#app #lottery-console .lottery-selection{color:var(--ink-deep);font-size:18px;min-height:32px;}
+#app #lottery-console [data-lottery-message]{color:#315b48;}
+#app #lottery-console .lottery-grid button{background:#fffaf0;border-color:#b0b4a2;color:#173f33;}
+#app #lottery-console .lottery-grid button[aria-pressed=true]{background:#214f3e;border-color:#214f3e;color:#fff7e7;box-shadow:inset 0 0 0 2px #e4ce93;}
+#app #lottery-console .lottery-grid button:focus-visible{outline-color:#214f3e;}
+.lottery-tickets-jump{display:inline-flex;align-items:center;min-height:44px;text-decoration:underline;text-underline-offset:4px;color:var(--emerald);}
+#app #lottery-console .lottery-prize-details>summary{font-size:19px;font-weight:700;}
+#app #lottery-console .lottery-table th:first-child{min-width:44px;white-space:nowrap;}
+#app #lottery-console .lottery-table td:last-child{white-space:nowrap;font-variant-numeric:tabular-nums;}
+@media(max-width:850px){
+ #app .lobby-services{grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 20px;}
+ #app .lobby-services>a{min-height:66px;padding:12px;gap:9px;}
+ #app .lobby-services .lottery-entry{grid-column:1/-1;}
+ #app .lobby-services .service-icon{width:32px;height:32px;flex-basis:32px;}
+ #app .lobby-services strong{font-size:15px;}
+ #app #lottery-console{gap:16px;}
+ #app #lottery-console .lottery-hero{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;}
+ #app #lottery-console .lottery-hero h2{font-size:23px;}
+ #app #lottery-console .lottery-jackpot{gap:6px;max-width:128px;}
+ #app #lottery-console .lottery-jackpot span{font-size:11px;line-height:1.5;}
+ #app #lottery-console .lottery-jackpot strong{font-size:32px;}
+ #app #lottery-console .lottery-hero p{font-size:12px;margin:8px 0;}
+ #app #lottery-console .lottery-hero .small-label{font-size:11px;}
+ #app #lottery-console .lottery-grid{margin:18px 0;gap:8px;}
+ #app #lottery-console .lottery-rules{padding:10px 18px;}
+ #app #lottery-console .lottery-layout{gap:16px;}
+}
+@media(max-width:360px){
+ #app #lottery-console .lottery-hero{grid-template-columns:1fr;}
+ #app #lottery-console .lottery-jackpot{max-width:none;grid-template-columns:1fr auto;align-items:center;}
+ #app #lottery-console .lottery-jackpot>span:last-child{grid-column:1/-1;}
+}
+@media(max-width:480px){
+ /* The balance already opens the bank; keep voice/profile fully inside narrow headers. */
+ #app .topbar #open-bank{display:none;}
+}
+
+/* Reward desk: actionable rewards first; titles and rules have their own views. */
+#app .rewards-hub{max-width:1120px;margin-inline:auto;display:grid;gap:20px;}
+#app .rewards-hub [hidden]{display:none!important;}
+#app .reward-desk{background:#173c31;color:#fff7df;border:1px solid #b79953;border-radius:16px;padding:28px;display:flex;align-items:center;justify-content:space-between;gap:24px;}
+#app .reward-desk h2{color:inherit;font-size:28px;margin:8px 0;}
+#app .reward-desk p,#app .reward-desk span{color:#d8e2d4;line-height:1.6;}
+#app .reward-desk .button{min-width:190px;min-height:52px;flex-shrink:0;}
+#app .reward-tabs{display:flex;gap:8px;border-bottom:1px solid #bcad89;padding-bottom:12px;}
+#app .reward-tabs .button{flex:1;min-height:48px;background-image:none!important;box-shadow:none;font-size:16px;}
+#app .reward-tabs [aria-pressed="true"]{background:#224b3c;color:#fff8e6;border-color:#224b3c;}
+#app [data-hub-panel]{display:grid;gap:20px;}
+#app .reward-supplies .supply-boxes{margin:12px 0 0;}
+#app .reward-supplies .daily-box{display:grid;gap:12px;padding:20px;align-content:start;}
+#app .reward-supplies .daily-box>strong{font:600 30px/1.3 Georgia,serif;color:#214538;}
+#app .reward-supplies .daily-box>strong small{font:400 15px/1.5 sans-serif;}
+#app .reward-supplies .daily-box>span,#app .reward-supplies .daily-box>small{font-size:14px;color:#505a4b;}
+#app .reward-supplies .daily-box .button{min-height:48px;width:100%;justify-self:stretch;}
+#app .reward-income{display:flex;flex-wrap:wrap;align-items:center;gap:16px;}
+#app .reward-income>div{flex:1;min-width:160px;}
+#app .reward-income h2{margin:0 0 8px;}
+#app .reward-income p{margin:0;}
+#app .reward-income .text-button{flex-basis:100%;font-size:15px;}
+#app .reward-receipt{padding:20px 24px;background:#e6efdf;border:1px solid #6c855a;border-radius:12px;color:#203d2d;}
+#app .reward-receipt h2{font-size:20px;margin:0 0 8px;}
+#app .reward-receipt summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;}
+#app .reward-receipt ul{list-style:none;margin:0;padding:0;}
+#app .reward-receipt li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid #bccbb1;}
+#app .reward-rules p{max-width:70ch;font-size:16px;line-height:1.8;}
+#app .rewards-hub .milestone-tier{flex-wrap:wrap;}
+#app .rewards-hub .milestone-tier>div{flex-basis:60%;}
+#app .rewards-hub .milestone-tier .button{min-height:44px;}
+#app .rewards-hub .title-bonus-summary>a{display:none;}
+#app .rewards-hub .mission-card{box-shadow:none;}
+#app .rewards-hub .mission-card .button{min-height:44px;}
+#app .rewards-hub .title-bonus-summary{padding:20px 24px;}
+#app .reward-title-unlock{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;}
+#app .reward-title-unlock .button{min-height:44px;flex-shrink:0;}
+html[data-ui=current] #app #main .reward-tabs .button{background:#f8f0de;border:1px solid #ae9e7a;border-radius:8px;box-shadow:none;text-shadow:none;color:#244636;}
+html[data-ui=current] #app #main .reward-tabs [aria-pressed="true"]{background:#224b3c;color:#fff8e6;border-color:#224b3c;}
+html[data-ui=current] #app #main .reward-supplies .daily-box .button{width:100%!important;min-width:160px;max-width:none;justify-self:stretch;}
+@media(max-width:600px){
+ #app .rewards-hub{gap:16px;}
+ #app .reward-desk{display:grid;padding:20px;gap:12px;}
+ #app .reward-desk h2{font-size:24px;}
+ #app .reward-desk p{margin:4px 0;font-size:14px;}
+ #app .reward-desk .button{width:100%;}
+ #app .reward-tabs{gap:5px;}
+ #app .reward-tabs .button{padding:10px 6px;font-size:14px;}
+ #app .reward-supplies .supply-boxes{grid-template-columns:1fr;}
+ #app .reward-supplies .daily-box{padding:16px;}
+ #app .reward-receipt{padding:16px;}
+ #app .rewards-hub .milestone-tier>div{flex-basis:100%;}
+ #app .reward-supplies .daily-box{grid-template-columns:1fr auto;align-items:center;gap:8px 12px;}
+ #app .reward-supplies .daily-box>strong{grid-column:2;grid-row:1;font-size:24px;}
+ #app .reward-supplies .daily-box>button,#app .reward-supplies .daily-box>small{grid-column:1/-1;}
+}

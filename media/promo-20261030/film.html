@@ -1,0 +1,86 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>楠團牌室｜今晚，差你一個</title>
+<style>html,body{margin:0;background:#102b23;height:100%;display:grid;place-items:center}canvas{width:min(100vw,177.777vh);height:auto;display:block}button{position:fixed;bottom:16px;right:16px;padding:10px 20px;background:#ead298;color:#173e31;border:0;border-radius:30px;font:16px sans-serif}</style>
+<canvas id="film" width="1920" height="1080" aria-label="楠團牌室三十秒宣傳影片"></canvas><button id="play">播放 30 秒預覽</button>
+<script>
+// Original time-addressable film. All imagery comes from this game's own assets.
+const c=document.getElementById('film'),g=c.getContext('2d'),W=1920,H=1080;
+const C={ink:'#102b23',green:'#1c4a39',jade:'#317658',gold:'#e6c77e',paper:'#f5eedb',muted:'#bbcab9',red:'#aa5147'};
+const font='"Microsoft JhengHei","Noto Sans TC","PingFang TC",sans-serif';
+const files={holdem:'covers/holdem.webp',big2:'covers/big2.webp',blackjack:'covers/blackjack.webp',mahjong:'covers/mahjong.webp',club:'clubhouse/tier-6.webp',ace:'cards/as.webp',king:'cards/ks.webp',queen:'cards/qs.webp',jack:'cards/js.webp',ten:'cards/ts.webp'};
+let assets={};
+const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return 1-Math.pow(1-x,4);},smooth=x=>{x=clamp(x);return x*x*(3-2*x);},lerp=(a,b,t)=>a+(b-a)*t;
+const move=(t,start,d=.75)=>ease((t-start)/d);
+function rr(x,y,w,h,r=22,fill=C.paper,stroke){g.beginPath();g.roundRect(x,y,w,h,r);if(fill){g.fillStyle=fill;g.fill();}if(stroke){g.strokeStyle=stroke;g.lineWidth=2;g.stroke();}}
+function text(s,x,y,size=44,color=C.paper,weight=700,align='left'){g.fillStyle=color;g.font=`${weight} ${size}px ${font}`;g.textAlign=align;g.textBaseline='middle';g.fillText(s,x,y);}
+function title(s,x,y,t,start,size=98,color=C.paper){g.save();g.beginPath();g.rect(x-5,y-size*.65,1700,size*1.3);g.clip();text(s,x,y+size*1.4*(1-move(t,start)),size,color,800);g.restore();}
+function image(key,x,y,w,h,r=20){const im=assets[key];if(!im)return;g.save();g.beginPath();g.roundRect(x,y,w,h,r);g.clip();const scale=Math.max(w/im.width,h/im.height);g.drawImage(im,x+(w-im.width*scale)/2,y+(h-im.height*scale)/2,im.width*scale,im.height*scale);g.restore();}
+function chip(x,y,r,color=C.gold,angle=0){g.save();g.translate(x,y);g.rotate(angle);g.shadowColor='#0006';g.shadowBlur=18;g.shadowOffsetY=12;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fillStyle=color;g.fill();g.shadowBlur=0;g.shadowOffsetY=0;g.strokeStyle=C.paper;g.lineWidth=r*.09;g.setLineDash([r*.2,r*.22]);g.beginPath();g.arc(0,0,r*.87,0,Math.PI*2);g.stroke();g.setLineDash([]);g.strokeStyle=C.ink;g.lineWidth=2;g.beginPath();g.arc(0,0,r*.66,0,Math.PI*2);g.stroke();text('♠',0,0,r*.8,C.ink,700,'center');g.restore();}
+function card(key,x,y,w,angle=0){g.save();g.translate(x,y);g.rotate(angle);g.shadowColor='#0008';g.shadowBlur=25;g.shadowOffsetY=16;rr(-w/2,-w*.72,w,w*1.44,18,C.paper);g.shadowBlur=0;g.shadowOffsetY=0;const im=assets[key];if(im)g.drawImage(im,-w/2,-w*.72,w,w*1.44);g.restore();}
+function pill(s,x,y,w,fill=C.gold,color=C.ink){rr(x,y,w,56,28,fill);text(s,x+w/2,y+28,25,color,700,'center');}
+function label(s,t){g.globalAlpha=.65;text(s,120,85,24,C.paper,500);g.globalAlpha=1;}
+function grain(){g.strokeStyle='#ffffff08';g.lineWidth=1;for(let x=0;x<W;x+=80){g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();}}
+function backdrop(color=C.ink){g.fillStyle=color;g.fillRect(0,0,W,H);if(color===C.ink||color===C.green)grain();}
+function opening(t){
+ backdrop();
+ // Four seats converge around the empty place: the fifth chip becomes the logo.
+ const enter=move(t,0,1.2),spread=move(t,2.8,.9);
+ for(let i=0;i<4;i++){const a=i*Math.PI/2+.4,r=lerp(650,360,enter);chip(1350+Math.cos(a+t*.12)*r*(1-spread*.35),535+Math.sin(a+t*.12)*r*.7,64,[C.gold,C.red,C.jade,C.paper][i],t*.2+i);}
+ g.save();g.globalAlpha=enter;g.strokeStyle='#e6c77e44';g.lineWidth=3;g.beginPath();g.ellipse(1340,535,430,300,0,0,7);g.stroke();g.restore();
+ title('今晚，',125,395,t,.15,124);title('差你一個。',125,555,t,.65,124,C.gold);
+ g.globalAlpha=move(t,1.4);text('朋友的聚會場，隨時開桌。',132,720,34,C.muted,400);g.globalAlpha=1;
+ chip(1340,535,lerp(10,125,move(t,1.2)),C.gold,-.15*t);
+}
+function lobby(t){
+ backdrop(C.paper);
+ title('把朋友，',120,325,t,0,100,C.ink);title('聚在同一桌。',120,450,t,.25,100,C.ink);
+ g.globalAlpha=move(t,.7);text('楠團牌室',126,620,38,C.green);text('自己的帳號・自己的朋友圈',126,687,29,C.green,400);g.globalAlpha=1;
+ const p=move(t,0,1.1);g.save();g.translate(lerp(2100,870,p),lerp(185,150,p));g.rotate(lerp(.12,-.018,p)+Math.sin(t*.45)*.008);g.scale(1+t*.003,1+t*.003);
+ rr(0,0,925,770,30,'#fbf6e9');g.shadowColor='#0002';g.shadowBlur=40;
+ rr(0,0,925,72,30,C.ink);g.shadowBlur=0;text('♠  楠團牌室',36,36,24,C.paper);text('朋友已上線',865,36,20,C.gold,500,'right');
+ image('holdem',24,98,877,292);rr(24,98,877,292,22,'#102b2355');text('今晚，開一桌。',58,177,46);pill('選擇遊戲',58,260,174);
+ const names=['德州撲克','21 點','大老二'],keys=['holdem','blackjack','big2'];
+ for(let i=0;i<3;i++){const v=move(t,.5+i*.18);g.save();g.globalAlpha=v;g.translate(0,(1-v)*80);image(keys[i],24+i*297,420,281,190);text(names[i],44+i*297,651,28,C.ink);rr(44+i*297,688,240,48,12,C.green);text('開一桌',164+i*297,712,21,C.paper,700,'center');g.restore();}
+ g.restore();
+}
+function poker(t){
+ backdrop();label('德州撲克・21 點・大老二・麻將',t);
+ title('好牌值得等。',120,225,t,0,86);title('朋友不用等。',120,340,t,.25,86,C.gold);
+ const p=move(t,.1,1);g.save();g.translate(1130,630+(1-p)*600);g.rotate(-.06+Math.sin(t*.6)*.012);
+ g.fillStyle=C.green;g.strokeStyle=C.gold;g.lineWidth=7;g.beginPath();g.ellipse(0,0,620,305,0,0,7);g.fill();g.stroke();g.strokeStyle='#e6c77e44';g.lineWidth=2;g.beginPath();g.ellipse(0,0,590,275,0,0,7);g.stroke();
+ ['ace','king','queen','jack','ten'].forEach((k,i)=>{const e=move(t,.7+i*.25,.6);card(k,lerp(-600,(i-2)*145,e),lerp(-300,0,e),128,lerp(-1.2,0,e));});
+ chip(-390,160,40,C.gold,t);chip(-330,175,40,C.red,-t);chip(430,-130,48,C.gold,.3);g.restore();
+ g.globalAlpha=move(t,2.2);pill('電腦發牌，即時對局',125,525,350,C.paper);text('熟悉的遊戲，隨時揪一局。',126,640,31,C.muted,400);g.globalAlpha=1;
+}
+function clubhouse(t){
+ backdrop(C.paper);
+ const e=move(t,0,.9);g.save();g.translate(120,145+(1-e)*900);g.beginPath();g.roundRect(0,0,1020,790,28);g.clip();image('club',-t*3,-t*2,1020+t*6,790+t*4,28);g.restore();
+ title('打牌之外，',1210,330,t,.2,70,C.ink);title('還有你的',1210,430,t,.45,70,C.ink);title('專屬會所。',1210,530,t,.7,70,C.ink);
+ g.globalAlpha=move(t,1.3);text('從小聚，到氣派。',1214,670,33,C.green);text('升級會所，安排員工，',1214,740,27,C.green,400);text('把每天的補給留給下一局。',1214,787,27,C.green,400);g.globalAlpha=1;
+ const a=move(t,1.5);g.save();g.translate(165,800+(1-a)*120);g.globalAlpha=a;rr(0,0,650,95,18,C.ink);text('我的會所',28,34,22,C.muted,500);text('每一次回來，都有新進展。',28,66,28,C.paper);g.restore();
+}
+function lottery(t){
+ backdrop(C.green);label('朋友樂透｜20 選 5',t);
+ title('每天 21:00',120,260,t,0,105,C.gold);title('一起等好消息。',120,400,t,.25,90);
+ const ns=['03','07','11','16','20'];
+ for(let i=0;i<5;i++){const e=move(t,.8+i*.23,.7),x=225+i*330;g.save();g.translate(x,lerp(1250,660,e));g.rotate((1-e)*1.8);g.shadowColor='#0005';g.shadowBlur=30;g.shadowOffsetY=15;g.fillStyle=C.paper;g.beginPath();g.arc(0,0,108,0,7);g.fill();g.shadowBlur=0;g.shadowOffsetY=0;text(ns[i],0,0,76,C.ink,800,'center');g.restore();}
+ g.globalAlpha=move(t,2.25);pill('每注 100 點',125,875,240);text('每天一場・開獎自動派獎',405,903,31,C.paper,500);text('示意號碼，非實際開獎結果',1780,998,21,C.muted,400,'right');g.globalAlpha=1;
+}
+function montage(t){
+ backdrop(C.gold);const words=['德州撲克','21 點','大老二','台灣麻將'];const keys=['holdem','blackjack','big2','mahjong'];
+ const k=Math.min(3,Math.floor(t/.65)),phase=t/.65-k;
+ for(let i=0;i<4;i++){const y=200+i*180;g.globalAlpha=i===k?1:.2;text(words[i],120,y,110,C.ink,900);g.globalAlpha=1;}
+ g.save();g.translate(1350,535);g.rotate(-.05+Math.sin(t*2)*.025);image(keys[k],-390,-360,780,720,30);g.restore();
+ rr(1020,920,660,5,2,'#173e3140');rr(1020,920,660*clamp(t/2.6),5,2,C.ink);
+}
+function closing(t){
+ backdrop();const e=move(t,0,.8);chip(960,300,lerp(180,88,e),C.gold,lerp(.7,0,e));
+ title('今晚，楠團見。',554,540,t,.2,116);g.globalAlpha=move(t,.7);text('poker.leoapi.dpdns.org',960,710,40,C.gold,600,'center');g.globalAlpha=move(t,1.1);text('朋友限定・純虛擬點數・無現金兌換',960,865,26,C.muted,400,'center');g.globalAlpha=1;
+}
+const scenes=[{start:0,end:4,draw:opening},{start:4,end:9,draw:lobby},{start:9,end:14,draw:poker},{start:14,end:19,draw:clubhouse},{start:19,end:24,draw:lottery},{start:24,end:27,draw:montage},{start:27,end:30,draw:closing}];
+window.seek=async function(t){t=Math.max(0,Math.min(29.999,t));g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;const index=scenes.findIndex(s=>t<s.end),s=scenes[index];s.draw(t-s.start);
+ // A moving card-edge wipe connects consecutive visual worlds without blank frames.
+ if(index>0&&t-s.start<.28){const p=ease((t-s.start)/.28);g.fillStyle=index%2?C.gold:C.paper;g.beginPath();g.moveTo(W*p-150,0);g.lineTo(W,0);g.lineTo(W,H);g.lineTo(W*p+100,H);g.fill();}
+};
+window.ready=Promise.all(Object.entries(files).map(([k,v])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{assets[k]=im;resolve();};im.onerror=reject;im.src='../../static/assets/'+v;}))).then(()=>window.seek(0));
+let playing=false;document.getElementById('play').onclick=async()=>{if(playing)return;await window.ready;playing=true;const start=performance.now();const tick=async now=>{const t=(now-start)/1000;await window.seek(t);if(t<30)requestAnimationFrame(tick);else playing=false;};requestAnimationFrame(tick);};
+</script></html>

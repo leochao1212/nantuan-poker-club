@@ -64,8 +64,11 @@ class AuthenticationReview(unittest.TestCase):
 
     def test_proxy_abuse_cannot_exhaust_another_registered_account(self):
         c=fixtures.Client(self.base)
-        for i in range(121):
+        for i in range(120):
             self.assertEqual(c.call('/api/register',dict(username=f'bad_registration_{i}',nickname='Test',password='password123',invite_code='WRONG'))[0],403)
+        self.assertEqual(c.call('/api/register',dict(username='invite_overflow',nickname='Test',password='password123',invite_code='WRONG'))[0],429)
+        invite=self.alice.call('/api/state')[1]['invite_code']
+        self.assertEqual(c.call('/api/register',dict(username='valid_new_guest',nickname='Test',password='password123',invite_code=invite))[0],200)
         original=app.pass_hash
         with patch.object(app,'pass_hash',side_effect=lambda password,salt:'fake' if salt=='00'*16 else original(password,salt)):
             for i in range(120):self.assertEqual(c.call('/api/login',dict(username=f'absent_{i}',password='password123'))[0],401)

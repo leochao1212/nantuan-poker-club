@@ -681,7 +681,17 @@ class Handler(BaseHTTPRequestHandler):
                 if not re.fullmatch(r'[A-Za-z0-9_]{3,24}',username):raise Problem('账号请使用 3–24 位英文字母、数字或底线。')
                 count=db.execute('SELECT count(*) FROM users').fetchone()[0]
                 code=db.execute("SELECT value FROM settings WHERE key='invite_code'").fetchone()[0]
-                if (count or REQUIRE_INVITE) and not hmac.compare_digest(str(data.get('invite_code','')).strip().upper(),code):raise Problem('邀请码不正确，请向已加入的室友索取。',403)
+                if (count or REQUIRE_INVITE) and not hmac.compare_digest(str(data.get('invite_code','')).strip().upper(),code):
+                    # Preserve invite-code probing protection without sharing
+                    # its cooldown with valid logins or valid invitations.
+                    with AUTH_LOCK:
+                        clock=time.time();key='invite:'+self.client_address[0]
+                        for expired in [k for k,v in ATTEMPTS.items() if not v or v[-1]<=clock-600]:del ATTEMPTS[expired]
+                        attempts=[t for t in ATTEMPTS.get(key,[]) if t>clock-600]
+                        if len(attempts)>=120:raise Problem('邀請碼嘗試過多，請稍後再試。',429)
+                        if key not in ATTEMPTS and len(ATTEMPTS)>=4096:raise Problem('登入驗證忙碌，請稍後重試。',503)
+                        ATTEMPTS[key]=[*attempts,clock]
+                    raise Problem('邀请码不正确，请向已加入的室友索取。',403)
                 clean(data.get('nickname'),'昵称',16)
                 if db.execute('SELECT 1 FROM users WHERE username=?',(username,)).fetchone():raise Problem('这个账号已被使用。',409)
                 salt=secrets.token_hex(16)

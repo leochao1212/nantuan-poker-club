@@ -70,6 +70,9 @@ class OfflineSeats(unittest.TestCase):
         self.db.execute("INSERT INTO settings VALUES('invite_code','TESTONLY')")
         self.db.executemany('INSERT INTO users VALUES(?,?,?,?)',[(i,f'p{i}',f'P{i}','2026-10-20') for i in range(1,5)])
         online.initialize(self.db)
+        # Keep this transaction scenario at a fixed 3,000-point budget.
+        from . import scenario_budget
+        scenario_budget(self.db)
         self.users={i:{'id':i,'username':f'p{i}','nickname':f'P{i}'} for i in range(1,5)}
         self.rid=online.mutate(self.db,'/api/online/rooms',{'name':'Offline test'},self.users[1],100)['id']
         self.path=f'/api/online/rooms/{self.rid}'
@@ -258,7 +261,7 @@ class PresenceAPI(ServerTestCase):
                 db.execute('UPDATE poker_rooms SET state=? WHERE id=?',(json.dumps(room),rid));db.commit()
             state=a.call(path)[1]
             self.assertNotIn(2,[seat['user_id'] for seat in state['seats']])
-            self.assertEqual(b.call('/api/online/lobby')[1]['wallet']['balance'],3000)
+            self.assertEqual(b.call('/api/online/lobby')[1]['wallet']['balance'],10000)
         self.assertEqual(a.call('/api/online/presence',{},origin='https://evil.invalid')[0],403)
 
 

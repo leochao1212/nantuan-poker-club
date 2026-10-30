@@ -17,6 +17,7 @@ import club_features
 import view_cache
 import game_settings
 import result_stats
+import economy
 
 OFFLINE_GRACE_SECONDS = 120
 
@@ -124,6 +125,8 @@ def save(db, room, clock):
         result = db.execute("INSERT OR IGNORE INTO poker_hands(room_id,hand_number,public_state,finished_at) VALUES(?,?,?,?)",
             (room["id"], room["hand_no"], json.dumps(rules(room).public_view(room, -1)["hand"], ensure_ascii=False), hand["finished_at"]))
         if result.rowcount:
+            economy.settle(db,room,result.lastrowid,hand['finished_at'])
+            db.execute('UPDATE poker_hands SET public_state=? WHERE id=?',(json.dumps(rules(room).public_view(room,-1)['hand'],ensure_ascii=False),result.lastrowid))
             for row in hand["results"]:
                 db.execute("INSERT INTO poker_results VALUES(?,?,?,?,?)", (result.lastrowid, row["user_id"], row["profit"], row["payout"], row["rank"]))
                 clubhouse.record(db,row["user_id"],row["profit"],"game","hand:"+str(result.lastrowid),hand["finished_at"],game=True)
@@ -258,6 +261,11 @@ def room_view(db, room_id, user_id, clock, *, touch_presence=True):
     view = rules(room).public_view(room, user_id)
     view['next_game_settings']=game_settings.public(game_settings.current(db,kind))
     view['game_rules_note']=game_settings.NOTES[kind]
+    own=(room.get('hand') or {}).get('economy',{}).get('players',{}).get(str(user_id))
+    budget=economy.view(db,user_id,clock)
+    available=max(0,own['happy']-own['used']) if own and room['status']=='playing' else budget['happy_remaining']
+    view['game_rules_note']+=f' 歡樂優待每日共用 6,000 點，本局／下局可補最多 {available:,} 點；不足時僅補剩餘額度。稱號加碼另有每日共用 1,500 點上限，依開局裝備結算至錢包，不改抽牌。'
+    view['economy']={**budget,'hand_happy_remaining':available,'title_label':rewards.ITEMS.get((own or {}).get('title',{}).get('title_id'),{}).get('game_label','') if room['status']=='playing' else rewards.ITEMS.get(rewards.game_perk(db,user_id).get('title_id'),{}).get('game_label','')}
     if view.get('hand',{}):
         snapshot=view['hand'].get('game_settings')
         if snapshot:view['hand']['game_settings']=game_settings.public(snapshot)
@@ -390,6 +398,7 @@ def _mutate(db, path, data, user, clock, received_at):
                 current_settings=game_settings.current(db,room.get('game_type','holdem'))
                 if type(expected_settings) is not int or expected_settings!=current_settings['revision']:
                     return {'conflict':True,'reason':'stale_settings'}
+            if room['status']=='waiting':economy.prepare(db,room,clock)
             club_features.check_start(db,room,uid,clock)
             if not wallet.active(db):raise engine.RuleError('本手結束後會啟用總籌碼制度，請稍候重新開桌。')
             if seat["away"] or seat["leaving"] or seat["stack"] == 0:

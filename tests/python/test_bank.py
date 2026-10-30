@@ -14,11 +14,15 @@ class BankRules(unittest.TestCase):
         self.db.executescript('''CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT,nickname TEXT,created_at TEXT);
           CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);INSERT INTO settings VALUES('invite_code','TESTONLY');
           INSERT INTO users VALUES(1,'alice','Alice','2026');INSERT INTO users VALUES(2,'bob','Bob','2026');''')
-        online.initialize(self.db);self.user={'id':1};self.serial=0
+        online.initialize(self.db)
+        from . import scenario_budget
+        scenario_budget(self.db)
+        self.user={'id':1};self.serial=0
         self.db.execute('INSERT INTO club_admins VALUES(2,0,0)')
 
     def act(self,action,amount=0,clock=100,**extra):
         self.serial+=1
+        if action=='borrow':extra.setdefault('accept_auto_repay',True)
         if action=='repay':extra.setdefault('loan_id',(bank.loan(self.db,1,clock) or {}).get('id'))
         return bank.mutate(self.db,self.user,action,dict(amount=amount,operation_id='bank_test_'+str(self.serial).zfill(16),**extra),clock)
 
@@ -50,58 +54,58 @@ class BankRules(unittest.TestCase):
             with self.assertRaises(member_accounts.AccountError):bank.mutate(self.db,self.user,action,{**data,'amount':amount},200)
 
     def test_loan_is_not_wealth_and_repay_is_interest_first(self):
-        self.act('borrow',3000,expected_revision=1)
+        self.act('borrow',3000,expected_revision=2)
         self.assertEqual(wallet.view(self.db,1,100)['balance'],6000)
         self.assertEqual(wallet.view(self.db,1,100)['total'],3000)
-        self.assertEqual(bank.view(self.db,1,100+bank.DAY)['loan']['total_due'],3045)
-        self.act('repay',1000,clock=100+bank.DAY)
-        l=bank.view(self.db,1,100+bank.DAY)['loan'];self.assertEqual(l['principal'],2045);self.assertEqual(l['interest'],0)
-        self.assertEqual(wallet.view(self.db,1,100+bank.DAY)['total'],2955)
-        self.act('repay',2045,clock=100+bank.DAY)
+        self.assertEqual(bank.view(self.db,1,100+4*bank.DAY)['loan']['total_due'],3012)
+        self.act('repay',1000,clock=100+4*bank.DAY)
+        l=bank.view(self.db,1,100+4*bank.DAY)['loan'];self.assertEqual(l['principal'],2012);self.assertEqual(l['interest'],0)
+        self.assertEqual(wallet.view(self.db,1,100+4*bank.DAY)['total'],2988)
+        self.act('repay',2012,clock=100+4*bank.DAY)
         self.assertIsNone(bank.view(self.db,1,100+bank.DAY)['loan'])
-        self.assertEqual(wallet.view(self.db,1,100+bank.DAY)['total'],2955)
-        self.act('borrow',100,clock=100+bank.DAY,expected_revision=1)
+        self.assertEqual(wallet.view(self.db,1,100+4*bank.DAY)['total'],2988)
+        self.act('borrow',100,clock=100+bank.DAY,expected_revision=2)
 
     def test_overdue_and_interest_cap_no_auto_debit(self):
-        self.act('borrow',1000,expected_revision=1)
+        self.act('borrow',1000,expected_revision=2)
         before=wallet.view(self.db,1,100)['balance']
         l=bank.view(self.db,1,100+bank.DAY*10000)['loan']
-        self.assertEqual(l['total_due'],2000);self.assertTrue(l['overdue'])
+        self.assertEqual(l['total_due'],1050);self.assertTrue(l['overdue'])
         self.assertEqual(wallet.view(self.db,1,100+bank.DAY*10000)['balance'],before)
-        with self.assertRaises(RuleError):self.act('borrow',1000,clock=100+bank.DAY*10000,expected_revision=1)
+        with self.assertRaises(RuleError):self.act('borrow',1000,clock=100+bank.DAY*10000,expected_revision=2)
 
     def test_full_payoff_uses_arrival_interest_and_same_receipt(self):
-        self.act('borrow',1000,expected_revision=1)
+        self.act('borrow',1000,expected_revision=2)
         request=dict(amount=1000,pay_all=True,loan_id=bank.loan(self.db,1,100)['id'],operation_id='bank_full_payoff_123456')
-        r=bank.mutate(self.db,self.user,'repay',request,101)
-        self.assertEqual(r['amount'],1001);self.assertIsNone(bank.loan(self.db,1,101))
-        self.assertEqual(bank.mutate(self.db,self.user,'repay',request,1000)['amount'],1001)
+        r=bank.mutate(self.db,self.user,'repay',request,100+3*bank.DAY+1)
+        self.assertEqual(r['amount'],1004);self.assertIsNone(bank.loan(self.db,1,100+3*bank.DAY+1))
+        self.assertEqual(bank.mutate(self.db,self.user,'repay',request,1000)['amount'],1004)
         with self.assertRaises(member_accounts.AccountError):bank.mutate(self.db,self.user,'repay',{**request,'pay_all':False},1000)
 
     def test_rounded_interest_also_consumes_total_interest_cap(self):
-        self.act('borrow',1,expected_revision=1)
-        self.act('repay',1,clock=101)
+        self.act('borrow',1,expected_revision=2)
+        self.act('repay',1,clock=100+3*bank.DAY+1)
         self.assertEqual(bank.view(self.db,1,100+bank.DAY*10000)['loan']['total_due'],1)
         self.act('repay',1,clock=100+bank.DAY*10000)
         self.assertIsNone(bank.loan(self.db,1,100+bank.DAY*10000))
 
     def test_delayed_repayment_cannot_pay_a_different_loan(self):
-        self.act('borrow',100,expected_revision=1)
+        self.act('borrow',100,expected_revision=2)
         first=bank.loan(self.db,1,100)['id']
         self.act('repay',100)
-        self.act('borrow',3000,expected_revision=1)
+        self.act('borrow',3000,expected_revision=2)
         before=wallet.view(self.db,1,100)['balance']
         with self.assertRaises(member_accounts.AccountError):self.act('repay',100,pay_all=True,loan_id=first)
         self.assertEqual(wallet.view(self.db,1,100)['balance'],before)
         self.assertEqual(bank.loan(self.db,1,100)['principal'],3000)
 
     def test_rate_change_settles_old_savings_and_preserves_loan(self):
-        self.act('deposit',1000);self.act('borrow',1000,expected_revision=1)
+        self.act('deposit',1000);self.act('borrow',1000,expected_revision=2)
         self.policy(clock=100+bank.DAY,deposit_bps=100,loan_bps=200)
-        self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['interest'],15)
-        self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['loan']['interest'],30)
-        self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['loan']['rate_bps'],150)
-        with self.assertRaises(member_accounts.AccountError):self.act('borrow',100,expected_revision=1)
+        self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['interest'],0)
+        self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['loan']['interest'],2)
+        self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['loan']['rate_bps'],10)
+        with self.assertRaises(member_accounts.AccountError):self.act('borrow',100,expected_revision=2)
 
     def test_validation_and_no_funds(self):
         for value in [True,0,-1,1.5,'100',1_000_001]:
@@ -110,17 +114,17 @@ class BankRules(unittest.TestCase):
         with self.assertRaises(RuleError):self.act('withdraw',1)
         with self.assertRaises(RuleError):self.act('collect')
         with self.assertRaises(RuleError):self.act('repay',1)
-        with self.assertRaises(RuleError):self.act('borrow',3001,expected_revision=1)
-        with self.assertRaises(RuleError):self.policy(deposit_bps=200,loan_bps=100)
+        with self.assertRaises(RuleError):self.act('borrow',14641,expected_revision=2)
+        with self.assertRaises(RuleError):self.policy(deposit_bps=501,loan_bps=100)
         self.policy(loan_limit=0)
-        with self.assertRaises(RuleError):self.act('borrow',1,expected_revision=2)
+        with self.assertRaises(RuleError):self.act('borrow',1,expected_revision=3)
 
     def test_atomic_rollback_and_insufficient_repayment(self):
         with patch('bank.save_account',side_effect=RuntimeError('failure')):
             with self.assertRaises(RuntimeError):self.act('deposit',1000)
         self.assertEqual(wallet.view(self.db,1,100)['balance'],3000)
         self.assertEqual(bank.view(self.db,1,100)['history'],[])
-        self.act('borrow',3000,expected_revision=1)
+        self.act('borrow',3000,expected_revision=2)
         wallet.transfer(self.db,1,-6000,'test','spend',100)
         before=dict(bank.loan(self.db,1,100+bank.DAY))
         with self.assertRaises(RuleError):self.act('repay',100,clock=100+bank.DAY)
@@ -146,7 +150,7 @@ class BankRules(unittest.TestCase):
         self.act('deposit',1000)
         self.db.execute("CREATE TRIGGER bank_audit_failure BEFORE INSERT ON bank_settings_history BEGIN SELECT RAISE(ABORT,'test failure'); END")
         with self.assertRaises(sqlite3.IntegrityError):self.policy(clock=100+bank.DAY,deposit_bps=100,loan_bps=200)
-        self.assertEqual(bank.settings(self.db)['revision'],1)
+        self.assertEqual(bank.settings(self.db)['revision'],2)
         self.assertEqual(bank.view(self.db,1,100+2*bank.DAY)['interest'],10)
 
 
@@ -161,15 +165,15 @@ class BankHTTP(ServerTestCase):
         self.assertTrue(all(r[0]==200 for r in responses),responses)
         self.assertEqual(sum(not r[1]['replayed'] for r in responses),1)
         result=c.call('/api/bank')[1]
-        self.assertEqual(result['bank']['savings'],1000);self.assertEqual(result['wallet']['balance'],2000)
-        self.assertEqual(result['wallet']['total'],3000)
+        self.assertEqual(result['bank']['savings'],1000);self.assertEqual(result['wallet']['balance'],9000)
+        self.assertEqual(result['wallet']['total'],10000)
         self.assertEqual(len(result['bank']['history']),1)
-        self.assertEqual(c.call('/api/online/lobby')[1]['users'][0]['total_chips'],3000)
+        self.assertEqual(c.call('/api/online/lobby')[1]['users'][0]['total_chips'],10000)
         with ThreadPoolExecutor(2) as pool:
             withdrawals=list(pool.map(lambda i:c.call('/api/bank/withdraw',dict(amount=700,operation_id='bank_withdraw_race_'+str(i).zfill(8))),range(2)))
         self.assertEqual(sorted(r[0] for r in withdrawals),[200,400])
         self.assertEqual(c.call('/api/bank')[1]['bank']['savings'],300)
-        payload=dict(amount=3000,expected_revision=1,operation_id='http_bank_borrow_12345678')
+        payload=dict(amount=3000,expected_revision=2,accept_auto_repay=True,operation_id='http_bank_borrow_12345678')
         with ThreadPoolExecutor(4) as pool:loans=list(pool.map(lambda _:c.call('/api/bank/borrow',payload),range(4)))
         self.assertTrue(all(r[0]==200 for r in loans));self.assertEqual(sum(not r[1]['replayed'] for r in loans),1)
-        self.assertEqual(c.call('/api/bank')[1]['wallet']['balance'],5700)
+        self.assertEqual(c.call('/api/bank')[1]['wallet']['balance'],12700)

@@ -24,11 +24,11 @@ class SpeedRules(unittest.TestCase):
                 self.assertEqual(v['cap'],v['rate']*24)
                 u=next(u for u in v['upgrades'] if u['track']=='production');self.assertEqual(u['current'],v['rate'])
     def test_decor_preserves_fraction_and_does_not_backdate_speed(self):
-        t=self.clock;self.upgrade(t+30)
-        v=c.income_view(self.db,2,t+30);self.assertEqual(v['stored_units'],c.UNIT//2);self.assertEqual(v['rate'],90)
-        self.assertEqual(c.income_view(self.db,2,t+49.999)['available'],0)
-        self.assertEqual(c.income_view(self.db,2,t+50)['available'],1)
-        self.assertEqual(c.income_view(self.db,2,t+3630)['available'],90)
+        t=self.clock;self.upgrade(t+15)
+        v=c.income_view(self.db,2,t+15);self.assertEqual(v['stored_units'],c.UNIT//2);self.assertEqual(v['rate'],180)
+        self.assertEqual(c.income_view(self.db,2,t+24.999)['available'],0)
+        self.assertEqual(c.income_view(self.db,2,t+25)['available'],1)
+        self.assertEqual(c.income_view(self.db,2,t+3615)['available'],180)
     def test_running_jobs_only_accelerate_remaining_time(self):
         t=self.clock;job=self.dispatch()['job_id'];self.upgrade(t+1200)
         row=self.db.execute('SELECT * FROM staff_jobs WHERE id=?',(job,)).fetchone()
@@ -55,22 +55,22 @@ class SpeedRules(unittest.TestCase):
         self.db.execute('UPDATE club_income SET decor_level=2,last_at=? WHERE user_id=2',(t-36000,))
         job=self.dispatch()['job_id'];self.db.execute('UPDATE staff_jobs SET finishes_at=? WHERE id=?',(t+3600,job));self.db.commit()
         c.schema(self.db,t);self.db.commit();v=c.income_view(self.db,2,t)
-        self.assertEqual(v['available'],600);self.assertEqual(v['rate'],120)
-        self.assertEqual(c.income_view(self.db,2,t+3600)['available'],720)
+        self.assertEqual(v['available'],600);self.assertEqual(v['rate'],240)
+        self.assertEqual(c.income_view(self.db,2,t+3600)['available'],840)
         self.assertEqual(self.db.execute('SELECT finishes_at FROM staff_jobs WHERE id=?',(job,)).fetchone()[0],t+1800)
         before=dict(self.db.execute('SELECT * FROM club_income WHERE user_id=2').fetchone());c.schema(self.db,t+1800)
         self.assertEqual(dict(self.db.execute('SELECT * FROM club_income WHERE user_id=2').fetchone()),before)
     def test_migration_preserves_old_storage_ceiling_without_backfill(self):
         t=self.clock;self.db.execute("DELETE FROM wallet_meta WHERE key='clubhouse_speed_v1'")
         self.db.execute('UPDATE club_income SET decor_level=3,last_at=? WHERE user_id=2',(t-864000,));self.db.commit();c.schema(self.db,t)
-        v=c.income_view(self.db,2,t);self.assertEqual(v['available'],1440);self.assertEqual(v['cap'],3600)
-        self.assertEqual(c.income_view(self.db,2,t+3600)['available'],1590)
+        v=c.income_view(self.db,2,t);self.assertEqual(v['available'],1440);self.assertEqual(v['cap'],7200)
+        self.assertEqual(c.income_view(self.db,2,t+3600)['available'],1740)
     def test_failed_receipt_rolls_back_deadline_rate_and_charge(self):
         job=self.dispatch()['job_id'];before=dict(self.db.execute('SELECT * FROM staff_jobs WHERE id=?',(job,)).fetchone());balance=wallet.view(self.db,2,self.clock)['balance']
         self.db.execute("CREATE TEMP TRIGGER fail_speed BEFORE INSERT ON income_upgrades BEGIN SELECT RAISE(ABORT,'test failure');END")
         with self.assertRaises(sqlite3.IntegrityError):self.upgrade(self.clock+100)
         self.assertEqual(dict(self.db.execute('SELECT * FROM staff_jobs WHERE id=?',(job,)).fetchone()),before)
-        self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],balance);self.assertEqual(c.income_view(self.db,2,self.clock)['rate'],60)
+        self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],balance);self.assertEqual(c.income_view(self.db,2,self.clock)['rate'],120)
 
 class SpeedAPI(ServerTestCase):
     def test_concurrent_decor_receipt_accelerates_only_once(self):
@@ -80,7 +80,7 @@ class SpeedAPI(ServerTestCase):
         request=dict(track='decor',expected_level=0,revision=i['revision'],operation_id='speed_api_upgrade_001',speed_multiplier=1000)
         with ThreadPoolExecutor(8) as pool:results=list(pool.map(lambda _:client.call('/api/wallet/clubhouse-upgrade',request),range(8)))
         self.assertTrue(all(code==200 for code,_ in results));self.assertEqual(sum(not value['replayed'] for _,value in results),1)
-        _,lobby=client.call('/api/online/lobby');self.assertEqual(lobby['wallet']['balance'],2200);self.assertEqual(lobby['wallet']['income']['rate'],90)
+        _,lobby=client.call('/api/online/lobby');self.assertEqual(lobby['wallet']['balance'],9200);self.assertEqual(lobby['wallet']['income']['rate'],180)
         _,staff=client.call('/api/clubhouse/staff');self.assertEqual(staff['speed_multiplier'],1.5);self.assertEqual(staff['missions'][0]['seconds'],2400)
         job=staff['employees'][0]['job'];self.assertEqual(job['reward'],60);self.assertAlmostEqual(job['finishes_at']-job['started_at'],2400,delta=2)
 

@@ -149,6 +149,7 @@ def start_hand(room,clock,deck=None,settings=None):
            dealer=dealer,streak=room.get('mahjong_streak',0),round_wind=(room.get('mahjong_round',0)//4)%4,
            last_discard=None,drawn_tile=None,draw_source='initial',discard_count=0,calls=0,pending={},responses={})
     room.update(status='playing',hand=h)
+    __import__('economy').attach(room)
     for p in players:poker.pay(p,required)
     for _ in range(16):
         for p in players:_take(h,p,False)

@@ -146,7 +146,9 @@ class Storage(unittest.TestCase):
     def setUp(self):
         self.db=sqlite3.connect(':memory:');self.db.row_factory=sqlite3.Row;self.addCleanup(self.db.close)
         self.db.executescript('CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT,nickname TEXT,created_at TEXT);CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);INSERT INTO settings VALUES("invite_code","TESTONLY");INSERT INTO users VALUES(1,"a","A","2026");INSERT INTO users VALUES(2,"b","B","2026");')
-        online.initialize(self.db);self.user=dict(id=1,username='a',nickname='A')
+        online.initialize(self.db)
+        from . import scenario_budget
+        scenario_budget(self.db);self.user=dict(id=1,username='a',nickname='A')
     def call(self,rid,verb,clock,**data):
         r=online.get_room(self.db,rid)
         return online.mutate(self.db,f'/api/online/rooms/{rid}/{verb}',dict(revision=r['revision'],**data),self.user,clock)
@@ -203,7 +205,7 @@ class Storage(unittest.TestCase):
         for ident in rewards.MISSIONS:
             data=dict(mission_id=ident,operation_id='mission_claim_'+ident+'_001')
             online.mutate(self.db,'/api/club/mission',data,self.user,clock);online.mutate(self.db,'/api/club/mission',data,self.user,clock+1)
-        self.assertEqual(wallet.view(self.db,1,clock)['balance'],3350)
+        self.assertEqual(wallet.view(self.db,1,clock)['balance'],4000)
         self.assertEqual(self.db.execute('SELECT sum(profit) FROM poker_results').fetchone()[0],0)
         self.assertEqual(rewards.progress(self.db,1,clock+86400)['play3'],0)
         self.assertEqual(len(rewards.view(self.db,1,clock)['items']),20)

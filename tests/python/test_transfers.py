@@ -15,7 +15,9 @@ class TransferRules(unittest.TestCase):
         self.db.executescript('''CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT,nickname TEXT,created_at TEXT);
           CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);INSERT INTO settings VALUES('invite_code','TESTONLY');
           INSERT INTO users VALUES(1,'alice','Alice','2026');INSERT INTO users VALUES(2,'bob','Bob','2026');INSERT INTO users VALUES(3,'carol','Carol','2026');''')
-        online.initialize(self.db);transfers.initialize(self.db);self.sender={'id':1}
+        online.initialize(self.db)
+        from . import scenario_budget
+        scenario_budget(self.db);transfers.initialize(self.db);self.sender={'id':1}
         self.payload=dict(recipient_id=2,recipient_username='bob',amount=1000,note='測試轉移',operation_id='transfer_test_000001')
 
     def test_conservation_receipt_restart_and_privacy(self):
@@ -83,18 +85,18 @@ class TransferAPI(fixtures.ServerTestCase):
             stream.state()
             with ThreadPoolExecutor(2) as pool:replies=list(pool.map(lambda _:a.call('/api/wallet/transfers',request),range(2)))
             self.assertTrue(all(r[0]==200 for r in replies));self.assertEqual(sum(not r[1]['replayed'] for r in replies),1)
-            state=stream.state();self.assertEqual(state['wallet']['balance'],3500)
+            state=stream.state();self.assertEqual(state['wallet']['balance'],10500)
         self.assertEqual(c.call('/api/wallet/transfers')[1]['transfers'],[])
         self.assertEqual(len(a.call('/api/wallet/transfers')[1]['transfers']),1)
         self.assertEqual(a.call('/api/wallet/transfers',{**request,'amount':501})[0],409)
-        room=a.call('/api/online/rooms',dict(name='funds',game_type='slot',buy_in=2000))[1]
+        room=a.call('/api/online/rooms',dict(name='funds',game_type='slot',buy_in=9000))[1]
         self.assertIn('id',room)
         self.assertEqual(a.call('/api/wallet/transfers',{**request,'amount':501,'operation_id':'insufficient_test_001'})[0],400)
         requests=[{**request,'amount':400,'operation_id':f'concurrent_test_{i:04}'} for i in range(2)]
         with ThreadPoolExecutor(2) as pool:replies=list(pool.map(lambda payload:a.call('/api/wallet/transfers',payload),requests))
         self.assertEqual(sorted(r[0] for r in replies),[200,400])
         self.assertEqual(a.call('/api/wallet/transfers')[1]['wallet']['balance'],100)
-        self.assertEqual(b.call('/api/wallet/transfers')[1]['wallet']['balance'],3900)
+        self.assertEqual(b.call('/api/wallet/transfers')[1]['wallet']['balance'],10900)
         with closing(sqlite3.connect(self.db_path)) as db:
             db.execute('INSERT INTO club_admins VALUES(2,1,0)');db.commit()
         self.assertEqual(b.call('/api/wallet/transfers',dict(recipient_id=1,recipient_username='alice',amount=1,operation_id='admin_first_gate_001'))[0],403)

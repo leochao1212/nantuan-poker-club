@@ -7,14 +7,13 @@ import hashlib
 import time
 from poker_engine import RuleError
 
-RATE = 60
+RATE = 120
 CAP_HOURS = 24
-SECONDS_PER_POINT = 60
+SECONDS_PER_POINT = 30
 CAP = RATE * CAP_HOURS
 UNIT = 3_600_000  # Exact point units: hourly rate times elapsed milliseconds.
-# Keep the original four tiers unchanged so saved income and active jobs retain
-# their rates. New tiers are opt-in upgrades, not a repricing/migration.
-RATES = (60,90,120,180,240,300,360,420,480,600)
+# economy.initialize closes accrued time at OLD_RATES before enabling these rates.
+RATES = (120,140,180,240,300,360,420,480,560,660)
 HOURS = (24,30,36,48,60,72,84,96,120,144)
 DECOR = ('私人包廂','暖燈小館','尊爵會館','曜金行宮','翡翠御苑',
          '星河城堡','雲頂王庭','天際皇宮','星耀帝城','楠團天宮')
@@ -66,7 +65,7 @@ def schema(db,clock=None):
         # Settle every existing account at the old rate before enabling its bonus.
         # Completed tasks remain completed; only unfinished work speeds up.
         for row in db.execute('SELECT * FROM club_income').fetchall():
-            rate=RATES[row['production_level']];hours=HOURS[row['storage_level']]
+            rate=__import__('economy').OLD_RATES[row['production_level']];hours=HOURS[row['storage_level']]
             elapsed=max(0,int(clock*1000)-int(row['last_at']*1000))
             units=min(rate*hours*UNIT,row['stored_units']+elapsed*rate)
             anchor=max(int(row['last_at']*1000),int(clock*1000))/1000
@@ -82,7 +81,7 @@ def schema(db,clock=None):
                        (units,max(int(row['last_at']*1000),int(clock*1000))/1000,row['user_id']))
         db.execute("INSERT INTO wallet_meta VALUES('title_perks_v1','single-equipped-basis-points')")
     import schema_migrations
-    schema_migrations.close_title_income(db,time.time() if clock is None else clock,RATES,HOURS,SPEED_STEPS,UNIT)
+    schema_migrations.close_title_income(db,time.time() if clock is None else clock,__import__('economy').OLD_RATES,HOURS,SPEED_STEPS,UNIT)
 
 
 
@@ -122,7 +121,9 @@ def record(db,uid,amount,kind,key,clock,*,game=False):
 def income_state(db,uid,clock,row=None):
     row=row if row is not None else db.execute('SELECT * FROM club_income WHERE user_id=?',(uid,)).fetchone()
     if not row:raise RuleError('會所尚未啟用，請重新登入。')
-    rate=RATES[row['production_level']]*SPEED_STEPS[row['decor_level']]//2;hours=HOURS[row['storage_level']]
+    import economy
+    rates=RATES if db.execute('SELECT 1 FROM wallet_meta WHERE key=?',(economy.VERSION,)).fetchone() else economy.OLD_RATES
+    rate=rates[row['production_level']]*SPEED_STEPS[row['decor_level']]//2;hours=HOURS[row['storage_level']]
     elapsed=max(0,int(clock*1000)-int(row['last_at']*1000))
     # Previously earned points above the new cap remain claimable.
     units=max(row['stored_units'],min(rate*hours*UNIT,row['stored_units']+elapsed*rate))
@@ -134,7 +135,7 @@ def income_view(db,uid,clock):
     row=db.execute('SELECT * FROM club_income WHERE user_id=?',(uid,)).fetchone()
     if not row:
         return dict(rate=RATE,cap_hours=CAP_HOURS,cap=CAP,available=0,last_at=clock,
-                    seconds_per_point=60,stored_units=0,units_per_point=UNIT,full=False,upgrades=[])
+                    seconds_per_point=SECONDS_PER_POINT,stored_units=0,units_per_point=UNIT,full=False,upgrades=[])
     row,rate,hours,units=income_state(db,uid,clock,row)
     upgrades=[]
     for key,spec in UPGRADES.items():
@@ -263,6 +264,7 @@ def staff_mutate(db,user,action,data,clock):
     from member_accounts import AccountError
     uid=user['id'];member_accounts.require_active(db,uid)
     if not wallet.active(db):raise RuleError('點數制度尚未啟用。')
+    if action in ('collect_all','redispatch'):return staff_batch(db,user,action,data,clock)
     if action not in ('hire','dispatch','collect'):raise RuleError('員工操作無效。')
     op=member_accounts.operation_id(data.get('operation_id'))
     employee=data.get('employee');mission=data.get('mission');job_id=data.get('job_id')
@@ -303,4 +305,30 @@ def staff_mutate(db,user,action,data,clock):
         db.execute('RELEASE SAVEPOINT staff_action')
     except Exception:
         db.execute('ROLLBACK TO SAVEPOINT staff_action');db.execute('RELEASE SAVEPOINT staff_action');raise
+    return result
+
+
+def staff_batch(db,user,action,data,clock):
+    import member_accounts
+    uid=user['id'];op=member_accounts.operation_id(data.get('operation_id'));job_id=data.get('job_id')
+    if action=='redispatch' and (type(job_id) is not int or job_id<1):raise RuleError('任務編號無效。')
+    fingerprint=hashlib.sha256(json.dumps([action,job_id]).encode()).hexdigest()
+    old=db.execute('SELECT fingerprint,result FROM staff_operations WHERE user_id=? AND operation_id=?',(uid,op)).fetchone()
+    if old:
+        if old['fingerprint']!=fingerprint:raise member_accounts.AccountError('同一操作編號已用於其他派遣。',409,'operation_conflict')
+        return {**json.loads(old['result']),'replayed':True}
+    jobs=db.execute('SELECT * FROM staff_jobs WHERE user_id=? AND claimed_at IS NULL AND finishes_at<=?'+(' AND id=?' if action=='redispatch' else ''),(uid,clock,job_id) if action=='redispatch' else (uid,clock)).fetchall()
+    if action=='redispatch' and not jobs:raise RuleError('這趟任務尚未完成，或已領取。')
+    db.execute('SAVEPOINT staff_batch')
+    try:
+        amount=0
+        for job in jobs:
+            sub=hashlib.sha256((op+':'+str(job['id'])).encode()).hexdigest()
+            result=staff_mutate(db,user,'collect',dict(operation_id=sub,job_id=job['id']),clock);amount+=result.get('amount',0)
+            if action=='redispatch':staff_mutate(db,user,'dispatch',dict(operation_id='again_'+sub,employee=job['employee_key'],mission=job['mission_key']),clock)
+        result=dict(ok=True,replayed=False,amount=amount,message=f'已領取 {amount:,} 點'+('，並再次派遣。' if action=='redispatch' else '。'))
+        db.execute('INSERT INTO staff_operations VALUES(?,?,?,?)',(uid,op,fingerprint,json.dumps(result,ensure_ascii=False)))
+        db.execute('RELEASE SAVEPOINT staff_batch')
+    except Exception:
+        db.execute('ROLLBACK TO SAVEPOINT staff_batch');db.execute('RELEASE SAVEPOINT staff_batch');raise
     return result

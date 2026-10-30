@@ -18,7 +18,11 @@ class AdminRules(unittest.TestCase):
         self.db=sqlite3.connect(':memory:');self.addCleanup(self.db.close);self.db.row_factory=sqlite3.Row
         self.db.executescript('CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT,nickname TEXT,created_at TEXT);CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);')
         self.db.executemany('INSERT INTO users VALUES(?,?,?,?)',[(i,f'user_{i}',f'Player{i}','2026-10-20T00:00:00Z') for i in range(1,4)])
-        online.initialize(self.db);self.db.execute('INSERT INTO club_admins VALUES(1,0,?)',(time.time(),));self.db.commit()
+        online.initialize(self.db)
+        # Fixed scenario budget, independent of the new-member welcome grant.
+        from . import scenario_budget
+        scenario_budget(self.db)
+        self.db.execute('INSERT INTO club_admins VALUES(1,0,?)',(time.time(),));self.db.commit()
         self.actor={'id':1};self.clock=time.time()
         self.request={'user_id':2,'amount':500,'note':'test allowance','operation_id':'grant_regression_0001'}
 
@@ -157,7 +161,7 @@ class AdminAPI(ServerTestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             results=list(pool.map(lambda _:admin.call('/api/admin/grants',request),range(4)))
         self.assertEqual([r[0] for r in results],[200]*4)
-        self.assertEqual(normal.call('/api/online/lobby')[1]['wallet']['balance'],3750)
+        self.assertEqual(normal.call('/api/online/lobby')[1]['wallet']['balance'],10750)
         self.assertEqual(len(admin.call('/api/admin/accounts')[1]['history']),1)
         self.assertEqual(admin.call('/api/admin/grants',{**request,'amount':751})[0],409)
         adjustment={**request,'amount':-750,'operation_id':'api_adjust_once_0001'}
@@ -166,10 +170,10 @@ class AdminAPI(ServerTestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             results=list(pool.map(lambda _:admin.call('/api/admin/adjustments',adjustment),range(4)))
         self.assertEqual([r[0] for r in results],[200]*4)
-        self.assertEqual(normal.call('/api/online/lobby')[1]['wallet']['balance'],3000)
+        self.assertEqual(normal.call('/api/online/lobby')[1]['wallet']['balance'],10000)
         self.assertEqual(admin.call('/api/admin/adjustments',{**adjustment,'amount':750})[0],409)
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-            results=list(pool.map(lambda i:admin.call('/api/admin/adjustments',{**adjustment,'amount':-2000,'operation_id':f'api_adjust_race_000{i}'}),range(2)))
+            results=list(pool.map(lambda i:admin.call('/api/admin/adjustments',{**adjustment,'amount':-9000,'operation_id':f'api_adjust_race_000{i}'}),range(2)))
         self.assertEqual(sorted(r[0] for r in results),[200,400])
         self.assertEqual(normal.call('/api/online/lobby')[1]['wallet']['balance'],1000)
         self.assertEqual(len(admin.call('/api/admin/accounts')[1]['history']),3)

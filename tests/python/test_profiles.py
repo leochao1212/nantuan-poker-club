@@ -123,7 +123,7 @@ class ProfileRules(unittest.TestCase):
         r=online.get_room(self.db,rid);self.assertIsNone(r['hand']['first_card']);self.assertTrue(next(s for s in r['seats'] if s['user_id']==2)['leaving'])
         for seat in r['seats']:seat['away']=True
         online.rules(r).tick(r,self.clock+3);online.save(self.db,r,self.clock+3)
-        self.assertEqual(sum(wallet.view(self.db,u,self.clock)['total'] for u in users),12000)
+        self.assertEqual(sum(wallet.view(self.db,u,self.clock)['total'] for u in users),19000)
         self.assertEqual(self.db.execute('SELECT count(*) FROM poker_hands').fetchone()[0],1)
         self.assertEqual(self.db.execute('SELECT sum(profit) FROM poker_results').fetchone()[0],0)
         self.assertIsNone(online.current_room(self.db,2))
@@ -164,7 +164,7 @@ class ProfileAPI(ServerTestCase):
         self.assertNotIn(2,[a['id'] for a in admin_state['accounts']])
         self.assertEqual(admin_state['total_accounts'],2)
         with closing(sqlite3.connect(self.db_path)) as db:
-            self.assertEqual(db.execute('SELECT sum(balance) FROM wallets').fetchone()[0],9000)
+            self.assertEqual(db.execute('SELECT sum(balance) FROM wallets').fetchone()[0],30000)
             self.assertIsNone(db.execute('SELECT avatar_png FROM member_profiles WHERE user_id=2').fetchone()[0])
             self.assertEqual(db.execute('SELECT status FROM account_states WHERE user_id=2').fetchone()[0],'deleted')
 

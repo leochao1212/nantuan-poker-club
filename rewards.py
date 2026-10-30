@@ -54,8 +54,31 @@ for game,(game_name,title,targets) in GAMES.items():
                      source='milestone',milestone_id=key,daily_bps=daily,hourly_bps=hourly)
 
 
+# Only the equipped title at deal time applies. All titles share one daily cap.
+GAME_PERKS = {
+ 'holdem':('play','有效參局'), 'big2':('play','有效參局'), 'mahjong':('play','有效參局'),
+ 'blackjack':('win','贏局加碼'), 'baccarat':('win','贏局加碼'),
+ 'roulette':('loss','落敗回饋'), 'dice':('loss','落敗回饋'),
+ 'slot':('win','贏局加碼'), 'mines':('win','探險獲利加碼'),
+ 'tower':('win','登塔獲利加碼'), 'inbetween':('post','撞柱損失補貼')}
+for key, milestone in MILESTONES.items():
+    item=ITEMS[milestone['title_id']];tier=milestone['tier'];game=milestone['game'];mode,label=GAME_PERKS[game]
+    item['game_perk']=dict(game=game,mode=mode,bps=(100,200,300)[tier-1],per_hand=(30,60,100)[tier-1])
+    item['game_label']=f"{GAMES[game][0]}{label} +{tier}% · 每局最多 {item['game_perk']['per_hand']} 點"
+for ident,item in ITEMS.items():
+    if item['slot']=='title' and item.get('source')!='milestone':
+        bps=50 if item['cost']<80000 else 100 if item['cost']<350000 else 150 if item['cost']<1500000 else 200
+        item['game_perk']=dict(game='all',mode='win',bps=bps,per_hand=100)
+        item['game_label']=f"全遊戲贏局加碼 +{bps/100:g}% · 每局最多 100 點"
+
+def game_perk(db,uid):
+    row=db.execute("SELECT e.item_id FROM cosmetic_equipped e JOIN cosmetic_items o ON o.user_id=e.user_id AND o.item_id=e.item_id WHERE e.user_id=? AND e.slot='title'",(uid,)).fetchone()
+    return dict(ITEMS.get(row[0],{}).get('game_perk',{}),title_id=row[0]) if row else {}
+
+
 def bonus_label(item):
     parts=[]
+    if item.get('game_label'):parts.append(item['game_label'])
     if item.get('daily_bps'):parts.append(f"每日補給 +{item['daily_bps']/100:g}%")
     if item.get('hourly_bps'):parts.append(f"每小時補給 +{item['hourly_bps']/100:g}%")
     return ' · '.join(parts)
@@ -83,7 +106,7 @@ def milestone_view(db,uid,owned):
              progress=min(counts.get(game,0),m['target']),claimed=m['title_id'] in owned) for key,m in MILESTONES.items() if m['game']==game]) for game,spec in GAMES.items()]
 
 
-MISSIONS = {'play3':dict(name='完成 3 局',target=3,reward=150), 'variety':dict(name='體驗 2 種遊戲',target=2,reward=100), 'win1':dict(name='完成 1 局正獲利',target=1,reward=100)}
+MISSIONS = {'play3':dict(name='完成 3 局',target=3,reward=500), 'variety':dict(name='體驗 2 種遊戲',target=2,reward=300), 'win1':dict(name='完成 1 局正獲利',target=1,reward=200)}
 
 def initialize(db):
     db.executescript('''
@@ -132,21 +155,26 @@ def view(db,uid,clock,*,profiles=None,appearances=None):
     owned={r[0] for r in db.execute('SELECT item_id FROM cosmetic_items WHERE user_id=?',(uid,))}
     appearances=profile_map(db) if appearances is None else appearances
     equipped=appearances.get(uid,{})
+    if set(MISSIONS)<=claimed:
+        counts['complete']=1
     leaders,profits=public_leaders(db)
     import member_accounts
     profiles=member_accounts.public_profiles(db) if profiles is None else profiles
     for person in leaders+profits:person.update(cosmetics=appearances.get(person['id'],{}),**profiles.get(person['id'],{}))
-    return dict(day=today,missions=[dict(id=k,**m,progress=min(counts[k],m['target']),claimed=k in claimed) for k,m in MISSIONS.items()],items=[dict(id=k,**v,owned=k in owned,equipped=equipped.get(v['slot'],{}).get('id')==k) for k,v in ITEMS.items() if v['source']=='shop' or k in owned],total_items=len(ITEMS),milestones=milestone_view(db,uid,owned),title_bonus=equipped_bonus(db,uid),equipped=equipped,collected=len(owned),leaders=leaders,profit_leaders=profits)
+    return dict(day=today,missions=[dict(id=k,**m,progress=min(counts.get(k,0),m['target']),claimed=k in claimed) for k,m in (MISSIONS|{'complete':dict(name='今日任務全完成',target=1,reward=500)}).items()],items=[dict(id=k,**v,owned=k in owned,equipped=equipped.get(v['slot'],{}).get('id')==k) for k,v in ITEMS.items() if v['source']=='shop' or k in owned],total_items=len(ITEMS),milestones=milestone_view(db,uid,owned),title_bonus=equipped_bonus(db,uid),equipped=equipped,collected=len(owned),leaders=leaders,profit_leaders=profits)
 
 def mutate(db,path,data,user,clock):
     uid=user['id']
     if not wallet.active(db):raise RuleError('點數制度尚未啟用。')
     if path=='/api/club/mission':
         ident=data.get('mission_id')
-        if not isinstance(ident,str) or ident not in MISSIONS:raise RuleError('任務無效。')
-        mission=MISSIONS[ident];today=wallet.day(clock)
+        if not isinstance(ident,str) or ident not in (*MISSIONS,'complete'):raise RuleError('任務無效。')
+        mission=MISSIONS.get(ident,dict(target=1,reward=500));today=wallet.day(clock)
         if db.execute('SELECT 1 FROM mission_claims WHERE user_id=? AND day=? AND mission_id=?',(uid,today,ident)).fetchone():return {'ok':True,'message':'今天已領取這個任務。'}
-        if progress(db,uid,clock)[ident]<mission['target']:raise RuleError('任務尚未完成。')
+        if ident=='complete':
+            claimed={r[0] for r in db.execute('SELECT mission_id FROM mission_claims WHERE user_id=? AND day=?',(uid,today))}
+            if not set(MISSIONS)<=claimed:raise RuleError('請先領完三項今日任務。')
+        elif progress(db,uid,clock)[ident]<mission['target']:raise RuleError('任務尚未完成。')
         db.execute('INSERT INTO mission_claims VALUES(?,?,?,?,?)',(uid,today,ident,mission['reward'],clock))
         wallet.transfer(db,uid,mission['reward'],'mission','mission:'+today+':'+ident,clock)
         return {'ok':True,'message':f"已領取 {mission['reward']} 點任務獎勵。"}

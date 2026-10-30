@@ -27,8 +27,8 @@ class TenLevelRules(unittest.TestCase):
         level=next(u['level'] for u in view['upgrades'] if u['track']==track)
         return c.upgrade(self.db,{'id':2},dict(track=track,expected_level=level,revision=view['revision'],operation_id=op),at)
 
-    def test_legacy_four_tier_values_and_costs_are_unchanged(self):
-        self.assertEqual(c.RATES[:4],(60,90,120,180))
+    def test_friends_rates_preserve_existing_costs_and_levels(self):
+        self.assertEqual(c.RATES[:4],(120,140,180,240))
         self.assertEqual(c.HOURS[:4],(24,30,36,48))
         self.assertEqual(c.DECOR[:4],('私人包廂','暖燈小館','尊爵會館','曜金行宮'))
         self.assertEqual(c.SPEED_STEPS[:4],(2,3,4,5))
@@ -44,20 +44,20 @@ class TenLevelRules(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT finishes_at FROM staff_jobs WHERE id=?',(job,)).fetchone()[0],deadline)
         self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],balance)
         view=c.income_view(self.db,2,self.clock+3600)
-        self.assertEqual((view['rate'],view['cap_hours'],view['available']),(450,48,450))
+        self.assertEqual((view['rate'],view['cap_hours'],view['available']),(600,48,600))
         self.assertTrue(all(u['max_level']==9 and u['next'] is not None for u in view['upgrades']))
 
     def test_four_to_five_keeps_fraction_and_applies_only_future_rate(self):
-        for track,rate,hours,cost in [('production',600,48,24000),('storage',450,60,9000),('decor',540,48,10000)]:
+        for track,rate,hours,cost in [('production',750,48,24000),('storage',600,60,9000),('decor',720,48,10000)]:
             with self.subTest(track=track):
                 self.db.execute('UPDATE club_income SET production_level=3,storage_level=3,decor_level=3,last_at=?,stored_units=? WHERE user_id=2',(self.clock,c.UNIT//2))
                 before=wallet.view(self.db,2,self.clock)['balance']
                 self.upgrade(track,self.clock+1800,'ten_four_to_five_'+track)
                 view=c.income_view(self.db,2,self.clock+1800)
-                self.assertEqual(view['stored_units'],225*c.UNIT+c.UNIT//2)
+                self.assertEqual(view['stored_units'],300*c.UNIT+c.UNIT//2)
                 self.assertEqual((view['rate'],view['cap_hours']),(rate,hours))
                 self.assertEqual(wallet.view(self.db,2,self.clock)['balance'],before-cost)
-                self.assertEqual(c.income_view(self.db,2,self.clock+5400)['available'],225+rate)
+                self.assertEqual(c.income_view(self.db,2,self.clock+5400)['available'],300+rate)
 
     def test_tenth_decor_accelerates_only_remaining_work_with_ceiling(self):
         self.db.execute('UPDATE club_income SET decor_level=8 WHERE user_id=2')
@@ -87,12 +87,12 @@ class TenLevelRules(unittest.TestCase):
         self.db.execute('UPDATE club_income SET production_level=9,storage_level=9,decor_level=9 WHERE user_id=2')
         at=self.clock+1000*3600
         view=c.income_view(self.db,2,at)
-        self.assertEqual((view['rate'],view['cap_hours'],view['cap'],view['available']),(3300,144,475200,475200))
+        self.assertEqual((view['rate'],view['cap_hours'],view['cap'],view['available']),(3630,144,522720,522720))
         req=dict(operation_id='ten_max_income_claim_01')
         before=wallet.view(self.db,2,at)['balance']
-        self.assertEqual(c.claim(self.db,{'id':2},req,at)['amount'],475200)
+        self.assertEqual(c.claim(self.db,{'id':2},req,at)['amount'],522720)
         self.assertTrue(c.claim(self.db,{'id':2},req,at+3600)['replayed'])
-        self.assertEqual(wallet.view(self.db,2,at)['balance'],before+475200)
+        self.assertEqual(wallet.view(self.db,2,at)['balance'],before+522720)
         self.assertEqual(c.income_view(self.db,2,at)['available'],0)
 
 
@@ -119,8 +119,8 @@ class TenLevelAPI(ServerTestCase):
             self.assertEqual(status,400)
         self.assertTrue(client.call('/api/wallet/clubhouse-upgrade',replay)[1]['replayed'])
         lobby=client.call('/api/online/lobby')[1]
-        self.assertEqual(lobby['wallet']['balance'],814700)
-        self.assertEqual((lobby['wallet']['income']['decor_level'],lobby['wallet']['income']['rate'],lobby['wallet']['income']['cap']),(9,3300,475200))
+        self.assertEqual(lobby['wallet']['balance'],821700)
+        self.assertEqual((lobby['wallet']['income']['decor_level'],lobby['wallet']['income']['rate'],lobby['wallet']['income']['cap']),(9,3630,522720))
         self.assertEqual(client.call('/api/members/1')[1]['person']['clubhouse'],dict(level=9,name='楠團天宮'))
         self.assertEqual(client.call('/api/clubhouse/staff')[1]['speed_multiplier'],5.5)
         with closing(sqlite3.connect(self.db_path)) as db:

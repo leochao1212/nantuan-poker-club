@@ -32,6 +32,7 @@ import club_admin
 import game_settings
 import transfers
 import bank
+import lottery
 import market
 import market_data
 import market_catalog
@@ -392,6 +393,11 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
                     value=market_review.view(db,user,time.time())
                 self.reply(200,value)
+            elif path=='/api/lottery':
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);clock=time.time()
+                    value=dict(lottery=lottery.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+                self.reply(200,value)
             elif path in ('/api/bank','/api/admin/bank-settings'):
                 query=parse_qs(urlsplit(self.path).query)
                 with connect() as db:
@@ -464,7 +470,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/battle.js", "/battle-scene.js", "/battle-art.js", "/battle-motion.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-review.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/battle.js", "/battle-scene.js", "/battle-art.js", "/battle-motion.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-review.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/lottery.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "txt":"text/plain"}
                 ext = name.rsplit(".",1)[-1]
@@ -850,6 +856,11 @@ class Handler(BaseHTTPRequestHandler):
         if path in ('/api/bank/deposit','/api/bank/withdraw','/api/bank/collect','/api/bank/borrow','/api/bank/repay','/api/bank/convert'):
             clock=time.time();result=bank.mutate(db,user,path.rsplit('/',1)[1],data,clock)
             result.update(bank=bank.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
+            db.commit();EVENTS.publish()
+            return Reply(200,result)
+        if path=='/api/lottery/buy':
+            clock=time.time();result=lottery.buy(db,user['id'],data,clock)
+            result.update(lottery=lottery.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
             db.commit();EVENTS.publish()
             return Reply(200,result)
         if path=='/api/wallet/transfers':

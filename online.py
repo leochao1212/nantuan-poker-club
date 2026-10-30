@@ -4,6 +4,7 @@ import re
 import time
 import hashlib
 import poker_engine as engine
+import lottery
 import wallet
 import clubhouse
 import social
@@ -73,6 +74,7 @@ def initialize(db):
     social.initialize(db)
     club_admin.initialize(db)
     wallet.initialize(db,time.time())
+    lottery.initialize(db,time.time())
     upgrade_dice_capacity(db)
     upgrade_big2_rules(db)
     view_cache.initialize(db)
@@ -163,6 +165,7 @@ def maintenance(db, clock=None, due_at=None):
             save(db, room, clock)
             changed = True
     changed = wallet.maybe_activate(db,clock) or changed
+    changed = lottery.maintenance(db,clock) or changed
     changed = social.cleanup(db,clock) or changed
     return changed
 

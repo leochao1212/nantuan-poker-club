@@ -27,3 +27,5 @@ npm run test:motion
 
 - `python -m unittest tests.python.test_friends_economy -v`：新經濟移轉、7 天貸款、獎勵提撥、稱號遊戲加成與額度。
 - `npm run test:economy`：以臨時帳號驗證借款同意、還款與補給／銀行／收藏／會所 12 組響應式畫面。
+
+朋友樂透：`python -m unittest tests.python.test_lottery -v` 與 `npm run test:lottery`，使用隔離資料庫測試期別、回執、派獎及手機／桌面購票。

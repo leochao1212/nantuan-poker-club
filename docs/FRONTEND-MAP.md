@@ -88,3 +88,7 @@ round-presentation.js 只管理演出，game.js 仍立即處理伺服器回執�
 ## 荒島行動
 
 大廳入口 → `#battle`；`battle.js` 負責房間、HUD 與重連，`battle-scene.js` 延遲載入本機 Three.js 並管理 3D／輸入。`battle-console` 保留增量 DOM 身分，`unmount` 釋放 GPU／事件監聽。玩法、限制與驗證見 [荒島行動](BATTLE.md)。
+
+## 朋友樂透
+
+`/#lottery` → `static/lottery.js` → `/api/lottery`、`/api/lottery/buy` → `lottery.py`。大廳入口、不新增手機底部分頁。完整規則與金流見 [LOTTERY.md](LOTTERY.md)。

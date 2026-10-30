@@ -6,3 +6,5 @@
 /static/three.module.js -text -whitespace
 /static/three.core.js -text -whitespace
 /docs/licenses/three-LICENSE.txt -text
+# These scripts are installed and executed directly on Linux hosts.
+/ops/*.py text eol=lf

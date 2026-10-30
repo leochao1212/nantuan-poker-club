@@ -24,13 +24,22 @@ jobs:
           DEPLOY_ENABLED: ${{ vars.PRODUCTION_DEPLOY_ENABLED }}
         shell: python
         run: |
-          import json,os,time,urllib.request
+          import json,os,time,urllib.request,urllib.error
           if os.environ['GITHUB_REF']!='refs/heads/main':raise SystemExit('Select the main branch')
           if os.environ['DEPLOY_ENABLED']!='true':raise SystemExit('Production runner setup is not enabled yet')
           repo=os.environ['REPO'];sha=os.environ['SHA']
           def api(path):
-              r=urllib.request.Request('https://api.github.com/repos/'+repo+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
-              with urllib.request.urlopen(r,timeout=30) as response:return json.load(response)
+              for attempt in range(4):
+                  r=urllib.request.Request('https://api.github.com/repos/'+repo+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Cache-Control':'no-cache'})
+                  try:
+                      with urllib.request.urlopen(r,timeout=30) as response:return json.load(response)
+                  except urllib.error.HTTPError as error:
+                      retry=error.code in (429,500,502,503,504)
+                      code=error.code;error.close()
+                      if not retry or attempt==3:raise SystemExit('GitHub API unavailable (HTTP '+str(code)+')') from None
+                  except (urllib.error.URLError,TimeoutError):
+                      if attempt==3:raise SystemExit('GitHub API unavailable after retries') from None
+                  time.sleep(2**(attempt+1))
           for _ in range(100):
               if api('/commits/main')['sha']!=sha:raise SystemExit('main changed; start a new deployment')
               runs=api('/actions/workflows/ci.yml/runs?branch=main&per_page=50')['workflow_runs']

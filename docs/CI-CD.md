@@ -11,6 +11,7 @@
 
 - 執行程式 [deploy.py](../ops/deploy.py) 是主機上 root 擁有的受信任閘道；部署 workflow 不 checkout 程式、不執行 PR 中的腳本。
 - 主機再次向 GitHub 核對執行中的 workflow_dispatch、main SHA、成功的 Checks 執行及 artifact 名稱。只讀取該次工作的短效 GITHUB_TOKEN，不保存 PAT。
+- GitHub API 的 429／500／502／503／504 及連線逾時最多嘗試 4 次，間隔 2、4、8 秒；401／403 等授權錯誤立即拒絕。讀取要求重新驗證快取。部署工作仍顯示排隊時，每 10 秒重讀、最多等待 5 分鐘，必須實際看到 in_progress 才繼續；已取消、完成或版本不符立即拒絕。
 - 下載驗證 SHA256，拒絕壓縮包路徑穿越與連結，檢查映像 ID 與 commit label，先啟動不掛正式資料的候選容器。
 - 排空時建立 120 秒租約、持續續期；拒絕新桌與新手，既有行動、結算、離桌、同一 operation_id 重送仍可完成。資料庫觸發器亦保護升級前的舊服務。10 分鐘仍未打完則取消，恢復開局。
 - 備份舊 source／image／SQLite，保留正式 Compose、.env 與資料卷。切換使用已測試的映像，不在正式主機重新建置。
@@ -47,3 +48,5 @@ runner 不加入 docker 群組，不能讀 leoserver 私有家目錄及正式 .e
 用既有 SSH 上傳審查過的 ops/install_runner.py 與 ops/deploy.py 到同一個私有暫存目錄。從 GitHub 官方 actions/runner release 取得 Linux x64 封裝並核對其 SHA256；放在 ~/.cache/nantuan-runner-VERSION.tar.gz。以 sudo python3 install_runner.py 執行，stdin 是包含 token、version、digest 的 JSON（token 使用一次性 runner registration token）。不要把 token 寫進 repo 或 shell 歷史。既有 runner 會檢查 repo 是否相同；閘道副本固定 root 擁有。首次安裝後若更改 service drop-in，需要 systemctl restart 對應 runner 服務才套用新限制，且應先確認沒有部署正在執行。
 
 Docker 封裝以整個壓縮檔的 SHA256 作為傳輸完整性依據；classic/containerd 儲存可能顯示不同本機 ID，匯入後從固定 SHA tag 重新核對版本、linux/amd64 平台及全部來源檔，收據同時記錄建置端與部署端映像 ID。
+
+2026-10-31 維護：主機閘道已備份並個別安裝重試修復，保留 root 擁有權及受限 sudo。ops/*.py 固定 LF 換行，避免 Windows checkout 的 CRLF 破壞 Linux shebang。原服務持續用滿單核心配額導致健康檢查逾時，已先備份正式 Compose，再將 CPU 配額調為 2 核心；記憶體限制、資料卷及環境設定沿用原值。調整後健康檢查恢復，CPU 持續高負載仍應追蹤。

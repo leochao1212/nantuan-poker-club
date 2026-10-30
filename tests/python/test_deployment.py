@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import urllib.request
+import urllib.error
 import zipfile
 
 from ops import deploy as d
@@ -57,6 +58,46 @@ class DeploymentPolicy(unittest.TestCase):
         artifacts[0]['expired'] = False
         artifacts.append(deepcopy(artifacts[0]))
         with self.assertRaises(d.Refused):d.validate_request(self.request, self.api)
+
+    def test_delayed_deployment_status_requires_eventual_running_status(self):
+        pending = dict(self.responses['/actions/runs/11'], status='queued')
+        with patch.object(d.time, 'sleep') as sleep:
+            reads = iter([pending, self.responses['/actions/runs/11']])
+            def api(path):
+                return next(reads) if path == '/actions/runs/11' else self.api(path)
+            self.assertEqual(d.validate_request(self.request, api, status_attempts=2), 99)
+            sleep.assert_called_once_with(10)
+        self.responses['/actions/runs/11'] = pending
+        with patch.object(d.time, 'sleep'), self.assertRaisesRegex(d.Refused, 'Timed out'):
+            d.validate_request(self.request, self.api, status_attempts=2)
+        # A pending job with the wrong identity is never retried or authorized.
+        pending['head_sha'] = 'b' * 40
+        with patch.object(d.time, 'sleep') as sleep, self.assertRaises(d.Refused):
+            d.validate_request(self.request, self.api)
+        sleep.assert_not_called()
+
+    def test_completed_or_cancelled_deployment_is_rejected_without_waiting(self):
+        for status in ['completed', 'cancelled']:
+            self.responses['/actions/runs/11']['status'] = status
+            with patch.object(d.time, 'sleep') as sleep, self.assertRaises(d.Refused):
+                d.validate_request(self.request, self.api)
+            sleep.assert_not_called()
+
+    def test_github_transient_errors_retry_but_auth_errors_fail_closed(self):
+        client = d.GitHub('private-token')
+        response = io.BytesIO(b'{"ok":true}')
+        error = urllib.error.HTTPError('https://api.github.com', 502, 'Bad Gateway', {}, None)
+        with patch.object(client.opener, 'open', side_effect=[error, response]) as opening, patch.object(d.time, 'sleep') as sleep:
+            self.assertEqual(client.api('/commits/main'), {'ok': True})
+            self.assertEqual(opening.call_count, 2)
+            sleep.assert_called_once_with(2)
+        for code, expected in [(401, 1), (403, 1), (404, 1), (503, 4)]:
+            with patch.object(client.opener, 'open', side_effect=lambda *a, **k: (_ for _ in ()).throw(
+                    urllib.error.HTTPError('https://api.github.com', code, 'secret-url', {}, None))) as opening, patch.object(d.time, 'sleep'):
+                with self.assertRaises(d.Refused) as caught:client.api('/commits/main')
+                self.assertEqual(opening.call_count, expected)
+                self.assertNotIn('private-token', str(caught.exception))
+                self.assertNotIn('secret-url', str(caught.exception))
 
     def test_arbitrary_arguments_and_paths_rejected(self):
         for field, value in [('run_id', '../other'), ('sha', '--help')]:

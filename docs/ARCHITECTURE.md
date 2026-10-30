@@ -48,7 +48,7 @@ result_stats.py           歷史結算統計投影
 backup.py                 SQLite Backup API
 manage_admin.py           由主機操作者建立獨立管理員
 static/                   不需打包的網站與素材；night.css 是唯一遊戲樣式，ui-art.js 管理現行圖片
-tests/python/test_*.py    後端回歸測試（56 檔，使用套件相對引用）
+tests/python/test_*.py    後端回歸測試（60 檔，使用套件相對引用）
 tests/browser/            瀏覽器互動與排版測試
 ~~~
 
@@ -111,15 +111,6 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 
 內部虛擬莊家備付在等待狀態、同一個資料庫交易中處理。`bet_limit_funded` 記錄歷來已備付的最高上限，只有更高上限才重新估算，玩家餘額和局中銀行不會因推播或設定修改而變動。
 
-### 漁港
-
-
-
-
-魚場SSE頻道`-500-room`與牌桌／大廳分流，最多5Hz共用JSON快照，閒時2秒心跳，客戶端軌跡補間。120ms時鐘僅在有竿、魚場或砲彈活動時加入FIFO；本人錢包立即回應，共享大廳每750ms合併喚醒。發射回應只回錢包與發射統計的partial快照，前端合併原狀態，避免每批重算／重送圖鑑、房間列表與規則；近期砲彈依room／expires_at索引，Canvas30fps、減少動態20fps、手機DPR1.5。背景、斷線、慢確認停止連發，保存原回執，不追補未送砲彈。
-
-
-
 ### 射龍門撞柱保護（規則 v4）
 
 管理員「遊戲設定 → 射龍門」的 `post_protection_bps` 為 0–10000（0–100%，預設 5000），與既有權限、預覽、版本鎖、操作收據及變更紀錄共用流程。啟動時只為缺少此欄位的設定補入 5000 並遞增版本，不覆蓋自訂 `target_bps` 或其他遊戲。局中快照與已凍結報價不改寫；v1/v2 手牌不啟用保護。
@@ -144,3 +135,12 @@ social-root 與 AudioWorklet 在 SPA 頁面切換外維持。第一次按頁首�
 ## 即時 3D 生存戰
 
 `battle.py`／`battle_engine.py` 提供完全分離的記憶體戰場與 `/api/battle/socket`。高頻輸入不進 SQLite、FIFO 或 SSE；沿用網站登入及帳號資格。最多 3 房、32 條真人連線，每房最多 16 人含 AI；模擬固定 20Hz、每人只留最新快照，收發有界，慢連線不阻塞其他人。Three.js 只在 `#battle` 載入。戰局不收點數、重啟清除；完整範圍、協定與限制見 [荒島行動](BATTLE.md)。
+
+
+### 審查修復（2026-10-30）
+
+- 停止服務時同時停止 SSE、停用中的射擊 Hub 與語音 relay；先拒絕新語音並關閉 peer socket，再等 HTTP handlers 完成。Linux CI 以實際 SIGTERM、語音與重啟後的同一補給回執驗證。
+- 登入失敗以正規化帳號隔離，不直接信任 forwarded IP；不存在帳號的探測另以連線來源限制。密碼雜湊最多同時兩筆且不佔 FIFO。錯誤邀請碼不會消耗其他帳號的登入額度；忙碌拒絕不計入帳號失敗額度。
+- 舊 APK 的 android_resume 事件在後端正規化為 resume，新 Flutter bridge 直接使用 resume；不重新載入頁面或重送下注。
+- 局間以 house_risk_funded 記錄最高備付風險，倍率或下注上限提高時只補增加額度；降低後調回及重試不重補虧損。既有桌首次局間補足目前要求一次，不動玩家籌碼或進行中快照。
+- market_review.py 保存異常行情候選值，提供有權限、價格核對與耐久收據的人工恢復；不自動解除異常停牌。詳細流程見 MARKET.md 的「行情異常審核」。

@@ -40,9 +40,11 @@ class Relay:
         self.peers = {}
         self.wake = threading.Event()
         self.writer = None
+        self.stopped = False
 
     def add(self, peer):
         with self.lock:
+            if self.stopped:raise ValueError("語音服務正在關閉，請稍後重新連線。")
             old = self.peers.get(peer.uid)
             if len(self.peers) - int(old is not None) >= MAX_PEERS:
                 raise ValueError('語音使用人數已滿，請稍後再試。')
@@ -53,6 +55,14 @@ class Relay:
                 self.writer=threading.Thread(target=self.send_loop,daemon=True)
                 self.writer.start()
         if old:old.stop()
+
+    def stop(self):
+        """Retire admission and unblock every HTTP reader before server_close."""
+        with self.lock:
+            self.stopped=True;peers=list(self.peers.values());self.peers.clear();writer=self.writer
+        for peer in peers:peer.stop()
+        self.wake.set()
+        if writer and writer is not threading.current_thread():writer.join(timeout=1)
 
     def control(self,peer,payload,opcode):
         try:peer.controls.put_nowait(frame_bytes(payload,opcode))

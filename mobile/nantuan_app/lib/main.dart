@@ -174,7 +174,7 @@ class _ClubScreenState extends State<ClubScreen> with WidgetsBindingObserver {
       // Resume the existing connection and receipt. Never reload or repeat a bet.
       unawaited(
         _web.runJavaScript(
-          "if(typeof resumeConnections==='function') resumeConnections('android_resume');",
+          "if(typeof resumeConnections==='function') resumeConnections('resume');",
         ),
       );
     }

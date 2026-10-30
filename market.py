@@ -13,6 +13,7 @@ import member_accounts
 import market_catalog
 import market_contracts
 import market_charts
+import market_review
 from poker_engine import RuleError
 
 SCALE = 100_000_000
@@ -81,6 +82,7 @@ def initialize(db):
     market_catalog.initialize(db,CATALOG)
     market_contracts.initialize(db)
     market_charts.initialize(db)
+    market_review.initialize(db)
     db.execute('CREATE TABLE IF NOT EXISTS market_history(symbol TEXT NOT NULL,asof REAL NOT NULL,price TEXT NOT NULL,native TEXT NOT NULL,fx TEXT NOT NULL,fx_at REAL NOT NULL,PRIMARY KEY(symbol,asof))')
 
 
@@ -361,12 +363,14 @@ def apply_quotes(db,rows,clock):
         symbol=r['symbol']
         if not market_catalog.get(db,symbol):raise RuleError('未知行情標的。')
         price,bid,ask=(decimal(r[k]) for k in ('price','bid','ask'))
+        native,fx=(decimal(r[k]) for k in ('native','fx'))
         if market_catalog.group(symbol)=='US':bid=ask=price
         if bid>ask or r['asof']>clock+5 or r['asof']<clock-8*86400:continue
         old=db.execute('SELECT * FROM market_quotes WHERE symbol=?',(symbol,)).fetchone()
         if old and r['asof']<old['asof']:continue
         halted=int(bool(old and (old['halted'] or market_catalog.group(symbol)!='CC' and abs(price/Decimal(old['price'])-1)>Decimal('.35'))))
         if halted and old:
+            market_review.observe(db,old,{**r,'native':str(native),'fx':str(fx)},clock)
             db.execute('UPDATE market_quotes SET halted=1,checked_at=? WHERE symbol=?',(clock,symbol));changed=True;continue
         token=hashlib.sha256(json.dumps([symbol,str(price),str(bid),str(ask),r['asof'],r['fx_at']]).encode()).hexdigest()[:24]
         db.execute("INSERT INTO market_quotes(symbol,price,bid,ask,native,fx,asof,fx_at,checked_at,source,token,halted) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET price=excluded.price,bid=excluded.bid,ask=excluded.ask,native=excluded.native,fx=excluded.fx,asof=excluded.asof,fx_at=excluded.fx_at,checked_at=excluded.checked_at,source=excluded.source,token=excluded.token,halted=excluded.halted",

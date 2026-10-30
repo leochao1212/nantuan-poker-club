@@ -1,4 +1,4 @@
-# Python 回歸測試（58 個檔案）
+# Python 回歸測試（60 個檔案）
 
 這裡集中所有 Python 測試。整理時移動前後均為 386 個測試案例，案例名稱及次數一致；後續數量以當次 CI 為準。
 
@@ -113,3 +113,6 @@ python -m unittest tests.python.test_transfers.TransferRules.test_conservation_r
 - `test_battle_http.py`：隔離帳號的 HTTP／WebSocket、認證／撤銷、Origin、租約替換、重送與錢包資料不變。
 
 - `test_title_supplies.py`：實際 HTTP 並行領取每日／每小時補給，只入帳一次；換裝與重送不重領。
+
+- `test_market_review.py`：行情隔離、審核權限、過期／變價拒絕、舊價結清、跨資產回滾與收據重送。
+- `test_shutdown.py`：語音停止的 admission、Linux SIGTERM 正常結束、重啟後補給收據不重複入帳。

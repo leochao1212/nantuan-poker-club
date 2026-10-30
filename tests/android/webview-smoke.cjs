@@ -6,8 +6,12 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/android
  const adb=(...args)=>execFileSync('adb',args,{timeout:30000});
  let launcherRecoveries=0;
  async function ensureNativeInput(){
-  const focus=()=>adb('shell','dumpsys','window','windows').toString().split('\n').filter(line=>line.includes('mCurrentFocus=')).join('\n');
+  let raw='';
+  const focus=()=>{raw=adb('shell','dumpsys','window').toString();return raw.split('\n').filter(line=>line.includes('mCurrentFocus=')).at(-1)||'';};
   const current=focus();
+  fs.writeFileSync(path.join(out,'native-input-'+Date.now()+'.txt'),raw);
+  console.log('Native input focus: '+current.trim());
+  assert.ok(current,'Full Android window dump must report native focus');
   if(!current.includes('Application Not Responding: com.android.launcher3'))return;
   // Android 35's first-boot launcher can ANR before this App is installed.
   // Recover ONLY this known emulator system dialog, never our App's ANR.

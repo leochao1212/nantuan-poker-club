@@ -5,7 +5,7 @@ module.exports=async function blackjackFairnessChecks(page,name){
   for(const [mode,tie,bust] of [['easy','50','25'],['fun','100','50'],['off','0','0'],['easy','50','25']]){
    await page.locator('[data-benefit-preset='+mode+']').click();assert.equal(await page.locator('[data-rule-key=tie_win_bps]').inputValue(),tie);assert.equal(await page.locator('[data-rule-key=bust_refund_bps]').inputValue(),bust);assert.equal(await page.locator('[data-benefit-preset='+mode+']').getAttribute('aria-pressed'),'true');
   }
-  await page.locator('[data-rules-form] [type=submit]').click();await page.locator('#game-settings-modal').waitFor({state:'visible'});assert.match(await page.locator('#game-settings-modal').innerText(),/普通同點轉勝/);assert.match(await page.locator('#game-settings-modal').innerText(),/爆牌全額退注/);await page.locator('[data-rules-cancel]').click();
+  await page.locator('[data-rules-form] [type=submit]').click();await page.locator('#game-settings-modal').waitFor({state:'visible'});assert.match(await page.locator('#game-settings-modal').innerText(),/普通同點轉勝/);assert.match(await page.locator('#game-settings-modal').innerText(),/爆牌退注觸發/);await page.locator('[data-rules-cancel]').click();
   await page.locator('[data-rules-defaults]').click();assert.equal(await page.locator('[data-benefit-preset=off]').getAttribute('aria-pressed'),'true');
   await page.locator('[data-rule-key=tie_win_bps]').fill('37.5');assert.equal(await page.locator('[data-benefit-preset=off]').getAttribute('aria-pressed'),'false');
   await page.locator('[data-rule-key=bust_refund_bps]').fill('101');assert.equal(await page.locator('[data-rule-key=bust_refund_bps]').evaluate(e=>e.validity.rangeOverflow),true);
@@ -35,5 +35,5 @@ module.exports=async function blackjackFairnessChecks(page,name){
  });
  assert.equal(views[0].count,2);assert.match(views[0].text,/Blackjack · 兩張 21 點/);
  assert.equal(views[1].count,5);assert.match(views[1].text,/5 張湊成 21 點 · 非 Blackjack/);
- for(const v of views){assert.equal(v.overflow,false);if(v.kind){assert.ok(contrast(v.colors[0],v.colors[2])>=4.5,'benefit text contrast '+JSON.stringify(v.colors));assert.ok(contrast(v.colors[1],v.colors[2])>=4.5,'benefit note contrast '+JSON.stringify(v.colors));assert.ok(v.awarded);assert.match(v.banner,/普通同點 50% 轉勝/);assert.match(v.banner,/爆牌 25% 全額退注/);assert.match(v.text,v.kind==='tie_win'?/總返還 200 點/:/總返還 100 點/);}}
+ for(const v of views){assert.equal(v.overflow,false);if(v.kind){assert.ok(contrast(v.colors[0],v.colors[2])>=4.5,'benefit text contrast '+JSON.stringify(v.colors));assert.ok(contrast(v.colors[1],v.colors[2])>=4.5,'benefit note contrast '+JSON.stringify(v.colors));assert.ok(v.awarded);assert.match(v.banner,/每日共用 6,000 點/);assert.match(v.banner,/額度不足時僅補剩餘點數/);assert.match(v.banner,/普通同點 50% 轉勝/);assert.match(v.banner,/爆牌 25% 退注/);assert.match(v.text,v.kind==='tie_win'?/總返還 200 點/:/總返還 100 點/);}}
 };

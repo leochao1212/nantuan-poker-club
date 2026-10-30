@@ -282,13 +282,13 @@ class ContractHTTP(original.ServerTestCase):
         data=dict(symbol='CC:BTC',direction='long',leverage=10,margin=1000,operation_id='http_contract_duplicate_1234')
         with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(lambda _:a.call('/api/market/contracts/open',data),range(8)))
         self.assertTrue(all(r[0]==200 for r in results),results);self.assertEqual(len({r[1]['order_id'] for r in results}),1)
-        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],1995)
+        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],8995)
         tick(100);p=a.call('/api/market')[1]['market']['contracts']['positions'][0]
         data=dict(position_id=p['id'],operation_id='http_contract_close_once_1234')
         with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(lambda _:a.call('/api/market/contracts/close',data),range(8)))
         self.assertTrue(all(r[0]==200 for r in results),results)
         tick(110);value=a.call('/api/market?symbol=CC%3ABTC&period=15m&interval=5m')[1]
-        self.assertEqual(value['wallet']['balance'],3989)
+        self.assertEqual(value['wallet']['balance'],10989)
         self.assertEqual(value['market']['chart']['currency'],'USD')
         self.assertTrue(a.call('/api/market/contracts/close',data)[1]['replayed'])
-        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],3989)
+        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],10989)

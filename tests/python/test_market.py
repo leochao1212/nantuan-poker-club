@@ -18,7 +18,10 @@ class MarketRules(unittest.TestCase):
         self.db.executescript("""CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT,nickname TEXT,created_at TEXT);
         CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);INSERT INTO settings VALUES('invite_code','TESTONLY');
         INSERT INTO users VALUES(1,'alice','Alice','2026');INSERT INTO users VALUES(2,'bob','Bob','2026');""")
-        online.initialize(self.db);self.user={'id':1};self.serial=0
+        online.initialize(self.db)
+        # Keep this transaction scenario at a fixed 3,000-point budget.
+        from . import scenario_budget
+        scenario_budget(self.db);self.user={'id':1};self.serial=0
         self.quote(100,100)
 
     def quote(self,price,clock,symbol='CC:BTC',**fields):
@@ -381,8 +384,8 @@ class MarketHTTP(ServerTestCase):
             results=list(pool.map(lambda _:a.call('/api/market/order',data),range(8)))
         self.assertTrue(all(r[0]==200 for r in results),results)
         self.assertEqual(len({r[1]['order_id'] for r in results}),1)
-        value=a.call('/api/market')[1];self.assertEqual(value['wallet']['balance'],2000)
-        self.assertEqual(value['wallet']['total'],3000);self.assertEqual(len(value['market']['orders']),1)
+        value=a.call('/api/market')[1];self.assertEqual(value['wallet']['balance'],9000)
+        self.assertEqual(value['wallet']['total'],10000);self.assertEqual(len(value['market']['orders']),1)
         b=Client(self.base);code=a.call('/api/state')[1]['invite_code']
         self.assertEqual(b.call('/api/register',dict(username='market_other',nickname='另一位',password='SyntheticMarket123',invite_code=code))[0],200)
         self.assertEqual(b.call('/api/market')[1]['market']['orders'],[])
@@ -407,7 +410,7 @@ class MarketHTTP(ServerTestCase):
         with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(lambda _:a.call('/api/market/order',data),range(8)))
         self.assertTrue(all(r[0]==200 for r in results),results)
         self.assertEqual(len({r[1]['order_id'] for r in results}),1)
-        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],2000)
+        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],9000)
         tick(100);short=a.call('/api/market')[1]['market']['shorts'][0]
         data=dict(symbol='CC:BTC',side='cover',position_id=short['id'],operation_id='http_short_same_cover_12345')
         with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(lambda _:a.call('/api/market/order',data),range(8)))
@@ -415,9 +418,9 @@ class MarketHTTP(ServerTestCase):
         self.assertEqual(len({r[1]['order_id'] for r in results}),1)
         tick(90)
         value=a.call('/api/market')[1]
-        self.assertEqual(value['wallet']['balance'],3100);self.assertEqual(value['market']['shorts'],[])
+        self.assertEqual(value['wallet']['balance'],10100);self.assertEqual(value['market']['shorts'],[])
         self.assertTrue(a.call('/api/market/order',data)[1]['replayed'])
-        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],3100)
+        self.assertEqual(a.call('/api/market')[1]['wallet']['balance'],10100)
         with closing(sqlite3.connect(self.db_path)) as db:
             self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE user_id=? AND kind='market_reserve'",(uid,)).fetchone()[0],1)
             self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE user_id=? AND event_key=?",(uid,'market:cover:'+str(short['id']))).fetchone()[0],1)

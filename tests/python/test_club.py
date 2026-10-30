@@ -13,6 +13,9 @@ class WalletRules(unittest.TestCase):
         self.db.executescript("CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT,nickname TEXT);CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);INSERT INTO settings VALUES('invite_code','TESTCODE');")
         self.db.executemany('INSERT INTO users VALUES(?,?,?)',[(i,f'u{i}',f'P{i}') for i in range(1,4)])
         online.initialize(self.db)
+        # Keep this transaction scenario at a fixed 3,000-point budget.
+        from . import scenario_budget
+        scenario_budget(self.db)
         self.users=[{'id':i,'username':f'u{i}','nickname':f'P{i}'} for i in range(1,4)]
         self.clock=1792425600
 
@@ -39,7 +42,7 @@ class WalletRules(unittest.TestCase):
         self.assertTrue(wallet.claim(self.db,1,before)['claimed'])
         self.assertFalse(wallet.claim(self.db,1,before+.5)['claimed'])
         self.assertTrue(wallet.claim(self.db,1,before+1)['claimed'])
-        self.assertEqual(wallet.view(self.db,1,before+1)['balance'],5000)
+        self.assertEqual(wallet.view(self.db,1,before+1)['balance'],7000)
 
     def test_insufficient_wallet_and_repeated_initialization(self):
         rid=self.create();path=f'/api/online/rooms/{rid}'
@@ -64,7 +67,7 @@ class WalletRules(unittest.TestCase):
         self.assertTrue(wallet.maybe_activate(self.db,self.clock+5))
         self.assertEqual(online.get_room(self.db,rid)['status'],'closed')
         self.assertEqual(self.db.execute('SELECT count(*) FROM poker_hands').fetchone()[0],1)
-        self.assertEqual([r[0] for r in self.db.execute('SELECT balance FROM wallets')],[3000,3000,3000])
+        self.assertEqual([r[0] for r in self.db.execute('SELECT balance FROM wallets')],[10000,10000,10000])
 
     def test_play_and_exit_preserve_wallet_sum(self):
         rid=self.create();path=f'/api/online/rooms/{rid}'
@@ -92,8 +95,8 @@ class ClubAPI(ServerTestCase):
         self.assertIsNone(first.call('/api/bootstrap')[1]['account_limit'])
         lobby=first.call('/api/online/lobby')[1]
         self.assertEqual(lobby['total_members'],8)
-        self.assertEqual(lobby['wallet']['total'],3000)
-        self.assertEqual(first.call('/api/wallet/claim',{})[1]['wallet']['balance'],4000)
+        self.assertEqual(lobby['wallet']['total'],10000)
+        self.assertEqual(first.call('/api/wallet/claim',{})[1]['wallet']['balance'],12000)
         self.assertFalse(first.call('/api/wallet/claim',{})[1]['claimed'])
         rid=first.call('/api/online/rooms',{'name':'Social room'})[1]['id'];path=f'/api/online/rooms/{rid}'
         for i in range(1,6):

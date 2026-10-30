@@ -14,6 +14,9 @@ class FundingRules(unittest.TestCase):
         self.db.execute('CREATE TABLE users(id INTEGER PRIMARY KEY,nickname TEXT)')
         self.db.executemany('INSERT INTO users VALUES(?,?)',[(i,f'P{i}') for i in range(1,4)])
         online.initialize(self.db)
+        # Keep this transaction scenario at a fixed 3,000-point budget.
+        from . import scenario_budget
+        scenario_budget(self.db)
         self.users={i:{'id':i,'nickname':f'P{i}'} for i in range(1,4)}
         self.clock=100
 
@@ -114,13 +117,13 @@ class FundingAPI(ServerTestCase):
         self.assertEqual(b.call('/api/register',{'username':'funding_b','nickname':'B','password':'password123','invite_code':invite})[0],200)
         status,result=a.call('/api/online/rooms',{'buy_in':123,'operation_id':'funding-create-0001'})
         self.assertEqual(status,200,result);path=f'/api/online/rooms/{result["id"]}'
-        payload={'buy_in':3000,'seat':5,'operation_id':'funding-join-000001'}
+        payload={'buy_in':10000,'seat':5,'operation_id':'funding-join-000001'}
         self.assertEqual(b.call(path+'/join',payload)[0],200)
         self.assertEqual(b.call(path+'/join',payload)[0],200)
         state=b.call(path)[1]
         self.assertEqual(state['wallet']['balance'],0)
-        self.assertEqual(next(s['stack'] for s in state['seats'] if s['seat']==5),3000)
-        self.assertEqual(a.call(path+'/rebuy',{'amount':2877,'operation_id':'funding-topup-0001'})[0],200)
+        self.assertEqual(next(s['stack'] for s in state['seats'] if s['seat']==5),10000)
+        self.assertEqual(a.call(path+'/rebuy',{'amount':9877,'operation_id':'funding-topup-0001'})[0],200)
         self.assertEqual(a.call(path)[1]['wallet']['balance'],0)
         self.assertEqual(a.call(path+'/rebuy',{'amount':1,'operation_id':'funding-empty-0001'})[0],400)
 

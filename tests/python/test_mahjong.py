@@ -202,7 +202,7 @@ class MahjongReceipts(unittest.TestCase):
             online.maintenance(self.db,self.clock+5+i)
             if online.get_room(self.db,made['id'])['status']=='closed':break
         self.assertEqual(online.get_room(self.db,made['id'])['status'],'closed')
-        self.assertEqual(sum(wallet.view(self.db,uid,self.clock+400)['balance'] for uid in (1,2,3,4)),12000)
+        self.assertEqual(sum(wallet.view(self.db,uid,self.clock+400)['balance'] for uid in (1,2,3,4)),19000)
         self.assertEqual(self.db.execute('SELECT count(*) FROM poker_operations WHERE operation_id=?',(data['operation_id'],)).fetchone()[0],1)
 
     def test_replay_is_unavailable_midgame_and_never_reveals_prior_opponent_hands(self):

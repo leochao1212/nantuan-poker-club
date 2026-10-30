@@ -847,7 +847,7 @@ class Handler(BaseHTTPRequestHandler):
             result={**bank.configure(db,user,data,time.time()),**bank.admin_view(db,user)}
             db.commit();EVENTS.publish()
             return Reply(200,result)
-        if path in ('/api/bank/deposit','/api/bank/withdraw','/api/bank/collect','/api/bank/borrow','/api/bank/repay'):
+        if path in ('/api/bank/deposit','/api/bank/withdraw','/api/bank/collect','/api/bank/borrow','/api/bank/repay','/api/bank/convert'):
             clock=time.time();result=bank.mutate(db,user,path.rsplit('/',1)[1],data,clock)
             result.update(bank=bank.view(db,user['id'],clock),wallet=wallet.view(db,user['id'],clock))
             db.commit();EVENTS.publish()
@@ -884,7 +884,7 @@ class Handler(BaseHTTPRequestHandler):
             result=club_admin.adjust(db,user,data,time.time())
             db.commit();EVENTS.publish()
             return Reply(200,result)
-        if path in ('/api/clubhouse/hire','/api/clubhouse/dispatch','/api/clubhouse/collect'):
+        if path in ('/api/clubhouse/hire','/api/clubhouse/dispatch','/api/clubhouse/collect','/api/clubhouse/collect_all','/api/clubhouse/redispatch'):
             clock=time.time();result=clubhouse.staff_mutate(db,user,path.rsplit('/',1)[1],data,clock);db.commit()
             if not result['replayed']:EVENTS.publish()
             return Reply(200,{**result,'staff':clubhouse.staff_view(db,user['id'],clock),'wallet':wallet.view(db,user['id'],clock),'server_time':clock})

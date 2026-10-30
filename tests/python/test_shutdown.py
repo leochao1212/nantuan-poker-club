@@ -4,7 +4,7 @@ from unittest.mock import patch
 from . import test_auth_review as auth_tests
 from .test_app import ServerTestCase
 from .test_voice import Wire
-import server,voice_transport
+import server,voice_transport,wallet
 
 class ShutdownRules(unittest.TestCase):
  def test_relay_shutdown_retires_all_peers_and_new_admission(self):
@@ -52,4 +52,4 @@ class ShutdownSignal(ServerTestCase):
    except OSError:pass
    time.sleep(.05)
   result=c.call('/api/wallet/hourly',payload)
-  self.assertEqual(result[0],200);self.assertTrue(result[1]['replayed']);self.assertEqual(result[1]['wallet']['balance'],3200)
+  self.assertEqual(result[0],200);self.assertTrue(result[1]['replayed']);self.assertEqual(result[1]['wallet']['balance'],wallet.INITIAL+wallet.HOURLY)

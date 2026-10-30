@@ -82,7 +82,7 @@ class StaffAPI(ServerTestCase):
         with closing(sqlite3.connect(self.db_path)) as db:db.execute('UPDATE staff_jobs SET finishes_at=? WHERE id=?',(time.time()-1,job));db.commit()
         with ThreadPoolExecutor(8) as pool:results=list(pool.map(lambda i:a.call('/api/clubhouse/collect',dict(job_id=job,operation_id=f'staff_api_collect_{i:08d}')),range(8)))
         self.assertTrue(all(status==200 for status,r in results));self.assertEqual(sum(r['collected'] for status,r in results),1)
-        self.assertEqual(a.call('/api/online/lobby')[1]['wallet']['balance'],3060)
+        self.assertEqual(a.call('/api/online/lobby')[1]['wallet']['balance'],10060)
         with closing(sqlite3.connect(self.db_path)) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM staff_jobs').fetchone()[0],1)
             self.assertEqual(db.execute("SELECT count(*) FROM wallet_ledger WHERE kind='staff_mission'").fetchone()[0],1)

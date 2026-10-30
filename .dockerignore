@@ -44,3 +44,5 @@
 !market_contracts.py
 !market_charts.py
 !market_review.py
+
+!economy.py

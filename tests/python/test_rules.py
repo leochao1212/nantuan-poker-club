@@ -143,6 +143,8 @@ class StoredRulesRegression(unittest.TestCase):
         db.execute('CREATE TABLE users(id INTEGER PRIMARY KEY,nickname TEXT)')
         db.executemany('INSERT INTO users VALUES(?,?)', [(i,f'P{i}') for i in range(1,4)])
         online.initialize(db)
+        from . import scenario_budget
+        scenario_budget(db)
         users = {i:{'id':i,'nickname':f'P{i}'} for i in range(1,4)}
         rid = online.mutate(db,'/api/online/rooms',{},users[1],100)['id']
         path = f'/api/online/rooms/{rid}'

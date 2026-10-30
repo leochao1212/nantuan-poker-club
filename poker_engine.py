@@ -152,6 +152,7 @@ def start_hand(room, clock, deck=None):
         "pending": [p["user_id"] for p in participants if p["stack"] > 0],
         "actor": None, "deadline": None, "started_at": clock, "results": [], "pots": []}
     room["hand"] = hand
+    __import__('economy').attach(room)
     room["status"] = "playing"
     small = next(p for p in participants if p["seat"] == dealer) if len(players) == 2 else participants[0]
     big = next(p for p in participants if p["seat"] != dealer) if len(players) == 2 else participants[1]

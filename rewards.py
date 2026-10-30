@@ -166,6 +166,7 @@ def view(db,uid,clock,*,profiles=None,appearances=None):
 def mutate(db,path,data,user,clock):
     uid=user['id']
     if not wallet.active(db):raise RuleError('點數制度尚未啟用。')
+    if path=='/api/club/claim-all':return claim_all(db,user,data,clock)
     if path=='/api/club/mission':
         ident=data.get('mission_id')
         if not isinstance(ident,str) or ident not in (*MISSIONS,'complete'):raise RuleError('任務無效。')
@@ -209,3 +210,43 @@ def mutate(db,path,data,user,clock):
     if data.get('remove') is True:db.execute('DELETE FROM cosmetic_equipped WHERE user_id=? AND slot=?',(uid,item['slot']))
     else:db.execute('INSERT INTO cosmetic_equipped VALUES(?,?,?) ON CONFLICT(user_id,slot) DO UPDATE SET item_id=excluded.item_id',(uid,item['slot'],ident))
     return {'ok':True,'message':'外觀已更新。'}
+
+
+def claim_all(db,user,data,clock):
+    """One transactional receipt; existing eligibility, caps and debt rules apply.
+
+    Called through online.mutate, whose operation receipt makes retries safe even
+    across midnight or after a new hourly reward becomes available.
+    """
+    import clubhouse,hashlib
+    uid=user['id'];op=data['operation_id'];rows=[]
+    sub=lambda name:hashlib.sha256(('reward-hub:'+op+':'+name).encode()).hexdigest()
+    wallet.create(db,uid,clock)
+    before=db.execute('SELECT balance FROM wallets WHERE user_id=?',(uid,)).fetchone()[0]
+    db.execute('SAVEPOINT reward_hub')
+    try:
+        for name,result in [('每日補給',wallet.claim(db,uid,clock)),('每小時補給',wallet.claim_hourly(db,uid,clock,sub('hourly')))]:
+            if result.get('claimed'):rows.append(dict(name=name,amount=result['amount']))
+        for ident in (*MISSIONS,'complete'):
+            today=wallet.day(clock)
+            claimed={r[0] for r in db.execute('SELECT mission_id FROM mission_claims WHERE user_id=? AND day=?',(uid,today))}
+            eligible=set(MISSIONS)<=claimed if ident=='complete' else progress(db,uid,clock)[ident]>=MISSIONS[ident]['target']
+            if ident not in claimed and eligible:
+                mutate(db,'/api/club/mission',dict(mission_id=ident),user,clock)
+                mission=MISSIONS.get(ident,dict(name='今日任務全完成',reward=500))
+                rows.append(dict(name=mission['name'],amount=mission['reward']))
+        for name,result in [('會所收益',clubhouse.claim(db,user,dict(operation_id=sub('income')),clock)),('員工派遣',clubhouse.staff_mutate(db,user,'collect_all',dict(operation_id=sub('staff')),clock))]:
+            if result.get('amount',0):rows.append(dict(name=name,amount=result['amount']))
+        owned={r[0] for r in db.execute('SELECT item_id FROM cosmetic_items WHERE user_id=?',(uid,))}
+        for group in milestone_view(db,uid,owned):
+            for tier in group['tiers']:
+                if not tier['claimed'] and tier['progress']>=tier['target']:
+                    mutate(db,'/api/club/milestone',dict(milestone_id=tier['id']),user,clock)
+                    rows.append(dict(name=tier['title']['name'],amount=0,title_id=tier['title_id']))
+        total=sum(r['amount'] for r in rows)
+        after=db.execute('SELECT balance FROM wallets WHERE user_id=?',(uid,)).fetchone()[0]
+        result=dict(ok=True,receipt=dict(rows=rows,gross=total,net=after-before,repaid=total-(after-before)),message=f'已領取 {len(rows)} 項獎勵。' if rows else '目前沒有待領獎勵，去玩一局吧。')
+        db.execute('RELEASE SAVEPOINT reward_hub')
+        return result
+    except Exception:
+        db.execute('ROLLBACK TO SAVEPOINT reward_hub');db.execute('RELEASE SAVEPOINT reward_hub');raise

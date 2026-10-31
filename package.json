@@ -21,7 +21,8 @@
     "test:battle": "node tests/browser/battle-disabled.cjs && node tests/browser/battle.cjs && node tests/browser/battle-accuracy.cjs",
     "test:battle-perf": "node tests/browser/battle-performance.cjs",
     "test:market-review": "node tests/browser/market-review.cjs",
-    "test:lottery": "node tests/browser/lottery.cjs"
+    "test:lottery": "node tests/browser/lottery.cjs",
+    "test:readability": "node tests/browser/ui-readability.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

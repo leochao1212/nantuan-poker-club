@@ -60,16 +60,16 @@ GAME_PERKS = {
  'blackjack':('win','贏局加碼'), 'baccarat':('win','贏局加碼'),
  'roulette':('loss','落敗回饋'), 'dice':('loss','落敗回饋'),
  'slot':('win','贏局加碼'), 'mines':('win','探險獲利加碼'),
- 'tower':('win','登塔獲利加碼'), 'inbetween':('post','撞柱損失補貼')}
+ 'tower':('win','登塔獲利加碼'), 'inbetween':('win','射中加碼')}
 for key, milestone in MILESTONES.items():
     item=ITEMS[milestone['title_id']];tier=milestone['tier'];game=milestone['game'];mode,label=GAME_PERKS[game]
-    item['game_perk']=dict(game=game,mode=mode,bps=(100,200,300)[tier-1],per_hand=(30,60,100)[tier-1])
-    item['game_label']=f"{GAMES[game][0]}{label} +{tier}% · 每局最多 {item['game_perk']['per_hand']} 點"
+    item['game_perk']=dict(game=game,mode=mode,bps=(150,250,400)[tier-1],per_hand=(40,75,125)[tier-1])
+    item['game_label']=f"{GAMES[game][0]}{label} +{item['game_perk']['bps']/100:g}% · 每局最多 {item['game_perk']['per_hand']} 點"
 for ident,item in ITEMS.items():
     if item['slot']=='title' and item.get('source')!='milestone':
-        bps=50 if item['cost']<80000 else 100 if item['cost']<350000 else 150 if item['cost']<1500000 else 200
-        item['game_perk']=dict(game='all',mode='win',bps=bps,per_hand=100)
-        item['game_label']=f"全遊戲贏局加碼 +{bps/100:g}% · 每局最多 100 點"
+        bps=75 if item['cost']<80000 else 125 if item['cost']<350000 else 175 if item['cost']<1500000 else 250
+        item['game_perk']=dict(game='all',mode='win',bps=bps,per_hand=125)
+        item['game_label']=f"全遊戲贏局加碼 +{bps/100:g}% · 每局最多 125 點"
 
 def game_perk(db,uid):
     row=db.execute("SELECT e.item_id FROM cosmetic_equipped e JOIN cosmetic_items o ON o.user_id=e.user_id AND o.item_id=e.item_id WHERE e.user_id=? AND e.slot='title'",(uid,)).fetchone()

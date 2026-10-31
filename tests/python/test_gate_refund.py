@@ -9,6 +9,36 @@ from .test_gate_protection import room
 from .test_gate_blackjack import points
 
 class GateRefund(unittest.TestCase):
+    def test_v5_success_waives_full_ordinary_and_pair_loss_even_with_empty_budget(self):
+        for cards,direction,loss in ((['5c','9c','5d','9d','2h'],None,2),(['7c','7d','7h','2h'],'up',3)):
+            for budget in (0,500,6000):
+                for ticket,protected in ((4999,True),(5000,False)):
+                    r=room(5000,cards=cards,version=5);h=r['hand']
+                    h['economy']={'players':{'1':dict(happy=budget,used=0,title={})}}
+                    h.pop('gate_quotes');h['gate_quotes']=b.gate_quotes(h)
+                    quote=h['gate_quotes'][direction or 'between']
+                    self.assertIsNone(quote['happy_limit'])
+                    before=points(r);stack=r['seats'][0]['stack'];deck=list(h['deck'])
+                    with patch.object(b.secrets,'randbelow',return_value=ticket):
+                        b.act(r,1,'shoot',2,dict(stake=1000,direction=direction))
+                    charged=0 if protected else 1000*loss
+                    self.assertEqual(h['charged'],charged)
+                    self.assertEqual(r['seats'][0]['stack'],stack-charged)
+                    self.assertEqual(h['results'][0]['profit'],-charged)
+                    self.assertEqual(h['economy']['players']['1']['used'],0)
+                    self.assertEqual(h['third'],deck[-1]);self.assertEqual(h['deck'],deck[:-1])
+                    self.assertEqual(points(r),before)
+                    if protected:self.assertEqual(h['protection_event']['avoided_charge'],1000*loss)
+
+    def test_v5_custom_full_protection_reserves_one_stake_even_with_economy(self):
+        r=room(10000,stack=100,version=5);h=r['hand']
+        h['economy']={'players':{'1':dict(happy=0,used=0,title={})}}
+        h.pop('gate_quotes');h['gate_quotes']=b.gate_quotes(h)
+        self.assertEqual(b.legal_actions(r,1)['max_stake'],100)
+        with patch.object(b.secrets,'randbelow',side_effect=AssertionError('100% needs no draw')):
+            b.act(r,1,'shoot',2,dict(stake=100))
+        self.assertEqual(h['charged'],0);self.assertEqual(r['seats'][0]['stack'],100)
+
     def test_enumerates_physical_posts_waivers_charges_and_payouts(self):
         for rate in (0,5000,10000):
             wins=posts=waivers=paid=returned=0

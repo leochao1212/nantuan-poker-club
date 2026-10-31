@@ -83,7 +83,7 @@ class TaiwanGateRules(unittest.TestCase):
             self.assertEqual(room['hand']['results'][0]['payout'],payout);self.assertEqual(room['hand']['charged'],charge)
         room=make_gate(legacy=True);self.assertEqual(b.legal_actions(room,1)['actions'],['skip'])
         b.act(room,1,'skip',2);b.start_hand(room,3,deck=deck_order(['7c','7d','7h']))
-        self.assertEqual(room['hand']['gate_rules_version'],4)
+        self.assertEqual(room['hand']['gate_rules_version'],5)
 
     def test_public_quotes_never_depend_on_secret_third_or_deck_order(self):
         first=make_gate(third='8h');second=make_gate(third='2h')

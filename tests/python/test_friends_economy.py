@@ -141,7 +141,7 @@ class FriendsEconomy(unittest.TestCase):
             before=wallet.view(self.db,1,self.t)['balance']
             economy.settle(self.db,r,2000+i,self.t)
             self.assertEqual(wallet.view(self.db,1,self.t)['balance']-before,expected,(game,mode,profit))
-        self.assertEqual(economy.remaining(self.db,1,wallet.day(self.t),'title'),1365)
+        self.assertEqual(economy.remaining(self.db,1,wallet.day(self.t),'title'),1665)
 
     def test_partial_gate_refund_is_bounded_and_legacy_unchanged(self):
         for budget in (0,500,6000):
@@ -176,12 +176,53 @@ class FriendsEconomy(unittest.TestCase):
         economy.prepare(d,r,self.t);r['hand']=dict(players=[dict(user_id=1,contribution=10000)],results=[dict(user_id=1,profit=10000,rank='won')])
         economy.attach(r);d.execute('DELETE FROM cosmetic_equipped')
         for i in range(20):economy.settle(d,r,100+i,self.t)
-        self.assertEqual(d.execute("SELECT sum(amount) FROM wallet_ledger WHERE kind='title_game_bonus'").fetchone()[0],1500)
+        self.assertEqual(d.execute("SELECT sum(amount) FROM wallet_ledger WHERE kind='title_game_bonus'").fetchone()[0],1800)
         economy.settle(d,r,100,self.t)
         self.assertEqual(economy.remaining(d,1,wallet.day(self.t),'title'),0)
         r['hand']['economy']['day']=wallet.day(self.t+86400);r['hand']['players'][0]['contribution']=0
         economy.settle(d,r,999,self.t+86400)
-        self.assertEqual(economy.remaining(d,1,wallet.day(self.t+86400),'title'),1500)
+        self.assertEqual(economy.remaining(d,1,wallet.day(self.t+86400),'title'),1800)
+
+    def test_upgraded_titles_award_each_game_with_the_displayed_rate(self):
+        for i,(key,m) in enumerate(rewards.MILESTONES.items()):
+            perk=rewards.ITEMS[m['title_id']]['game_perk'];game=m['game'];tier=m['tier']
+            self.assertEqual(perk['bps'],(150,250,400)[tier-1])
+            self.assertEqual(perk['per_hand'],(40,75,125)[tier-1])
+            profit=-1000 if perk['mode']=='loss' else 1000
+            r=dict(game_type=game,hand=dict(stake=1000,third='7c',selected=[0],
+                players=[dict(user_id=2,contribution=1000)],results=[dict(user_id=2,profit=profit,rank='射中龍門')],
+                economy=dict(day=wallet.day(self.t),players={'2':dict(used=0,title=perk)})))
+            before=wallet.view(self.db,2,self.t)['balance']
+            economy.settle(self.db,r,4000+i,self.t)
+            self.assertEqual(wallet.view(self.db,2,self.t)['balance']-before,(15,25,40)[tier-1],key)
+            economy.settle(self.db,r,4000+i,self.t)
+            self.assertEqual(wallet.view(self.db,2,self.t)['balance']-before,(15,25,40)[tier-1],key)
+        self.assertEqual(economy.remaining(self.db,2,wallet.day(self.t),'title'),920)
+
+    def test_gate_title_rewards_wins_without_rewarding_refunds_or_losses(self):
+        perk=rewards.ITEMS['title_ms_inbetween_10000']['game_perk']
+        self.assertEqual(perk['mode'],'win')
+        for i,(profit,expected) in enumerate([(0,0),(-1000,0),(1000,40)]):
+            r=dict(game_type='inbetween',hand=dict(stake=1000,third='7c',
+                players=[dict(user_id=1,contribution=0 if profit==0 else 1000)],
+                results=[dict(user_id=1,profit=profit,rank='撞柱保護' if profit==0 else '射中龍門')],
+                economy=dict(day=wallet.day(self.t),players={'1':dict(used=0,title=perk)})))
+            before=wallet.view(self.db,1,self.t)['balance']
+            economy.settle(self.db,r,5000+i,self.t)
+            self.assertEqual(wallet.view(self.db,1,self.t)['balance']-before,expected)
+
+    def test_shop_title_brackets_credit_displayed_percent_with_integer_rounding(self):
+        for i,(ident,bps,expected) in enumerate([
+                ('title_night',75,7),('title_patron',125,12),
+                ('title_mogul',175,17),('title_treasury',250,25)]):
+            perk=rewards.ITEMS[ident]['game_perk']
+            self.assertEqual(perk['bps'],bps);self.assertEqual(perk['per_hand'],125)
+            r=dict(game_type='slot',hand=dict(players=[dict(user_id=1,contribution=1000)],
+                results=[dict(user_id=1,profit=2000,rank='won')],economy=dict(day=wallet.day(self.t),
+                players={'1':dict(used=0,title=perk)})))
+            before=wallet.view(self.db,1,self.t)['balance']
+            economy.settle(self.db,r,6000+i,self.t)
+            self.assertEqual(wallet.view(self.db,1,self.t)['balance']-before,expected)
 
     def test_mission_completion_and_staff_batch_retries(self):
         with patch.object(rewards,'progress',return_value=dict(play3=3,variety=2,win1=1)):

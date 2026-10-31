@@ -20,9 +20,9 @@ module.exports=async function gateProtectionChecks(page,name){
  const checks=await page.evaluate(()=>{
   const original=room,results=[];
   try{
-   for(const rate of [0,5000,10000]){
+   for(const version of [4,5])for(const rate of [0,5000,10000]){
     const fixture=structuredClone(original);fixture.hand.id='protection-ui-'+rate;
-    fixture.status='waiting';fixture.hand.phase='showdown';fixture.hand.gate_rules_version=4;
+    fixture.status='waiting';fixture.hand.phase='showdown';fixture.hand.gate_rules_version=version;
     fixture.hand.game_settings.params.post_protection_bps=rate;
     fixture.hand.pillars=['5c','9c'];fixture.hand.third='5d';fixture.hand.direction='between';
     fixture.hand.post_protection_triggered=rate>0;fixture.hand.protected_discards=[];fixture.hand.charged=rate?0:200;fixture.hand.protection_event=rate?{mode:'refund',nickname:'保護成功測試玩家',user_id:fixture.hand.players[0].user_id,avoided_charge:200}:null;
@@ -36,11 +36,11 @@ module.exports=async function gateProtectionChecks(page,name){
     const postText=document.querySelector('#gate-post-chance').textContent;
     const count=document.querySelectorAll('.gate-discard-cards .playing-card').length;
     const protection=document.querySelector('.gate-protection-discards');if(protection)protection.open=true;
-    results.push({rate,note,postText,count,banner:document.querySelector('.gate-protection-success')?.textContent||'',win:document.querySelector('#gate-chance').textContent,rtp:document.querySelector('#gate-rtp').textContent,
+    results.push({version,rate,note,postText,count,banner:document.querySelector('.gate-protection-success')?.textContent||'',win:document.querySelector('#gate-chance').textContent,rtp:document.querySelector('#gate-rtp').textContent,
      overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1});
    }
   }finally{room=original;renderTableUpdate();}
   return results;
  });
- for(const c of checks){assert.match(c.note,new RegExp('撞柱保護 '+c.rate/100+'%'));assert.equal(c.postText,(12*(1-c.rate/10000)).toFixed(2)+'%');assert.equal(c.count,0);if(c.rate){assert.match(c.banner,/保護成功測試玩家 觸發撞柱保護/);assert.match(c.banner,/本局扣點 0/);assert.match(c.banner,/免除 200/);}assert.ok(!c.overflow,JSON.stringify(c));assert.notEqual(c.rtp,'—');}
+ for(const c of checks){assert.match(c.note,new RegExp('撞柱保護 '+c.rate/100+'%'));assert.equal(c.postText,(12*(1-c.rate/10000)).toFixed(2)+'%');assert.equal(c.count,0);if(c.version>=5){assert.match(c.note,/全額免扣/);assert.doesNotMatch(c.note,/按剩餘/);}if(c.rate){assert.match(c.banner,/保護成功測試玩家 觸發撞柱保護/);assert.match(c.banner,/本局扣點 0/);assert.match(c.banner,/免除 200/);if(c.version>=5)assert.match(c.banner,/不占歡樂額度/);}assert.ok(!c.overflow,JSON.stringify(c));assert.notEqual(c.rtp,'—');}
 };

@@ -3,7 +3,7 @@ from copy import deepcopy
 import json
 
 HAPPY_CAP = 6000
-TITLE_CAP = 1500
+TITLE_CAP = 1800
 VERSION = 'friends-economy-v1'
 OLD_RATES = (60,90,120,180,240,300,360,420,480,600)
 

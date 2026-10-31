@@ -2,6 +2,20 @@
 
 ## 使用方式
 
+日常部署統一使用 [deploy_monitor.py](../ops/deploy_monitor.py)，前提是該次正式更新已獲授權：
+
+```powershell
+python ops/deploy_monitor.py --start
+python ops/deploy_monitor.py --resume
+python ops/deploy_monitor.py --run-id 41176937488
+```
+
+三個命令是不同用途：啟動一次新部署、接續上次監控、只核對既有部署。需要本機 Python、已登入的 `gh`、`git`、`curl` 及既有 SSH 連線。腳本每 30 秒輪詢、只印階段變化，預設一小時後停止監控；停止或超時不會取消部署，也不自動重送。部署回應遺失時須先在 Actions 找到 run ID，不能再次啟動。
+
+`.qa/deploy-monitor/latest.json` 記錄本次 run ID；`RUN_ID.json` 保存精簡狀態及最終結果。只有伺服器完成收據與映像相符、容器健康、備份檔存在、[唯讀資料核對](../ops/audit_deployment.py)通過，以及首頁引用的 JS/CSS 雜湊符合發布提交時，才回傳成功（exit 0）。核對保留既有紀錄，允許上線後新增交易，並驗證餘額差額都有帳本依據。核對暫存使用資料卷，避免容器的 16 MB `/tmp` 限制造成誤報。報告只有彙總，不包含玩家個資、token 或環境設定。
+
+失敗回傳 exit 1、停止並提供 run ID 與診斷命令；不自動重啟部署或回復資料庫。完整日誌只在故障時按需查看。監控可在 GitHub 狀態延遲時依匹配的伺服器完成收據繼續驗證。這個入口保留下面的部署保護，也不需要為監控工具更新重新部署遊戲。
+
 1. 開 PR：Checks 自動執行完整 Python 回歸、JS 語法、文件連結、雙人 21 點／會所操作，以及 Chromium 和 WebKit 的手機／桌面排版檢查。失敗時在 Actions 下載 synthetic-browser-diagnostics 截圖及日誌。
 2. 合併 main：上述檢查全部成功後才建置 Docker。release-完整SHA artifact 保存 image.tar.gz、source.tar.gz、release.json，保留 7 天。只有程式與靜態素材，沒有資料庫或 .env。
 3. 更新網站：GitHub → Actions → Deploy production → Run workflow，選 main。工作會等待同一提交的 Checks/build 成功，再呼叫部署端。不是每次 push 自動更新。

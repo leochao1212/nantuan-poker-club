@@ -1,8 +1,8 @@
 """Paper spot and capped 1x short orders in TWD points. No network I/O; caller owns the transaction.
 
 Cash buys reserve an integer budget; sells reserve existing fractional units.
-Both execute only on a source observation newer than submission. Displayed old
-closing prices can never be used for a fill. Quantities use 1e-8 fixed units.
+Delayed stock orders execute on a source observation newer than their submission
+snapshot. Legacy orders require source time newer than submission wall time. Quantities use 1e-8 fixed units.
 """
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone, timedelta
@@ -35,9 +35,11 @@ TW_CHECK_AGE=20
 US_SOURCE='Yahoo Finance 成交參考價'
 US_QUOTE_AGE=90
 US_CHECK_AGE=30
-QUOTE_SQL="""SELECT q.*,COALESCE(h.issue,'') AS issue,m.session_start,m.session_end
+TV_SOURCE='TradingView 延遲成交參考價'
+TV_CHECK_AGE=90
+QUOTE_SQL="""SELECT q.*,COALESCE(h.issue,'') AS issue,m.session_start,m.session_end,t.delay_seconds,t.feed_session
  FROM market_quotes q LEFT JOIN market_quote_health h USING(symbol)
- LEFT JOIN market_quote_meta m USING(symbol)"""
+ LEFT JOIN market_quote_meta m USING(symbol) LEFT JOIN market_tv_meta t USING(symbol)"""
 
 
 def tw_session(clock):
@@ -79,6 +81,8 @@ def initialize(db):
     db.execute("CREATE TABLE IF NOT EXISTS market_quote_health(symbol TEXT PRIMARY KEY,issue TEXT NOT NULL)")
     # Keep the original twelve quote columns compatible with rollback releases.
     db.execute('CREATE TABLE IF NOT EXISTS market_quote_meta(symbol TEXT PRIMARY KEY,session_start REAL NOT NULL,session_end REAL NOT NULL)')
+    db.execute('CREATE TABLE IF NOT EXISTS market_tv_meta(symbol TEXT PRIMARY KEY,delay_seconds INTEGER NOT NULL,feed_session TEXT NOT NULL)')
+    db.execute('CREATE TABLE IF NOT EXISTS market_order_quote_refs(kind TEXT NOT NULL,order_id INTEGER NOT NULL,source_asof REAL NOT NULL,source TEXT NOT NULL,PRIMARY KEY(kind,order_id))')
     market_catalog.initialize(db,CATALOG)
     market_contracts.initialize(db)
     market_charts.initialize(db)
@@ -114,6 +118,11 @@ def quote_ready(q,clock):
     if not q or market_catalog.group(q['symbol']) not in ('TW','US','CC') or q['halted'] or ('issue' in q.keys() and q['issue']):return False
     group=market_catalog.group(q['symbol'])
     age=clock-q['asof']
+    if q['source']==TV_SOURCE:
+        return (group in ('TW','US') and 'delay_seconds' in q.keys() and
+            q['delay_seconds'] in (0,900) and q['feed_session']=='market' and
+            -5<=age<=q['delay_seconds']+120 and -5<=clock-q['checked_at']<=TV_CHECK_AGE and
+            (group!='TW' or tw_session(clock)) and (group!='US' or -5<=clock-q['fx_at']<=3*86400))
     if group=='TW':
         return q['source'] in (TW_SOURCE,TW_MID_SOURCE) and tw_session(clock) and -5<=age<=TW_QUOTE_AGE and -5<=clock-q['checked_at']<=TW_CHECK_AGE
     if group=='US':
@@ -127,24 +136,40 @@ def quote_ready(q,clock):
 
 def quote_notice(q,code,clock):
     if q and q['halted']:return '公司行動待確認，暫停成交'
+    if q and q['source']==TV_SOURCE:
+        if not quote_ready(q,clock):return '休市、行情缺漏或過期，暫停成交'
+        return '延遲行情模擬：等下一筆來源更新成交；外部即時價格可能有優勢'
     if market_catalog.group(code)=='US':
-        if not q or q['source']!=US_SOURCE:return '等待 Yahoo 行情，暫停成交'
+        if not q or q['source']!=US_SOURCE:return '等待 TradingView 行情，暫停成交'
         if 'issue' in q.keys() and q['issue']:return '行情缺資料或連線失敗，暫停成交'
         if q['session_start'] is None or q['session_end'] is None:return '交易時段待確認，暫停成交'
         if not q['session_start']<=clock<q['session_end']:return '盤後／休市，暫停成交'
         if not quote_ready(q,clock):return '行情或匯率已過期，暫停成交'
     if market_catalog.group(code)=='TW':
         if not tw_session(clock):return '盤後／休市，暫停成交'
-        if not q or q['source'] not in (TW_SOURCE,TW_MID_SOURCE):return '等待 MIS 盤中報價'
+        if not q or q['source'] not in (TW_SOURCE,TW_MID_SOURCE):return '等待 TradingView 行情，暫停成交'
         if 'issue' in q.keys() and q['issue']:return '行情缺資料或連線失敗，暫停成交'
         if not quote_ready(q,clock):return '行情已過期，暫停成交'
     return ''
 
 
+def remember_order_quote(db,kind,oid,q):
+    if q and q['source']==TV_SOURCE:
+        db.execute('INSERT INTO market_order_quote_refs VALUES(?,?,?,?)',(kind,oid,q['asof'],q['source']))
+
+
+def quote_after_order(db,kind,order,q,clock):
+    if not quote_ready(q,clock):return False
+    reference=db.execute('SELECT source_asof,source FROM market_order_quote_refs WHERE kind=? AND order_id=?',(kind,order['id'])).fetchone()
+    # Legacy orders retain their original submission-time requirement.
+    if reference:
+        return q['source']==reference['source'] and q['asof']>reference['source_asof'] and q['checked_at']>order['submitted_at']
+    return q['asof']>order['submitted_at']
+
+
 def execution_price(q,side):
-    # Yahoo chart supplies last trades, NOT an executable bid/ask. US orders
-    # explicitly simulate fills at the next reference trade for both directions.
-    return q['price'] if market_catalog.group(q['symbol'])=='US' else q['ask' if side in ('buy','cover') else 'bid']
+    # Stock scanner quotes are reference trades, not executable bid/ask.
+    return q['price'] if market_catalog.group(q['symbol'])=='US' or q['source']==TV_SOURCE else q['ask' if side in ('buy','cover') else 'bid']
 
 
 def _assets(db):
@@ -175,8 +200,10 @@ def view(db,uid,clock,symbol=None,period=None,interval=None):
             until=min(q['asof']+TW_QUOTE_AGE,q['checked_at']+TW_CHECK_AGE,close)
         if q and item['market']=='US':
             until=min(q['asof']+US_QUOTE_AGE,q['checked_at']+US_CHECK_AGE,q['fx_at']+3*86400,q['session_end'] or 0)
-        public=dict(q,bid=None,ask=None,execution='reference_trade') if q and item['market']=='US' else q
-        instruments.append(dict(item,quote=public,available=quote_ready(q,clock),valid_until=until,notice=quote_notice(q,code,clock),mode='盤中約 5–10 秒更新' if item['market']=='TW' else '約 10 秒更新'))
+        if q and q['source']==TV_SOURCE:
+            until=min(q['asof']+(q['delay_seconds'] or 0)+120,q['checked_at']+TV_CHECK_AGE,q['fx_at']+3*86400 if item['market']=='US' else float('inf'))
+        public=dict(q,bid=None,ask=None,execution='reference_trade') if q and (item['market']=='US' or q['source']==TV_SOURCE) else q
+        instruments.append(dict(item,quote=public,available=quote_ready(q,clock),valid_until=until,notice=quote_notice(q,code,clock),mode='TradingView 延遲行情模擬 · 約 30 秒檢查更新' if q and q['source']==TV_SOURCE else '盤中約 5–10 秒更新' if item['market']=='TW' else '約 10 秒更新'))
     positions=[]
     for r in db.execute('SELECT * FROM market_positions WHERE user_id=? AND units>0',(uid,)):
         item=dict(r);reserved=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,r['symbol'])).fetchone()[0]
@@ -260,6 +287,7 @@ def mutate(db,user,action,data,clock):
             elif units_for_budget(budget,execution_price(q,'buy'))<1:raise RuleError('買入點數不足最小份額。')
             if db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆委託，請先取消部分委託。')
             oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[market_catalog.group(symbol)],position_id)).lastrowid
+            remember_order_quote(db,'spot',oid,q)
             if side in ('buy','short'):wallet.transfer(db,uid,-budget,'market_reserve','market:reserve:'+str(oid),clock)
         result=dict(ok=True,order_id=oid,action=action,replayed=False)
         db.execute('INSERT INTO market_operations VALUES(?,?,?,?)',(uid,op,fingerprint,json.dumps(result)))
@@ -299,7 +327,7 @@ def settle(db,clock):
         except member_accounts.AccountError:
             cancel(db,o,clock,'cancelled','帳號已停用');changed=True;continue
         q=quotes.get(o['symbol'])
-        if not quote_ready(q,clock) or q['asof']<=o['submitted_at']:continue
+        if not quote_after_order(db,'spot',o,q,clock):continue
         if o['side']=='short':
             price=Decimal(execution_price(q,'short'));units=units_for_budget(o['budget'],price)
             proceeds=value_points(units,price)
@@ -375,6 +403,9 @@ def apply_quotes(db,rows,clock):
         token=hashlib.sha256(json.dumps([symbol,str(price),str(bid),str(ask),r['asof'],r['fx_at']]).encode()).hexdigest()[:24]
         db.execute("INSERT INTO market_quotes(symbol,price,bid,ask,native,fx,asof,fx_at,checked_at,source,token,halted) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET price=excluded.price,bid=excluded.bid,ask=excluded.ask,native=excluded.native,fx=excluded.fx,asof=excluded.asof,fx_at=excluded.fx_at,checked_at=excluded.checked_at,source=excluded.source,token=excluded.token,halted=excluded.halted",
             (symbol,str(price),str(bid),str(ask),str(decimal(r['native'])),str(decimal(r['fx'])),r['asof'],r['fx_at'],clock,r['source'],token,halted))
+        if r['source']==TV_SOURCE:
+            db.execute('INSERT INTO market_tv_meta VALUES(?,?,?) ON CONFLICT(symbol) DO UPDATE SET delay_seconds=excluded.delay_seconds,feed_session=excluded.feed_session',(symbol,r['delay_seconds'],r['feed_session']))
+            market_charts.apply(db,r.get('candles',[]),clock)
         db.execute('DELETE FROM market_quote_health WHERE symbol=?',(symbol,))
         if not halted:
             for p in db.execute('SELECT user_id,units,cost FROM market_positions WHERE symbol=? AND units>0',(symbol,)).fetchall():
@@ -418,6 +449,9 @@ PERIODS={'15m':900,'1h':3600,'1d':86400,'7d':7*86400,'30d':30*86400,'180d':180*8
 def chart(db,symbol,period,clock,interval=None):
     if not market_catalog.get(db,symbol) or period not in PERIODS:raise RuleError('價格圖標的或時間範圍無效。')
     seconds=PERIODS[period]
+    quote=db.execute('SELECT source,asof FROM market_quotes WHERE symbol=?',(symbol,)).fetchone()
+    delayed=quote and quote['source']==TV_SOURCE
+    if delayed:clock=min(clock,quote['asof'])
     if market_catalog.group(symbol)=='US':
         session=db.execute('SELECT session_start,session_end FROM market_quote_meta WHERE symbol=?',(symbol,)).fetchone()
         if not session or not session['session_start']<=clock<session['session_end']:
@@ -437,6 +471,6 @@ def chart(db,symbol,period,clock,interval=None):
     model=dict(symbol=symbol,period=period,from_at=start,to_at=clock,
       points=[dict(at=r[0],price=r[1]) for r in rows],currency='TWD',max_points=241,gap_seconds=max(90,bucket*2.5),
       retention_days=7 if market_catalog.group(symbol)=='CC' else 180,
-      basis='Yahoo 分鐘收盤線＋成交參考快照；分鐘時間為區間起點，美元依匯入時匯率換算點數。歷史線不參與成交。' if market_catalog.group(symbol)=='US' else '')
+      basis='TradingView 延遲觀測；時間軸截至最後來源時間，分鐘線逐步累積，缺樣不補造。既有歷史保留原來源，歷史線不參與成交。' if delayed else 'Yahoo 分鐘收盤線＋成交參考快照；分鐘時間為區間起點，美元依匯入時匯率換算點數。歷史線不參與成交。' if market_catalog.group(symbol)=='US' else '')
 
     return market_charts.enrich(db,model,symbol,clock,interval or '1m')

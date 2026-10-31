@@ -5555,3 +5555,15 @@ html[data-ui=current] #app #main .reward-supplies .daily-box .button{width:100%!
  #app .reward-supplies .daily-box>strong{grid-column:2;grid-row:1;font-size:24px;}
  #app .reward-supplies .daily-box>button,#app .reward-supplies .daily-box>small{grid-column:1/-1;}
 }
+
+/* Readability audit: retain the club art while making supporting UI legible. */
+html[data-ui=current] #app .play-reminder :is(.reminder-readable,.reminder-track,.reminder-track>span){color:var(--rail-muted);text-shadow:none;}
+#app .title-bonus-summary{padding:20px 24px;}
+@media(max-width:760px){
+ #app :is(.night-lobby,.rewards-hub)>.page-heading{flex-direction:row;align-items:center;text-align:left;}
+ #app :is(.night-lobby,.rewards-hub)>.page-heading>div{min-width:0;flex:1;}
+ #app :is(.night-lobby,.rewards-hub)>.page-heading>.button{width:auto;flex:0 0 auto;padding-inline:12px;}
+ #app .title-bonus-summary{padding:16px;gap:12px;}
+ #app .lobby-services>a:not(.lottery-entry){gap:8px;padding:12px 10px;}
+ #app .lobby-services>a:not(.lottery-entry)>span:last-child{display:none;}
+}

@@ -16,7 +16,7 @@ TAIPEI=timezone(timedelta(hours=8))
 URLS={'TW':'https://mis.twse.com.tw/stock/api/getStockInfo.jsp',
       'CC':'https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD',
       'FX':'https://open.er-api.com/v6/latest/USD'}
-PERIODS={'TW':5,'US':10,'CC':10,'FX':86400,'BARS':60}
+PERIODS={'TW':30,'US':30,'CC':10,'FX':86400,'BARS':60}
 
 
 def mis_rows(data,clock,instruments=None):
@@ -51,8 +51,8 @@ def mis_rows(data,clock,instruments=None):
     return rows
 
 
-def fetch_json(url,limit=2_000_000):
-    request=urllib.request.Request(url,headers={'User-Agent':'NantuanPaperMarket/1.0','Accept':'application/json','Cache-Control':'no-cache'})
+def fetch_json(url,limit=2_000_000,*,payload=None):
+    request=urllib.request.Request(url,data=json.dumps(payload).encode() if payload is not None else None,headers={'User-Agent':'NantuanPaperMarket/1.0','Accept':'application/json','Content-Type':'application/json','Cache-Control':'no-cache'})
     with urllib.request.urlopen(request,timeout=8) as response:
         raw=response.read(limit+1)
         if len(raw)>limit:raise ValueError('Oversized market response')
@@ -63,12 +63,12 @@ def due(db,clock):
     values={r['name']:r['next_at'] for r in db.execute('SELECT name,next_at FROM market_providers')}
     # Upgrade the old hourly EOD schedule without waiting for its next run.
     tw=db.execute("SELECT source FROM market_quotes WHERE symbol LIKE 'TW:%' LIMIT 1").fetchone()
-    if (not tw or tw[0]!=market.TW_SOURCE) and values.get('TW',0)>clock+PERIODS['TW']:values['TW']=0
+    if (not tw or tw[0] not in (market.TW_SOURCE,market.TW_MID_SOURCE,market.TV_SOURCE)) and values.get('TW',0)>clock+300:values['TW']=0
     # Retire the old daily/key-gated US schedule once, without overriding
     # Yahoo outage backoff on subsequent retries.
     us=db.execute("SELECT status FROM market_providers WHERE name='US'").fetchone()
     old_us=db.execute("SELECT source FROM market_quotes WHERE symbol LIKE 'US:%' LIMIT 1").fetchone()
-    if us and (us[0]=='missing_key' or values.get('US',0)>clock+300 and (not old_us or old_us[0]!=market.US_SOURCE)):values['US']=0
+    if us and (us[0]=='missing_key' or values.get('US',0)>clock+300 and (not old_us or old_us[0] not in (market.US_SOURCE,market.TV_SOURCE))):values['US']=0
     return [key for key in ('FX','TW','US','CC','BARS') if clock>=values.get(key,0)]
 
 
@@ -88,11 +88,7 @@ def read_provider(name,clock,fx,instruments=None):
     if name in ('US','CC') and (not fx or not -5<=clock-fx['asof']<=3*86400):
         return [],'fx_unavailable',clock+5,None
     url=URLS.get(name)
-    if name=='TW':
-        if not market.tw_session(clock):return [],'closed',clock+5,None
-        channels='|'.join(i.get('exchange','tse')+'_'+s.split(':')[1]+'.tw' for s,i in instruments.items() if i['market']=='TW')
-        url+='?'+urllib.parse.urlencode({'ex_ch':channels,'_':int(clock*1000)})
-    if name=='US':return yahoo_batch(clock,fx,instruments)
+    if name in ('TW','US'):return tradingview_batch(name,clock,fx,instruments)
     if name=='CC':url='https://api.kraken.com/0/public/Ticker?pair='+urllib.parse.quote(','.join(i.get('feed',{'CC:BTC':'XXBTZUSD','CC:ETH':'XETHZUSD','CC:SOL':'SOLUSD'}.get(s,s.split(':')[1]+'USD')) for s,i in instruments.items() if i['market']=='CC'),safe=',')
     data=fetch_json(url)
     if name=='FX':
@@ -150,7 +146,7 @@ def apply(db,results,clock,instruments=None):
             # Immediately stop every omitted/invalid symbol, even when its old
             # observation is still within the age window. Keep its last mark.
             db.executemany('INSERT INTO market_quote_health VALUES(?,?) ON CONFLICT(symbol) DO UPDATE SET issue=excluded.issue',[(symbol,'missing_data' if rows else status) for symbol,item in instruments.items() if item['market']==name])
-        if rows and name=='US':
+        if rows and name=='US' and 'quote' in rows[0]:
             for packet in rows:
                 changed=apply_yahoo(db,packet,clock) or changed
             rows=[]
@@ -262,7 +258,69 @@ def candle_batch(instruments,clock):
                 if b:rows.append(b)
             return rows
         except Exception:return []
-    items=[i for i in instruments.values() if i['market'] in ('TW','CC')]
+    items=[i for i in instruments.values() if i['market']=='CC']
     with ThreadPoolExecutor(max_workers=3) as pool:groups=list(pool.map(read,items))
     rows=[r for group in groups for r in group]
     return rows,'ok' if all(groups) else 'partial' if rows else 'unavailable',clock+60,None
+
+
+TV_COLUMNS=['name','close','currency','exchange','type','typespecs','update_mode',
+    'last-price-update-time','current_session','time|1','open|1','high|1','low|1','close|1','volume|1']
+TV_EXCHANGES={'TW':('TWSE','TPEX'),'US':('NASDAQ','NYSE','AMEX','CBOE')}
+
+
+def tradingview_tickers(symbol,item):
+    group=item['market'];code=symbol.split(':',1)[1]
+    known={'tse':'TWSE','otc':'TPEX','NMS':'NASDAQ','NGM':'NASDAQ','NCM':'NASDAQ',
+        'NYQ':'NYSE','NYS':'NYSE','ASE':'AMEX','PCX':'AMEX','BTS':'CBOE','BATS':'CBOE','NAS':'NASDAQ'}
+    exchange=known.get(item.get('exchange'),item.get('exchange'))
+    exchanges=(exchange,) if exchange in TV_EXCHANGES[group] else TV_EXCHANGES[group]
+    return [e+':'+code for e in exchanges]
+
+
+def tradingview_rows(data,group,clock,fx,instruments):
+    if not isinstance(data,dict) or not isinstance(data.get('data'),list):raise ValueError('Invalid scanner response')
+    candidates={}
+    for entry in data['data']:
+        if not isinstance(entry,dict) or not isinstance(entry.get('s'),str):continue
+        values=entry.get('d')
+        if not isinstance(values,list) or len(values)!=len(TV_COLUMNS):continue
+        row=dict(zip(TV_COLUMNS,values));symbol=group+':'+str(row['name'])
+        item=instruments.get(symbol)
+        if not item or item['market']!=group or entry['s'] not in tradingview_tickers(symbol,item):continue
+        candidates.setdefault(symbol,[]).append((entry['s'],row))
+    rows=[]
+    for symbol,entries in candidates.items():
+        if len(entries)!=1:continue  # Ambiguous exchange matches never choose an arbitrary price.
+        ticker,r=entries[0]
+        try:
+            if r['exchange']!=ticker.split(':')[0] or r['currency']!=('TWD' if group=='TW' else 'USD'):continue
+            if r['type']!='stock' and not (r['type']=='fund' and isinstance(r['typespecs'],list) and 'etf' in r['typespecs']):continue
+            mode=r['update_mode'];delay={'streaming':0,'delayed_streaming_900':900}.get(mode)
+            if delay is None or r['current_session'] not in ('market','pre_market','post_market','out_of_session'):continue
+            at=source_time(r['last-price-update-time'])
+            if not clock-8*86400<=at<=clock+5:continue
+            native=market.decimal(r['close']);rate=market.decimal(fx['rate']) if group=='US' else Decimal(1)
+            price=str(native*rate)
+            candle=market_charts.bar(symbol,r['time|1'],r['open|1'],r['high|1'],r['low|1'],r['close|1'],r['volume|1'],min(clock,at),'TradingView 原始分鐘 OHLC')
+            rows.append(dict(symbol=symbol,price=price,bid=price,ask=price,native=str(native),fx=str(rate),
+                fx_at=fx['asof'] if group=='US' else at,asof=at,source=market.TV_SOURCE,
+                delay_seconds=delay,feed_session=r['current_session'],candles=[candle] if candle else []))
+        except (ValueError,TypeError,KeyError,market.RuleError):continue
+    return rows
+
+
+def tradingview_batch(group,clock,fx,instruments):
+    symbols=[s for s,i in instruments.items() if i['market']==group];rows=[]
+    # Bounded payloads; one batch per 25 symbols rather than one HTTP call per stock.
+    for offset in range(0,len(symbols),25):
+        batch={s:instruments[s] for s in symbols[offset:offset+25]}
+        tickers=[t for s,i in batch.items() for t in tradingview_tickers(s,i)]
+        try:
+            data=fetch_json('https://scanner.tradingview.com/'+('taiwan' if group=='TW' else 'america')+'/scan',
+                payload={'symbols':{'tickers':tickers,'query':{'types':[]}},'columns':TV_COLUMNS,'range':[0,len(tickers)]})
+            rows.extend(tradingview_rows(data,group,clock,fx,batch))
+        except Exception:continue
+    status='ok' if len(rows)==len(symbols) else 'partial' if rows else 'unavailable'
+    if rows and status=='ok' and all(r['feed_session']!='market' for r in rows):status='closed'
+    return rows,status,clock+(30 if status=='ok' else 60),None

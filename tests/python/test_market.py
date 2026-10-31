@@ -253,16 +253,11 @@ def mis_fixture(clock,code='2330',**fields):
 class MISProviders(unittest.TestCase):
     def setUp(self):self.at=datetime(2026,10,28,2,tzinfo=timezone.utc).timestamp()
 
-    def test_batched_request_preserves_source_time_and_no_key(self):
+    def test_legacy_parser_preserves_original_source_time(self):
         payload=dict(rtcode='0000',msgArray=[mis_fixture(self.at-10),mis_fixture(self.at-5,'2317')])
-        with patch('market_data.fetch_json',return_value=payload) as fetch:
-            rows,status,next_at,_=market_data.read_provider('TW',self.at,None)
-        from urllib.parse import urlparse,parse_qs
-        url=fetch.call_args.args[0];query=parse_qs(urlparse(url).query)
-        self.assertEqual(len(query['ex_ch'][0].split('|')),5)
-        self.assertEqual(status,'partial');self.assertEqual(next_at,self.at+5)
-        self.assertEqual(rows[0]['asof'],self.at-10);self.assertEqual(rows[0]['source'],market.TW_SOURCE)
-        self.assertEqual((rows[0]['price'],rows[0]['bid'],rows[0]['ask']),('100','99','101'))
+        rows=market_data.mis_rows(payload,self.at)
+        self.assertEqual(rows[0]['asof'],self.at-10)
+        self.assertEqual(rows[0]['source'],market.TW_SOURCE)
 
     def test_missing_invalid_crossed_stale_future_or_ambiguous_rows_rejected(self):
         variants=[dict(z=None),dict(z='0'),dict(z='NaN'),dict(z='Infinity'),dict(b='-'),dict(a='-'),dict(g='0'),dict(f='-'),dict(b='102_',a='101_'),dict(t=''),dict(tlong=''),dict(tlong=str(int(self.at-5)*1000)),dict(ex='otc'),dict(d='20261399'),dict(z=100),dict(b=None)]
@@ -283,14 +278,10 @@ class MISProviders(unittest.TestCase):
         self.assertEqual((rows[0]['bid'],rows[0]['ask']),('99','101'))
         self.assertFalse(market_data.mis_rows(dict(rtcode='0000',msgArray=[mis_fixture(self.at-31,z='-')]),self.at))
 
-    def test_outside_session_does_not_fetch_and_failure_retries_bounded(self):
-        for at in (self.at-2*3600,self.at+4*3600,self.at+3*86400):
-            with patch('market_data.fetch_json') as fetch:
-                rows,status,_,_=market_data.read_provider('TW',at,None)
-            fetch.assert_not_called();self.assertEqual((rows,status),([],'closed'))
+    def test_stock_failure_retries_bounded(self):
         with patch('market_data.fetch_json',side_effect=TimeoutError):
             result=market_data.refresh(['TW'],self.at,None)
-        self.assertEqual(result,[('TW',[],'unavailable',self.at+5)])
+        self.assertEqual(result,[('TW',[],'unavailable',self.at+60)])
 
 
 class MISRules(unittest.TestCase):
@@ -477,13 +468,13 @@ class YahooFormats(unittest.TestCase):
             if code=='NVDA':raise ValueError('private upstream details')
             return yahoo_fixture(self.at,code)
         with patch('market_data.fetch_json',side_effect=fetch) as mocked:
-            rows,status,next_at,_=market_data.read_provider('US',self.at,self.fx)
+            rows,status,next_at,_=market_data.yahoo_batch(self.at,self.fx)
         self.assertEqual((len(rows),status,next_at),(2,'partial',self.at+60))
         self.assertEqual(mocked.call_count,3)
         self.assertTrue(all(c.args[0].startswith('https://query1.finance.yahoo.com/v8/finance/chart/') and c.args[0].endswith('?interval=1m&range=1d&includePrePost=false') for c in mocked.call_args_list))
         with patch('market_data.fetch_json',side_effect=lambda u:yahoo_fixture(self.at,u.split('/chart/')[1].split('?')[0])):
-            self.assertEqual(market_data.read_provider('US',self.at,self.fx)[2],self.at+10)
-            self.assertEqual(market_data.read_provider('US',self.at+6*3600,self.fx)[1:3],('closed',self.at+6*3600+60))
+            self.assertEqual(market_data.yahoo_batch(self.at,self.fx)[2],self.at+10)
+            self.assertEqual(market_data.yahoo_batch(self.at+6*3600,self.fx)[1:3],('closed',self.at+6*3600+60))
 
 
 class YahooRules(unittest.TestCase):

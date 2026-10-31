@@ -194,6 +194,7 @@ def mutate(db,user,action,data,clock):
                 reserve=margin+ceil(Fraction(margin*leverage*FEE_BPS,10000))
             expiry=7*86400 if kind=='limit' else market.PENDING_SECONDS[market_catalog.group(symbol)]
             oid=db.execute("INSERT INTO market_contract_orders(user_id,symbol,action,direction,leverage,margin,reserve,status,submitted_at,expires_at,position_id,order_kind,limit_native,take_profit,stop_loss) VALUES(?,?,?,?,?,?,?,'pending',?,?,?,?,?,?,?)",(uid,symbol,action,direction,leverage,margin,reserve,clock,clock+expiry,target if action=='close' else None,kind,limit,tp,sl)).lastrowid
+            market.remember_order_quote(db,'contract',oid,q)
             if reserve:wallet.transfer(db,uid,-reserve,'market_reserve','contract:reserve:'+str(oid),clock)
         result=dict(ok=True,order_id=oid,action=action,replayed=False,order_type='contract')
         db.execute('INSERT INTO market_operations VALUES(?,?,?,?)',(uid,op,fingerprint,json.dumps(result)))
@@ -236,7 +237,7 @@ def settle(db,clock,quotes):
         try:member_accounts.require_active(db,o['user_id'])
         except member_accounts.AccountError:cancel(db,o,clock,'cancelled','帳號已停用');changed=True;continue
         q=quotes.get(o['symbol'])
-        if not market.quote_ready(q,clock) or q['asof']<=o['submitted_at']:continue
+        if not market.quote_after_order(db,'contract',o,q,clock):continue
         if o['action']=='close':
             p=db.execute("SELECT * FROM market_contracts WHERE id=? AND status='open'",(o['position_id'],)).fetchone()
             if not p:cancel(db,o,clock,'cancelled','倉位已結束');changed=True;continue

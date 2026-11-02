@@ -13,6 +13,7 @@ import member_accounts
 import market_catalog
 import market_contracts
 import market_charts
+import market_tw
 import market_review
 from poker_engine import RuleError
 
@@ -83,6 +84,7 @@ def initialize(db):
     db.execute('CREATE TABLE IF NOT EXISTS market_quote_meta(symbol TEXT PRIMARY KEY,session_start REAL NOT NULL,session_end REAL NOT NULL)')
     db.execute('CREATE TABLE IF NOT EXISTS market_tv_meta(symbol TEXT PRIMARY KEY,delay_seconds INTEGER NOT NULL,feed_session TEXT NOT NULL)')
     db.execute('CREATE TABLE IF NOT EXISTS market_order_quote_refs(kind TEXT NOT NULL,order_id INTEGER NOT NULL,source_asof REAL NOT NULL,source TEXT NOT NULL,PRIMARY KEY(kind,order_id))')
+    market_tw.initialize(db)
     market_catalog.initialize(db,CATALOG)
     market_contracts.initialize(db)
     market_charts.initialize(db)
@@ -159,7 +161,7 @@ def remember_order_quote(db,kind,oid,q):
 
 
 def quote_after_order(db,kind,order,q,clock):
-    if not quote_ready(q,clock):return False
+    if not quote_ready(q,clock) or not market_tw.eligible(db,kind,order,q,clock):return False
     reference=db.execute('SELECT source_asof,source FROM market_order_quote_refs WHERE kind=? AND order_id=?',(kind,order['id'])).fetchone()
     # Legacy orders retain their original submission-time requirement.
     if reference:
@@ -202,8 +204,13 @@ def view(db,uid,clock,symbol=None,period=None,interval=None):
             until=min(q['asof']+US_QUOTE_AGE,q['checked_at']+US_CHECK_AGE,q['fx_at']+3*86400,q['session_end'] or 0)
         if q and q['source']==TV_SOURCE:
             until=min(q['asof']+(q['delay_seconds'] or 0)+120,q['checked_at']+TV_CHECK_AGE,q['fx_at']+3*86400 if item['market']=='US' else float('inf'))
+        order_window=None
+        if item['market']=='TW':
+            try:
+                start,end=market_tw.window(db,clock);order_window=dict(start=start,end=end,can_reserve=bool(q and not q['halted']))
+            except RuleError:pass
         public=dict(q,bid=None,ask=None,execution='reference_trade') if q and (item['market']=='US' or q['source']==TV_SOURCE) else q
-        instruments.append(dict(item,quote=public,available=quote_ready(q,clock),valid_until=until,notice=quote_notice(q,code,clock),mode='TradingView 延遲行情模擬 · 約 30 秒檢查更新' if q and q['source']==TV_SOURCE else '盤中約 5–10 秒更新' if item['market']=='TW' else '約 10 秒更新'))
+        instruments.append(dict(item,order_window=order_window,quote=public,available=quote_ready(q,clock),valid_until=until,notice=quote_notice(q,code,clock),mode='TradingView 延遲行情模擬 · 約 30 秒檢查更新' if q and q['source']==TV_SOURCE else '盤中約 5–10 秒更新' if item['market']=='TW' else '約 10 秒更新'))
     positions=[]
     for r in db.execute('SELECT * FROM market_positions WHERE user_id=? AND units>0',(uid,)):
         item=dict(r);reserved=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,r['symbol'])).fetchone()[0]
@@ -219,7 +226,7 @@ def view(db,uid,clock,symbol=None,period=None,interval=None):
     return dict(instruments=instruments,positions=positions,shorts=shorts,contracts=market_contracts.view(db,uid,clock,quotes),
         short_history=[dict(r,quantity=quantity(r['units'])) for r in db.execute("SELECT * FROM market_shorts WHERE user_id=? AND status!='open' ORDER BY id DESC LIMIT 20",(uid,))],
         chart=chart(db,symbol,period,clock,interval) if symbol else None,
-        orders=[dict(r,quantity=quantity(r['filled_units'] if r['status']=='filled' else r['units'])) for r in db.execute('SELECT * FROM market_orders WHERE user_id=? ORDER BY id DESC LIMIT 50',(uid,))],
+        orders=[dict(r,terms=market_tw.public(db,'spot',r['id']),quantity=quantity(r['filled_units'] if r['status']=='filled' else r['units'])) for r in db.execute('SELECT * FROM market_orders WHERE user_id=? ORDER BY id DESC LIMIT 50',(uid,))],
         providers=[dict(r) for r in db.execute('SELECT * FROM market_providers ORDER BY name')],
         value=assets(db).get(uid,0),server_time=clock)
 
@@ -249,6 +256,11 @@ def mutate(db,user,action,data,clock):
         # Keep original spot fingerprints compatible with already saved receipts.
         intent=[action,symbol,side,budget,units]
         if side=='cover':intent.append(position_id)
+        limit=str(decimal(data['limit_price'])) if data.get('limit_price') is not None else None
+        if limit is not None:
+            if not symbol.startswith('TW:'):raise RuleError('此現貨市場不支援限價委託。')
+            intent.extend(['limit',limit])
+        if data.get('expected_session_end') is not None:intent.extend(['rod_end',data['expected_session_end']])
         fingerprint=json.dumps(intent,separators=(',',':'))
     elif action=='cancel':
         oid=data.get('order_id')
@@ -271,7 +283,9 @@ def mutate(db,user,action,data,clock):
             cancel(db,row,clock,'cancelled','自行取消')
         else:
             q=db.execute(QUOTE_SQL+' WHERE q.symbol=?',(symbol,)).fetchone()
-            if not quote_ready(q,clock):raise RuleError('行情未就緒或已過期，暫停新委託。')
+            tw_terms=market_tw.terms(db,clock,limit) if symbol.startswith('TW:') else None
+            if tw_terms:market_tw.confirm_window(data,tw_terms)
+            if not quote_ready(q,clock) and not (tw_terms and limit is not None and q and not q['halted']):raise RuleError('行情未就緒或已過期，暫停新委託。')
             if side=='sell':
                 p=db.execute('SELECT units FROM market_positions WHERE user_id=? AND symbol=?',(uid,symbol)).fetchone()
                 held=db.execute("SELECT COALESCE(sum(units),0) FROM market_orders WHERE user_id=? AND symbol=? AND status='pending' AND side='sell'",(uid,symbol)).fetchone()[0]
@@ -286,7 +300,8 @@ def mutate(db,user,action,data,clock):
                 if db.execute("SELECT count(*) FROM market_shorts WHERE user_id=? AND status='open'",(uid,)).fetchone()[0]+db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND side='short' AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆做空倉位。')
             elif units_for_budget(budget,execution_price(q,'buy'))<1:raise RuleError('買入點數不足最小份額。')
             if db.execute("SELECT count(*) FROM market_orders WHERE user_id=? AND status='pending'",(uid,)).fetchone()[0]>=20:raise RuleError('最多同時保留 20 筆委託，請先取消部分委託。')
-            oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,clock+PENDING_SECONDS[market_catalog.group(symbol)],position_id)).lastrowid
+            oid=db.execute("INSERT INTO market_orders(user_id,symbol,side,budget,units,status,submitted_at,expires_at,position_id) VALUES(?,?,?,?,?,'pending',?,?,?)",(uid,symbol,side,budget,units,clock,tw_terms[2] if tw_terms else clock+PENDING_SECONDS[market_catalog.group(symbol)],position_id)).lastrowid
+            if tw_terms:market_tw.save(db,'spot',oid,tw_terms)
             remember_order_quote(db,'spot',oid,q)
             if side in ('buy','short'):wallet.transfer(db,uid,-budget,'market_reserve','market:reserve:'+str(oid),clock)
         result=dict(ok=True,order_id=oid,action=action,replayed=False)
@@ -321,7 +336,7 @@ def settle(db,clock):
             close_short(db,position,q,clock,liquidated=True);changed=True
     for o in db.execute("SELECT * FROM market_orders WHERE status='pending' ORDER BY id").fetchall():
         if clock>=o['expires_at']:
-            cancel(db,o,clock,'expired','等候新報價逾時，已解除保留');changed=True;continue
+            cancel(db,o,clock,'expired','ROD 當日未成交，已解除保留' if market_tw.public(db,'spot',o['id']) else '等候新報價逾時，已解除保留');changed=True;continue
         # A blocked/deleted account cannot have a previously queued order execute.
         try:member_accounts.require_active(db,o['user_id'])
         except member_accounts.AccountError:

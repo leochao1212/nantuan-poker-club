@@ -129,7 +129,7 @@ def view(db,uid,clock,quotes):
         p=dict(row);q=quotes.get(p['symbol'])
         closing=bool(db.execute("SELECT 1 FROM market_contract_orders WHERE position_id=? AND action='close' AND status='pending'",(p['id'],)).fetchone())
         positions.append(dict(p,**marks[p['id']],units=str(p['units']),quantity=market.quantity(p['units']),stale=not market.quote_ready(q,clock),closing=closing))
-    return dict(positions=positions,orders=[dict(r) for r in db.execute('SELECT * FROM market_contract_orders WHERE user_id=? ORDER BY id DESC LIMIT 50',(uid,))],
+    return dict(positions=positions,orders=[dict(r,terms=market.market_tw.public(db,'contract',r['id'])) for r in db.execute('SELECT * FROM market_contract_orders WHERE user_id=? ORDER BY id DESC LIMIT 50',(uid,))],
         history=[dict(r) for r in db.execute("SELECT * FROM market_contracts WHERE user_id=? AND status!='open' ORDER BY id DESC LIMIT 30",(uid,))],
         rules=dict(leverage_options=LEVERAGES,fee_bps=FEE_BPS,funding_bps=0,mode='isolated',tiers=[dict(cap=cap,max_leverage=lever,mmr_bps=mmr) for cap,lever,mmr in TIERS],
           reference='OKX 逐倉線性模型；本站台幣點數級距',max_margin=1_000_000,max_positions=20,order_types=['market','limit'],limit_expiry_seconds=7*86400))
@@ -158,7 +158,9 @@ def mutate(db,user,action,data,clock):
         key='position_id' if action=='close' else 'order_id';target=data.get(key)
         if type(target) is not int or target<1:raise market.RuleError('倉位或委託編號無效。')
         intent=[action,target]
+        if action=='close' and data.get('limit_price') is not None:intent.extend(['limit',str(market.decimal(data['limit_price']))])
     else:raise market.RuleError('合約操作無效。')
+    if data.get('expected_session_end') is not None:intent.extend(['rod_end',data['expected_session_end']])
     fingerprint=json.dumps(['contract',*intent],separators=(',',':'))
     old=db.execute('SELECT * FROM market_operations WHERE user_id=? AND operation_id=?',(uid,op)).fetchone()
     if old:
@@ -178,8 +180,12 @@ def mutate(db,user,action,data,clock):
                 if not position:raise market.RuleError('找不到可平倉的合約。')
                 if db.execute("SELECT 1 FROM market_contract_orders WHERE position_id=? AND action='close' AND status='pending'",(target,)).fetchone():raise market.RuleError('這筆倉位已在等待平倉。')
                 symbol=position['symbol'];direction=position['direction'];leverage=position['leverage'];margin=0
-                kind='market';limit=tp=sl=None
+                limit=str(market.decimal(data['limit_price'])) if data.get('limit_price') is not None else None
+                kind='limit' if limit is not None else 'market';tp=sl=None
+            tw_terms=market.market_tw.terms(db,clock,limit) if symbol.startswith('TW:') else None
+            if tw_terms:market.market_tw.confirm_window(data,tw_terms)
             q=db.execute(market.QUOTE_SQL+' WHERE q.symbol=?',(symbol,)).fetchone()
+            if tw_terms and q and q['halted']:raise market.RuleError('標的待核對，暫不能送出新預約。')
             if not q or kind!='limit' and not market.quote_ready(q,clock):raise market.RuleError('行情未就緒或已過期，暫停合約成交。')
             if db.execute("SELECT count(*) FROM market_contract_orders WHERE user_id=? AND status='pending'",(uid,)).fetchone()[0]>=20:raise market.RuleError('最多二十筆待成交合約委託。')
             reserve=0
@@ -193,7 +199,8 @@ def mutate(db,user,action,data,clock):
                 if existing>bracket['max_leverage']:raise market.RuleError('新增後會超過既有倉位的槓桿級距，請先減倉。')
                 reserve=margin+ceil(Fraction(margin*leverage*FEE_BPS,10000))
             expiry=7*86400 if kind=='limit' else market.PENDING_SECONDS[market_catalog.group(symbol)]
-            oid=db.execute("INSERT INTO market_contract_orders(user_id,symbol,action,direction,leverage,margin,reserve,status,submitted_at,expires_at,position_id,order_kind,limit_native,take_profit,stop_loss) VALUES(?,?,?,?,?,?,?,'pending',?,?,?,?,?,?,?)",(uid,symbol,action,direction,leverage,margin,reserve,clock,clock+expiry,target if action=='close' else None,kind,limit,tp,sl)).lastrowid
+            oid=db.execute("INSERT INTO market_contract_orders(user_id,symbol,action,direction,leverage,margin,reserve,status,submitted_at,expires_at,position_id,order_kind,limit_native,take_profit,stop_loss) VALUES(?,?,?,?,?,?,?,'pending',?,?,?,?,?,?,?)",(uid,symbol,action,direction,leverage,margin,reserve,clock,tw_terms[2] if tw_terms else clock+expiry,target if action=='close' else None,kind,limit,tp,sl)).lastrowid
+            if tw_terms:market.market_tw.save(db,'contract',oid,tw_terms)
             market.remember_order_quote(db,'contract',oid,q)
             if reserve:wallet.transfer(db,uid,-reserve,'market_reserve','contract:reserve:'+str(oid),clock)
         result=dict(ok=True,order_id=oid,action=action,replayed=False,order_type='contract')
@@ -233,7 +240,7 @@ def settle(db,clock,quotes):
             reason='止損觸發' if sl is not None and (current-fraction(sl))*sign<=0 else '止盈觸發' if tp is not None and (current-fraction(tp))*sign>=0 else None
             if reason:close(db,p,q,clock,reason=reason);changed=True
     for o in db.execute("SELECT * FROM market_contract_orders WHERE status='pending' ORDER BY id").fetchall():
-        if clock>=o['expires_at']:cancel(db,o,clock,'expired','等待有效新價格逾時');changed=True;continue
+        if clock>=o['expires_at']:cancel(db,o,clock,'expired','ROD 當日未成交，已解除保留' if market.market_tw.public(db,'contract',o['id']) else '等待有效新價格逾時');changed=True;continue
         try:member_accounts.require_active(db,o['user_id'])
         except member_accounts.AccountError:cancel(db,o,clock,'cancelled','帳號已停用');changed=True;continue
         q=quotes.get(o['symbol'])

@@ -16,7 +16,7 @@ TAIPEI=timezone(timedelta(hours=8))
 URLS={'TW':'https://mis.twse.com.tw/stock/api/getStockInfo.jsp',
       'CC':'https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD',
       'FX':'https://open.er-api.com/v6/latest/USD'}
-PERIODS={'TW':30,'US':30,'CC':10,'FX':86400,'BARS':60}
+PERIODS={'TW':30,'US':30,'CC':10,'FX':86400,'BARS':60,'TW_CALENDAR':86400}
 
 
 def mis_rows(data,clock,instruments=None):
@@ -69,7 +69,7 @@ def due(db,clock):
     us=db.execute("SELECT status FROM market_providers WHERE name='US'").fetchone()
     old_us=db.execute("SELECT source FROM market_quotes WHERE symbol LIKE 'US:%' LIMIT 1").fetchone()
     if us and (us[0]=='missing_key' or values.get('US',0)>clock+300 and (not old_us or old_us[0] not in (market.US_SOURCE,market.TV_SOURCE))):values['US']=0
-    return [key for key in ('FX','TW','US','CC','BARS') if clock>=values.get(key,0)]
+    return [key for key in ('FX','TW','US','CC','BARS','TW_CALENDAR') if clock>=values.get(key,0)]
 
 
 def fx_state(db):
@@ -84,6 +84,14 @@ def fx_state(db):
 def read_provider(name,clock,fx,instruments=None):
     """Shared bounded provider requests. Never return raw upstream exceptions."""
     instruments=instruments or market.INSTRUMENTS
+    if name=='TW_CALENDAR':
+        year=datetime.fromtimestamp(clock,TAIPEI).year;calendars=[]
+        for y in (year,year+1):
+            try:
+                data=fetch_json('https://www.twse.com.tw/holidaySchedule/holidaySchedule?queryYear='+str(y-1911)+'&response=json')
+                calendars.append((y,market.market_tw.parse_calendar(data,y)))
+            except Exception:continue
+        return calendars,'ok' if calendars else 'unavailable',clock+86400,None
     if name=='BARS':return candle_batch(instruments,clock)
     if name in ('US','CC') and (not fx or not -5<=clock-fx['asof']<=3*86400):
         return [],'fx_unavailable',clock+5,None
@@ -140,6 +148,9 @@ def apply(db,results,clock,instruments=None):
     instruments=instruments or market.INSTRUMENTS
     changed=False
     for name,rows,status,next_at in results:
+        if name=='TW_CALENDAR':
+            for year,closed in rows:db.execute('INSERT INTO market_tw_calendar VALUES(?,?) ON CONFLICT(year) DO UPDATE SET closed=excluded.closed',(year,json.dumps(closed)))
+            rows=[]
         if name=='BARS':
             market_charts.apply(db,rows,clock);rows=[]
         if name in ('TW','US','CC'):

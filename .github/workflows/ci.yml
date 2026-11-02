@@ -52,6 +52,7 @@ jobs:
       - run: npm run test:journeys
       - run: npm run test:rewards
       - run: npm run test:market
+      - run: npm run test:market-tw
       - run: npm run test:market-review
       - run: npm run test:contracts
       - run: npm run test:economy
@@ -72,6 +73,7 @@ jobs:
             artifacts/table-ux
             artifacts/rewards
             artifacts/milestones/browser
+            artifacts/tw-reservation
             artifacts/market/browser
             artifacts/market-review/browser
             artifacts/market/contracts-browser

@@ -12,6 +12,7 @@
 !wallet.py
 !bank.py
 !market.py
+!market_tw.py
 !market_data.py
 !transfers.py
 !social.py

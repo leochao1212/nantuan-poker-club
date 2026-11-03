@@ -56,6 +56,7 @@ jobs:
       - run: npm run test:market-review
       - run: npm run test:contracts
       - run: npm run test:economy
+      - run: npm run test:blocade
       - run: npm run test:lottery
       - run: npm run test:bank
       - run: npm run test:cards
@@ -78,6 +79,7 @@ jobs:
             artifacts/market-review/browser
             artifacts/market/contracts-browser
             artifacts/friends-economy
+            artifacts/blocade/browser
             artifacts/lottery/browser
             artifacts/bank/browser
             artifacts/bet-limit-browser

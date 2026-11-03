@@ -8,7 +8,7 @@ from collections import OrderedDict
 import secrets
 import threading
 
-TABLES=('users','poker_rooms','poker_results','poker_hands','wallets','member_profiles',
+TABLES=('blocade_rooms','blocade_entries','users','poker_rooms','poker_results','poker_hands','wallets','member_profiles',
         'market_positions','market_orders','market_quotes','market_shorts','market_contracts','market_contract_orders','account_states','cosmetic_items','cosmetic_equipped','room_chat','voice_members')
 
 

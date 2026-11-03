@@ -33,6 +33,7 @@ flowchart TD
 | 大老二／21 點／輪盤 | arcade.js：table、controls、blackjackBoard、blackjackBets | night.css |
 | 拉霸／骰寶／射龍門／風險小遊戲 | bonus.js：board、controls、roundSettings、bindSettings | night.css |
 | 台灣麻將 | mahjong.js | night.css |
+| 步步為營（#blocade、#blocade?room=桌號） | 按需載入 blocade.js：ClubBlocade | night.css，.blocade 範圍 |
 | 會所、個人檔案、公開名片 | profile.js：ClubIncome、ClubProfile、ClubMember、ClubStaff | night.css |
 | 會所圖與員工 | clubhouse-scene.js：ClubhouseScene | night.css |
 | 任務、外觀收藏與動效 | club.js | night.css |

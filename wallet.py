@@ -23,7 +23,8 @@ def active(db):
 
 
 def initialize(db,clock):
-    import bank,market
+    import bank,market,blocade
+    blocade.initialize(db)
     bank.initialize(db)
     market.initialize(db)
     db.executescript("""
@@ -139,12 +140,15 @@ def _in_play(db):
       UNION ALL
       SELECT json_extract(p.value,'$.user_id'),json_extract(p.value,'$.contribution')
       FROM poker_rooms r,json_each(r.state,'$.hand.players') p WHERE r.status='playing'
+      UNION ALL
+      SELECT e.user_id,e.stake FROM blocade_entries e JOIN blocade_rooms r ON r.id=e.room_id
+      WHERE e.payout IS NULL AND r.status IN ('waiting','playing')
     ) GROUP BY uid""")}
 
 
 def in_play(db):
     import view_cache
-    return view_cache.shared(db,'in_play',('poker_rooms',),lambda:_in_play(db))
+    return view_cache.shared(db,'in_play',('poker_rooms','blocade_rooms','blocade_entries'),lambda:_in_play(db))
 
 
 def view(db,uid,clock,totals=None):

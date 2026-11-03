@@ -60,6 +60,8 @@ class ResultProjections(unittest.TestCase):
         self.assertIn('result_facts_daily',plan)
 
     def test_room_money_projection_matches_stacks_and_committed_pots(self):
+        import blocade
+        blocade.initialize(self.db)
         self.db.execute('CREATE TABLE poker_rooms(id INTEGER PRIMARY KEY,status TEXT,state TEXT)')
         fixtures=[dict(status='playing',seats=[dict(user_id=1,stack=100),dict(user_id=2,stack=70)],hand=dict(players=[dict(user_id=1,contribution=30),dict(user_id=2,contribution=60)])),
                   dict(status='waiting',seats=[dict(user_id=3,stack=500)],hand=dict(players=[dict(user_id=3,contribution=999)])),

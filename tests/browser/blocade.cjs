@@ -30,10 +30,27 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/blocade
     await p.locator('[data-bc-start]:enabled').click();await p.waitForFunction(()=>document.querySelector('[data-bc-turn]')?.textContent.startsWith('輪到'));
     edit(rid,"s['game']['turn']=0;s['deadline']=time.time()+120");await p.reload();
     await p.locator('[data-bc-mode=move]:enabled').waitFor();
-    await p.locator('[data-bc-mode=h]').click();await p.locator('[data-bc-anchor="3,3"]').click();
-    assert.equal(await p.locator('.bc-preview').count(),1);assert.equal((await api(c,'/api/blocade')).blocade.room.game.walls.length,0,'Preview must not submit');
-    await p.locator('[data-bc-confirm]').click();await p.waitForFunction(()=>document.querySelectorAll('.bc-wall:not(.bc-preview)').length===1);
-    assert.equal((await api(c,'/api/blocade')).blocade.room.game.walls.length,1);
+    assert.equal(await p.locator('.bc-cell small,[data-bc-move],[data-bc-confirm],.bc-wall-inputs').count(),0);
+    assert.equal(await p.locator('.bc-pawn').first().textContent(),'');
+    await p.locator('[data-bc-mode=wall]').click();await p.locator('[data-bc-endpoint="4,3"]').click();
+    assert.equal((await api(c,'/api/blocade')).blocade.room.game.walls.length,0,'First endpoint must not submit');
+    await p.screenshot({path:path.join(out,`${name}-${width}-endpoints.png`),fullPage:true});
+    assert.equal(await p.locator('[data-bc-endpoint="4,4"]').isDisabled(),true,'One-cell wall is not selectable');
+    assert.equal(await p.locator('[data-bc-endpoint="5,4"]').isDisabled(),true,'Diagonal wall is not selectable');
+    await p.locator('[data-bc-endpoint="4,3"]').click();assert.equal(await p.locator('.bc-preview').count(),0,'Same endpoint cancels');
+    await p.locator('[data-bc-endpoint="4,3"]').click();await p.locator('[data-bc-endpoint="4,5"]').click();
+    await p.waitForFunction(()=>document.querySelectorAll('.bc-wall:not(.bc-preview)').length===1);
+    assert.deepEqual((await api(c,'/api/blocade')).blocade.room.game.walls,[['h',3,3]]);
+    edit(rid,"s['game']['turn']=0;s['deadline']=time.time()+120");await p.reload();
+    await p.locator('[data-bc-mode=wall]:enabled').click();
+    await p.locator('[data-bc-endpoint="9,1"]').click();await p.locator('[data-bc-endpoint="7,1"]').click();
+    await p.waitForFunction(()=>document.querySelectorAll('.bc-wall:not(.bc-preview)').length===2);
+    assert.deepEqual((await api(c,'/api/blocade')).blocade.room.game.walls[1],['v',7,0],'Reverse endpoints at the board edge');
+    // Focus changes retain a healthy SSE, while closed streams still recover.
+    await p.waitForFunction(()=>liveReady&&live?.readyState===1);
+    assert.equal(await p.evaluate(()=>{const original=live;lastResumeAt=0;resumeConnections('focus');return original===live;}),true);
+    await p.evaluate(()=>{live.close();lastResumeAt=0;resumeConnections('focus');});
+    await p.waitForFunction(()=>liveReady&&live?.readyState===1);
     await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,`${name}-${width}-two.png`),fullPage:true});
     assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No page overflow');
     // Leave through confirmation; opponent receives exactly one complete pot.
@@ -43,8 +60,8 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/blocade
     await p.locator('[data-bc-create] button[type=submit]').click();await p.locator('[data-bc-start]').click();await p.waitForFunction(()=>document.querySelector('[data-bc-turn]')?.textContent.startsWith('輪到'));
     result=await api(c,'/api/blocade');rid=result.blocade.room.id;
     assert.equal(result.blocade.room.game.players.filter(p=>p.bot).length,3);assert.equal(result.blocade.room.target_pot,2000);
-    edit(rid,"s['game']['turn']=0;s['deadline']=time.time()+120");await p.reload();await p.locator('[data-bc-move]:enabled').first().waitFor();
-    await p.locator('[data-bc-move]').first().click();await p.locator('[data-bc-confirm]').click();
+    edit(rid,"s['game']['turn']=0;s['deadline']=time.time()+120");await p.reload();await p.locator('[data-bc-mode=move]:enabled').click();await p.locator('[data-bc-cell]:enabled').first().waitFor();
+    await p.locator('[data-bc-cell]:enabled').first().click();
     await p.waitForFunction(()=>document.querySelectorAll('.bc-player.bc-playing').length===1);
     for(let i=0;i<100;i++){result=await api(c,'/api/blocade');if(result.blocade.room.game.ply>=4)break;await pause(150);}
     assert.ok(result.blocade.room.game.ply>=4,'All three bots must make a legal move');
@@ -60,6 +77,6 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/blocade
    }
    await browser.close();browser=null;
   }
-  assert.deepEqual(errors,[]);console.log('Blocade: Chromium/WebKit touch + desktop, 2/4 seats, bots, wall preview, receipts, payouts, reload and responsive layouts passed.');
+  assert.deepEqual(errors,[]);console.log('Blocade: Chromium/WebKit touch + desktop, 2/4 seats, bots, direct moves, two-endpoint walls, focus recovery, receipts, payouts, reload and responsive layouts passed.');
  }finally{if(browser)await browser.close();server.kill();fs.writeFileSync(path.join(out,'server.log'),logs);}
 })().catch(e=>{console.error(e);process.exitCode=1;});

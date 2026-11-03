@@ -38,8 +38,14 @@ window.ClubBlocade=(()=>{
   const players=g?.players||r.players;
   return `<div class="bc-room-heading"><div><h2>#${r.id} · ${r.capacity===2?'雙人對決':'四人混戰'}</h2><p>每人 ${n(r.stake)} 點 · ${r.bots?'允許機器人補位':'只限真人'}</p></div><div class="bc-pot"><span>${r.status==='waiting'?'滿桌獎池':'本局獎池'}</span><strong>${n(r.target_pot)} <small>點</small></strong></div></div>
    <div class="bc-match"><section class="bc-play"><div class="bc-turnline"><strong data-bc-turn></strong><span data-bc-clock></span></div><div class="bc-board-caption">${mine()?`你的目標是${goals[mine().side]}`:'先走到自己對面的一邊獲勝'}<button type="button" data-bc-zoom aria-pressed="false">放大棋盤</button></div><div data-bc-board>${board()}</div><div data-bc-controls>${controls()}</div></section><aside class="bc-sidebar"><div class="bc-player-list">${Array.from({length:r.capacity},(_,i)=>{const p=players[i];return p?`<div class="bc-player ${g?.turn===i&&r.status==='playing'?'bc-playing':''} ${p.out?'bc-out':''}">${pawn(p,i)}<div><strong>${esc(p.name)}${p.uid===ctx.user.id?'（你）':''}</strong><small>${p.bot?'機器人 · 系統出資':r.owner===p.uid?'桌主':'真人玩家'}${p.out?' · 已認輸':''}</small></div><b>${g?p.walls:r.capacity===2?10:5}<small>道牆</small></b></div>`:`<div class="bc-player bc-seat-empty"><span class="bc-empty-seat">${i+1}</span><span>等朋友入座${r.bots?'<small>開始時由機器人補位</small>':''}</span></div>`;}).join('')}</div>
-   ${ended?`<div class="bc-result" role="status"><h3>${r.status==='cancelled'?'本局已取消／和局':esc(r.winner.name)+' 獲勝'}</h3><p>${r.status==='cancelled'?esc(r.reason):`${r.winner.bot?'機器人贏得獎池，系統收回':'獎池已自動入帳'} ${n(r.pot)} 點。`}</p><button type="button" data-bc-back>回棋桌大廳</button></div>`:r.status==='waiting'?`<div class="bc-waiting"><h3>${r.players.length} / ${r.capacity} 人已入座</h3><p>${r.bots?'等朋友加入，或由桌主按開始，機器人補滿剩餘空位。':'等真人到齊後，由桌主開始。'}</p>${owner?`<button type="button" class="bc-primary" data-bc-start ${!r.bots&&r.players.length<r.capacity?'disabled':''}>${r.players.length<r.capacity?'補上機器人並開始':'開始對局'}</button>`:!member?`<button type="button" class="bc-primary" data-bc-join ${state.current_id||r.players.length>=r.capacity?'disabled':''}>加入並保留 ${n(r.stake)} 點</button>`:'<p>等桌主開始即可。</p>'}</div>`:''}
+   ${ended?`<div class="bc-result" role="status"><h3>${r.status==='cancelled'?'本局已取消／和局':esc(r.winner.name)+' 獲勝'}</h3><p>${r.status==='cancelled'?esc(r.reason):`${r.winner.bot?'機器人贏得獎池，系統收回':'獎池已自動入帳'} ${n(r.pot)} 點。`}</p>${rematchControls(r,member)}<button type="button" data-bc-back>回棋桌大廳</button></div>`:r.status==='waiting'?`<div class="bc-waiting"><h3>${r.players.length} / ${r.capacity} 人已入座</h3><p>${r.bots?'等朋友加入，或由桌主按開始，機器人補滿剩餘空位。':'等真人到齊後，由桌主開始。'}</p>${owner?`<button type="button" class="bc-primary" data-bc-start ${!r.bots&&r.players.length<r.capacity?'disabled':''}>${r.players.length<r.capacity?'補上機器人並開始':'開始對局'}</button>`:!member?`<button type="button" class="bc-primary" data-bc-join ${state.current_id||r.players.length>=r.capacity?'disabled':''}>加入並保留 ${n(r.stake)} 點</button>`:'<p>等桌主開始即可。</p>'}</div>`:''}
    <div class="bc-room-actions"><button type="button" data-bc-share>複製邀請連結</button>${member&&!ended&&!mine()?.out?`<button type="button" data-bc-leave>${r.status==='waiting'?'退桌並全額退還':'認輸離桌'}</button>`:''}${!ended?'<button type="button" data-bc-back>查看其他棋桌</button>':''}</div><p class="bc-small">重新整理可接回對局。開局後入場點數不退還，離開頁面仍會計時。</p></aside></div>`;
+ }
+ function rematchControls(r,member){
+  if(!member)return '';
+  const next=r.rematch;
+  if(next&&(next.joined||next.status!=='waiting'))return `<button type="button" class="bc-primary" data-bc-open="${next.id}">查看下一局</button>`;
+  return `<button type="button" class="bc-primary" data-bc-rematch ${busy||pending||state.current_id||r.paused?'disabled':''}>${next?'加入朋友的下一局':'再來一局'} · ${n(r.stake)} 點</button><p>${next?`朋友已開下一局（${next.count}/${r.capacity} 人），點擊即可同桌。`:'沿用人數、入場點數與機器人設定，朋友也能從這裡加入。'}點擊僅保留你自己的入場點數，桌主再按開始。</p>`;
  }
  function controls(){
   if(!myTurn())return '';
@@ -49,7 +55,7 @@ window.ClubBlocade=(()=>{
  function history(){return `<details class="bc-history"><summary>我的最近 20 桌紀錄</summary>${state.history.map(r=>`<button type="button" data-bc-open="${r.id}"><span>#${r.id} · 入場 ${n(r.stake)} 點</span><strong>${r.payout===null?'進行中':`已入帳 ${n(r.payout)} 點`}</strong></button>`).join('')||'<p>完成第一局後，這裡會留下結果。</p>'}</details>`;}
  function paint(force=false){
   if(!host||!state)return;
-  const r=state.room,sig=JSON.stringify([r?.id,r?.revision,r?null:state.tables,state.current_id,state.history,!!pending]);
+  const r=state.room,sig=JSON.stringify([r?.id,r?.revision,r?.rematch,r?null:state.tables,state.current_id,state.history,!!pending]);
   if(force||stamp!==sig){
    const old=host.querySelector('form'),form=old?Object.fromEntries(new FormData(old)):null;
    const focused=document.activeElement,focusKey=focused?.dataset?.bcCell||focused?.dataset?.bcEndpoint;
@@ -75,7 +81,7 @@ window.ClubBlocade=(()=>{
   host.querySelectorAll('[data-bc-pass],[data-bc-cell],[data-bc-endpoint],[data-bc-mode]').forEach(b=>{
    if(!usable())b.disabled=true;
   });
-  host.querySelectorAll('[data-bc-start],[data-bc-join],[data-bc-leave],form button[type="submit"]').forEach(b=>{
+  host.querySelectorAll('[data-bc-start],[data-bc-join],[data-bc-leave],[data-bc-rematch],form button[type="submit"]').forEach(b=>{
    if(pending||busy||stale)b.disabled=true;
   });
   const retry=q('[data-bc-retry]');if(retry)retry.disabled=busy;
@@ -87,6 +93,7 @@ window.ClubBlocade=(()=>{
   host.querySelectorAll('[data-bc-open]').forEach(b=>b.onclick=()=>void openRoom(Number(b.dataset.bcOpen)));
   host.querySelectorAll('[data-bc-back]').forEach(b=>b.onclick=()=>{controller?.abort();epoch++;reading=false;viewed=0;state.room=null;selected=null;stamp='';paint();void read();});
   if(q('[data-bc-current]'))q('[data-bc-current]').onclick=()=>void openRoom(state.current_id);
+  if(q('[data-bc-rematch]'))q('[data-bc-rematch]').onclick=()=>void send('rematch',{room_id:state.room.id});
   if(q('[data-bc-start]'))q('[data-bc-start]').onclick=()=>void send('start',{room_id:state.room.id});
   if(q('[data-bc-join]'))q('[data-bc-join]').onclick=()=>void send('join',{room_id:state.room.id});
   if(q('[data-bc-leave]'))q('[data-bc-leave]').onclick=async()=>{const r=state.room,token=epoch;if(!await ctx.confirm(r.status==='playing'?'認輸離桌':'退桌退款',r.status==='playing'?'確定認輸？入場點數不退還。':'退桌並全額退還入場點數？')||token!==epoch||state?.room?.id!==r.id)return;await send('leave',{room_id:r.id});};

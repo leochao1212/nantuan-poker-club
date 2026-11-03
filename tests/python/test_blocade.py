@@ -100,6 +100,50 @@ class Escrow(unittest.TestCase):
     def create(self,capacity=2,stake=100,bots=True):return self.call(1,'create',capacity=capacity,stake=stake,bots=bots)['room_id']
     def balance(self,uid):return self.db.execute('SELECT balance FROM wallets WHERE user_id=?',(uid,)).fetchone()[0]
 
+    def finish(self, capacity=2, bots=False):
+        rid=self.create(capacity=capacity,bots=bots)
+        if not bots:
+            for uid in range(2,capacity+1):self.call(uid,'join',room_id=rid)
+        self.call(1,'start',room_id=rid);room=game.get(self.db,rid)
+        room['game']['turn']=0;room['game']['players'][0]['pos']=[1,3]
+        game.save(self.db,room,self.clock);self.db.commit()
+        self.call(1,'act',room_id=rid,ply=room['game']['ply'],action=dict(kind='move',pos=[0,3]))
+        return rid
+
+    def test_rematch_same_table_opt_in_retries_and_immutable_history(self):
+        for capacity in (2,4):
+            rid=self.finish(capacity)
+            old=tuple(self.db.execute('SELECT * FROM blocade_rooms WHERE id=?',(rid,)).fetchone())
+            balances=[self.balance(i) for i in range(1,5)]
+            op=uuid.uuid4().hex
+            new=self.call(1,'rematch',room_id=rid,operation_id=op)['room_id']
+            self.assertEqual(self.call(1,'rematch',room_id=rid,operation_id=op)['room_id'],new)
+            self.assertEqual(self.call(1,'rematch',room_id=rid)['room_id'],new)
+            self.assertEqual([self.balance(i) for i in range(2,5)],balances[1:])
+            self.assertEqual(self.balance(1),balances[0]-100)
+            self.assertEqual(game.view(self.db,2,self.clock,rid)['room']['rematch']['id'],new)
+            for uid in range(2,capacity+1):self.assertEqual(self.call(uid,'rematch',room_id=rid)['room_id'],new)
+            self.assertEqual(len(game.get(self.db,new)['players']),capacity)
+            self.assertEqual(tuple(self.db.execute('SELECT * FROM blocade_rooms WHERE id=?',(rid,)).fetchone()),old)
+            for uid in range(1,capacity+1):self.call(uid,'leave',room_id=new)
+            self.assertEqual([self.balance(i) for i in range(1,5)],balances)
+
+    def test_rematch_permissions_balance_and_bot_settings(self):
+        rid=self.create()
+        with self.assertRaises(RuleError):self.call(1,'rematch',room_id=rid)
+        self.call(1,'start',room_id=rid);self.call(1,'leave',room_id=rid)
+        with self.assertRaises(RuleError):self.call(2,'rematch',room_id=rid)
+        self.db.execute('UPDATE wallets SET balance=50 WHERE user_id=1');self.db.commit()
+        with self.assertRaises(RuleError):self.call(1,'rematch',room_id=rid)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM blocade_rematches').fetchone()[0],0)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM blocade_rooms').fetchone()[0],1)
+        self.db.execute('UPDATE wallets SET balance=500 WHERE user_id=1');self.db.commit()
+        new=self.call(1,'rematch',room_id=rid,stake=0,capacity=4,bots=False)['room_id']
+        r=game.get(self.db,new)
+        self.assertEqual((r['stake'],r['capacity'],r['bots']),(100,2,True))
+        self.call(1,'start',room_id=new)
+        self.assertEqual(sum(p['bot'] for p in game.get(self.db,new)['players']),1)
+
     def test_create_retry_refund_and_wallet_total(self):
         before=self.balance(1);op=uuid.uuid4().hex
         result=self.call(1,'create',capacity=2,stake=100,bots=True,operation_id=op);rid=result['room_id']

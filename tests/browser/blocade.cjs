@@ -56,6 +56,20 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/blocade
     // Leave through confirmation; opponent receives exactly one complete pot.
     await p.locator('[data-bc-leave]').click();await p.locator('#confirm-yes').click();await p.locator('.bc-result').waitFor();
     assert.equal((await api(other,'/api/blocade')).wallet.balance,10100);
+    await p.screenshot({path:path.join(out,`${name}-${width}-rematch.png`),fullPage:true});
+    const rival=await other.newPage();await rival.goto(base+'/#blocade?room='+rid);
+    await rival.locator('[data-bc-rematch]').waitFor();
+    await p.locator('[data-bc-rematch]').click();await p.locator('[data-bc-start]').waitFor();
+    const next=(await api(c,'/api/blocade')).blocade.room.id;
+    assert.notEqual(next,rid);assert.equal((await api(other,'/api/blocade')).wallet.balance,10100,'Friend is not charged until opting in');
+    await rival.locator('[data-bc-rematch]').filter({hasText:'加入朋友的下一局'}).waitFor();
+    await rival.locator('[data-bc-rematch]').click();
+    await rival.waitForFunction(()=>document.querySelector('.bc-waiting h3')?.textContent.includes('2 / 2'));
+    assert.equal((await api(other,'/api/blocade')).blocade.room.id,next);
+    assert.equal((await api(other,'/api/blocade')).wallet.balance,10000);
+    await api(other,'/api/blocade/leave',{room_id:next,operation_id:crypto.randomUUID()});await rival.close();
+    await p.locator('[data-bc-leave]').click();await p.locator('#confirm-yes').click();await p.locator('.bc-result').waitFor();
+
     await p.locator('[data-bc-back]').click();await p.locator('[name=capacity][value="4"]').check();await p.locator('[name=bots]').check();await p.locator('[data-bc-stake="500"]').click();
     await p.locator('[data-bc-create] button[type=submit]').click();await p.locator('[data-bc-start]').click();await p.waitForFunction(()=>document.querySelector('[data-bc-turn]')?.textContent.startsWith('輪到'));
     result=await api(c,'/api/blocade');rid=result.blocade.room.id;

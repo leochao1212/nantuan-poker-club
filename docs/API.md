@@ -81,3 +81,5 @@ POST `/api/blocade/{create,join,start,act,leave}` 全部需要 operation_id。cr
 create／join 當下扣除同額入場籌碼並納入 in_play。start 只有桌主可做：允許 bots 時才會以系統出資補滿空位；不允許時需真人到齊。開局前 leave 全退，桌主退出由下一位真人接任；開局後 leave 認輸、移除棋子但保留牆。冠軍取整池，未抽水，派彩與狀態同一 SQLite 交易提交。機器人獲勝由系統收回獎池。
 
 操作回執保存在 blocade_operations，同編號同內容重送只回傳既有結果；舊 ply、錯誤玩家、非法牆與逾時回合均拒絕。前端預覽不送出動作，網路結果不明時持續保存原回執並停用新操作。棋局讀取每 2 秒一次，等候大廳每 5 秒，無重疊讀取，切頁或操作會取消舊讀取。
+
+步步為營 `POST /api/blocade/rematch` 接受 `room_id` 與 `operation_id`。僅原桌成員可於結束後發起；同一原桌只連到同一張新桌，沿用人數、賭注與機器人設定。每人點擊才保留自己的入場點數，重送不重扣；不自動開始。GET 的 `room.rematch` 提供下一桌 id/status/count/joined，原桌歷史不修改。

@@ -22,6 +22,17 @@ jobs:
               except (OSError,subprocess.TimeoutExpired) as e:return {'error':type(e).__name__}
           print('services',json.dumps(call(['systemctl','show','ssh','sshd','docker','tailscaled','cloudflared','--property=Id,LoadState,ActiveState,SubState'])))
           print('disk',json.dumps(call(['df','-h','/'])))
+
+          # Output only allowlisted state/error categories, never original logs.
+          try:
+              r=subprocess.run(['docker','inspect','--format','{{.State.Status}}','boyband-poker'],capture_output=True,text=True,timeout=10)
+              state=r.stdout.strip();print('container_state',state if state in ('running','exited','restarting','created','paused','dead') else 'not_accessible')
+              if r.returncode==0:
+                  logs=subprocess.run(['docker','logs','--tail','50','boyband-poker'],capture_output=True,text=True,timeout=10)
+                  allowed=('ModuleNotFoundError','ImportError','OperationalError','IntegrityError','SyntaxError','PermissionError','OSError','KeyError','TypeError','AttributeError','ValueError')
+                  print('startup_error_categories',json.dumps([e for e in allowed if e in logs.stdout+logs.stderr]))
+          except Exception:print('container_state','not_accessible')
+
           ports=call(['ss','-ltn']);print('listening',json.dumps({'ssh22':':22 ' in ports.get('stdout',''),'app8765':':8765 ' in ports.get('stdout','')}))
           try:
               r=subprocess.run(['tailscale','status','--json'],capture_output=True,text=True,timeout=15);s=json.loads(r.stdout)

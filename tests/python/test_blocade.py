@@ -177,7 +177,7 @@ class Escrow(unittest.TestCase):
             rid=self.call(uid,'create',capacity=2,stake=0,bots=True)['room_id'];self.call(uid,'start',room_id=rid)
             r=game.get(self.db,rid);r['game']['turn']=1;r['bot_at']=self.clock-1;game.save(self.db,r,self.clock)
         with patch('blocade_engine.choose',wraps=engine.choose) as choose:
-            game.maintenance(self.db,self.clock);self.assertEqual(choose.call_count,2)
+            self.assertFalse(game.maintenance(self.db,self.clock),'Bot moves must not broadcast unrelated lobby snapshots');self.assertEqual(choose.call_count,2)
         self.assertTrue(all(self.balance(uid)==10000 for uid in range(1,5)))
 
     def test_deploy_freezes_turns_and_resume_restores_remaining_time(self):

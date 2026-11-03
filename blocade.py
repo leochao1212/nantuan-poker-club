@@ -172,26 +172,27 @@ def mutate(db, user, verb, data, clock, received_at=None):
         else: raise RuleError('找不到這個棋桌操作。')
     save(db, room, clock)
     db.execute('INSERT INTO blocade_operations VALUES(?,?,?,?,?)', (uid, op, fingerprint, room['id'], clock))
-    return dict(room_id=room['id'], replayed=False)
+    return dict(room_id=room['id'], replayed=False,
+                wallet_changed=verb in ('create','join','leave') or room['status'] in ('finished','cancelled'))
 
 
 def maintenance(db, clock):
     import online
     paused = online.deployment_paused(db, clock)
-    changed = False; bot_count = 0
+    wallet_changed = False; bot_count = 0
     for row in db.execute("SELECT * FROM blocade_rooms WHERE status IN ('waiting','playing') ORDER BY updated_at,id").fetchall():
         room = decode(row)
         if paused:
             if room.get('paused_at') is None:
                 room['paused_at'] = clock
-                save(db, room, clock); changed = True
+                save(db, room, clock)
             continue
         if room.get('paused_at') is not None:
             elapsed = max(0, clock-room.pop('paused_at'))
             room['expires'] += elapsed; room['deadline'] += elapsed
             if room['started_at'] is not None:
                 room['started_at'] += elapsed; room['bot_at'] += elapsed
-            save(db, room, clock); changed = True
+            save(db, room, clock)
         if room['status'] == 'waiting':
             if clock < room['expires']: continue
             settle(db, room, clock, cancel=True, reason='等候超過 15 分鐘，入場點數已退還')
@@ -210,8 +211,11 @@ def maintenance(db, clock):
                 room['deadline'] = clock+TURN_SECONDS; room['bot_at'] = clock+1.5
                 if game['winner'] is not None: settle(db, room, clock)
             else: continue
-        save(db, room, clock); changed = True
-    return changed
+        save(db, room, clock)
+        if room['status'] in ('finished','cancelled'): wallet_changed = True
+    # Board clients poll their own small snapshot. Moves must not wake every
+    # unrelated poker/market client; only actual settlement changes wallets.
+    return wallet_changed
 
 
 def view(db, uid, clock, rid=None):

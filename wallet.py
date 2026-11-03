@@ -148,7 +148,7 @@ def _in_play(db):
 
 def in_play(db):
     import view_cache
-    return view_cache.shared(db,'in_play',('poker_rooms','blocade_rooms','blocade_entries'),lambda:_in_play(db))
+    return view_cache.shared(db,'in_play',('poker_rooms','blocade_entries'),lambda:_in_play(db))
 
 
 def view(db,uid,clock,totals=None):

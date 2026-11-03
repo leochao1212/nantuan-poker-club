@@ -943,7 +943,7 @@ class Handler(BaseHTTPRequestHandler):
             clock=time.time()
             result=blocade.mutate(db,user,path.rsplit('/',1)[1],data,clock,received_at=self.received_at)
             db.commit()
-            if not result['replayed']:EVENTS.publish()
+            if result.pop('wallet_changed',False):EVENTS.publish()
             with connect() as reader:
                 reader.execute('PRAGMA query_only=ON');reader.execute('BEGIN')
                 value={**result,'ok':True,'blocade':blocade.view(reader,user['id'],clock,result['room_id']),

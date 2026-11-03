@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Read host service and network status
-        shell: python
+        shell: python3 -I {0}
         run: |
           import subprocess,json,shutil,urllib.request
           def call(args):
@@ -30,3 +30,4 @@ jobs:
           try:
               with urllib.request.urlopen('http://127.0.0.1:8765/api/bootstrap',timeout=5) as r:print('local_app_http',r.status)
           except Exception as e:print('local_app_http',type(e).__name__)
+

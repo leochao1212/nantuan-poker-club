@@ -71,3 +71,13 @@
 operation_id 限 16–80 字元英數、底線或連字號。網路逾時應確認原編號，不能自行產生新操作。不是每個端點都用相同回執表：轉帳、頭像、會所與收藏各有自己的資料契約。
 
 SSE 的 state 是個人化 JSON；ping 只是保活，不得把它當新一手。auth 事件表示登入失效。HTTP 回覆和 SSE 誰先到都可能，畫面需以 revision／世代避免倒退，並核對 accepted_operations。
+
+## 步步為營棋桌
+
+登入後 GET `/api/blocade` 回傳目前棋桌、大廳、最近 20 桌、錢包；`?room=桌號` 可觀戰與查看已結束對局。
+
+POST `/api/blocade/{create,join,start,act,leave}` 全部需要 operation_id。create 另需 capacity（2／4）、stake（0–10,000 整數）及 bots（boolean）；其餘需 room_id。act 還需目前 ply，以及 action：`{"kind":"move","pos":[列,欄]}`、`{"kind":"wall","wall":["h或v",列,欄]}`；全部從 0 起算。暫無合法移動時可送 `{"kind":"wait"}`。不得自行送 winner、payout 或棋子座標覆蓋狀態。
+
+create／join 當下扣除同額入場籌碼並納入 in_play。start 只有桌主可做：允許 bots 時才會以系統出資補滿空位；不允許時需真人到齊。開局前 leave 全退，桌主退出由下一位真人接任；開局後 leave 認輸、移除棋子但保留牆。冠軍取整池，未抽水，派彩與狀態同一 SQLite 交易提交。機器人獲勝由系統收回獎池。
+
+操作回執保存在 blocade_operations，同編號同內容重送只回傳既有結果；舊 ply、錯誤玩家、非法牆與逾時回合均拒絕。前端預覽不送出動作，網路結果不明時持續保存原回執並停用新操作。棋局讀取每 2 秒一次，等候大廳每 5 秒，無重疊讀取，切頁或操作會取消舊讀取。

@@ -5,6 +5,7 @@ import time
 import hashlib
 import poker_engine as engine
 import lottery
+import blocade
 import wallet
 import clubhouse
 import social
@@ -166,6 +167,7 @@ def maintenance(db, clock=None, due_at=None):
             changed = True
     changed = wallet.maybe_activate(db,clock) or changed
     changed = lottery.maintenance(db,clock) or changed
+    changed = blocade.maintenance(db,clock) or changed
     changed = social.cleanup(db,clock) or changed
     return changed
 

@@ -34,6 +34,8 @@ poker_engine.py           德州狀態機、座位／籌碼共用工具
 arcade_engine.py          大老二、21 點、輪盤
 bonus_engine.py           百家樂、拉霸、礦區、爬塔、骰寶、射龍門
 mahjong_engine.py         台灣 16 張麻將與底／台結算
+blocade_engine.py         2／4 人棋盤合法走法、牆壁可達性與機器人
+blocade.py                棋桌持久化、入場保管、回執、退款與派彩
 game_settings.py          設定驗證、版本快照、派彩／理論指標
 wallet.py                 虛擬錢包、補給、入離桌移轉
 transfers.py              帳號間點數轉帳

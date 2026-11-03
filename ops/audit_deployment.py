@@ -29,6 +29,24 @@ def market_audit(db):
     return checks
 
 
+def blocade_audit(db):
+    """Preserve board escrow, operation receipts and completed matches on upgrades."""
+    tables = {r[0] for r in db.execute("SELECT name FROM saved.sqlite_master WHERE type='table'")}
+    checks = {}
+    if 'blocade_rooms' in tables:
+        checks['rooms'] = dict(
+            missing=db.execute('SELECT count(*) FROM saved.blocade_rooms b LEFT JOIN main.blocade_rooms a USING(id) WHERE a.id IS NULL').fetchone()[0],
+            changed_completed=db.execute("SELECT count(*) FROM (SELECT * FROM saved.blocade_rooms WHERE status IN ('finished','cancelled') EXCEPT SELECT * FROM main.blocade_rooms)").fetchone()[0])
+    if 'blocade_entries' in tables:
+        checks['entries'] = dict(changed=db.execute('''SELECT count(*) FROM saved.blocade_entries b
+            LEFT JOIN main.blocade_entries a USING(room_id,user_id)
+            WHERE a.user_id IS NULL OR a.stake!=b.stake OR a.joined_at!=b.joined_at
+              OR (b.payout IS NOT NULL AND a.payout IS NOT b.payout)''').fetchone()[0])
+    if 'blocade_operations' in tables:
+        checks['operations'] = dict(changed=db.execute('SELECT count(*) FROM (SELECT * FROM saved.blocade_operations EXCEPT SELECT * FROM main.blocade_operations)').fetchone()[0])
+    return checks
+
+
 def audit(database, backup):
     with closing(sqlite3.connect(Path(database).resolve().as_uri() + '?mode=ro', uri=True)) as db:
         db.execute('ATTACH DATABASE ? AS saved', (Path(backup).resolve().as_uri() + '?mode=ro',))
@@ -47,9 +65,11 @@ def audit(database, backup):
                       old_record_differences=differences, missing_users=missing_users,
                       unexplained_wallet_changes=unexplained)
         result['market'] = market_audit(db)
+        result['blocade'] = blocade_audit(db)
     result['passed'] = (result['integrity'] == result['backup_integrity'] == 'ok'
                         and not any(differences.values()) and not missing_users and not unexplained
                         and not any(value for check in result['market'].values() for value in check.values())
+                        and not any(value for check in result['blocade'].values() for value in check.values())
                         and all(c['after'] >= c['before'] for c in counts.values()))
     return result
 

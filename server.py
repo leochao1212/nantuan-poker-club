@@ -28,6 +28,7 @@ import clubhouse
 import social
 import voice_transport
 import battle
+import blocade
 import club_admin
 import game_settings
 import transfers
@@ -315,6 +316,13 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception:return False
                 try:return battle.serve(self,uid,code,authorize_battle)
                 except ValueError as ex:raise Problem(str(ex),400)
+            elif path == '/api/blocade':
+                query=parse_qs(urlsplit(self.path).query)
+                rid=int(query['room'][0]) if query.get('room') else None
+                with connect() as db:
+                    db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db);clock=time.time()
+                    value={'blocade':blocade.view(db,user['id'],clock,rid),'wallet':wallet.view(db,user['id'],clock),'server_time':clock}
+                self.reply(200,value)
             elif path == '/api/battle':
                 with connect() as db:
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
@@ -478,7 +486,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise Problem('圖片版本已更新，請重新整理。',404)
                 self.reply(200,artwork,content_type='image/webp',
                            cache_control='public, max-age=31536000, immutable' if versions else 'no-cache',etag=etag)
-            elif path in ("/battle.js", "/battle-scene.js", "/battle-art.js", "/battle-motion.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-review.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/lottery.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
+            elif path in ("/blocade.js", "/battle.js", "/battle-scene.js", "/battle-art.js", "/battle-motion.js", "/three.module.js", "/three.core.js", "/third-party-notices.txt", "/lightweight-charts.js", "/market-review.js", "/market-contracts.js", "/market-chart.js", "/market.js", "/bank.js", "/lottery.js", "/ui-art.js", "/round-presentation.js", "/mahjong.js", "/game-settings.js", "/", "/index.html", "/game.js", "/profile.js", "/clubhouse-scene.js", "/night.css", "/features.js", "/transfers.js", "/arcade-motion.js", "/bonus.js", "/club.js", "/arcade.js", "/voice-worklet.js", "/social.js", "/admin.js", "/dealer.js", "/favicon.svg", "/assets/pieces/mj-tiles.svg", "/ledger", "/ledger.html", "/ledger.js", "/ledger.css"):
                 name = "index.html" if path == "/" else "ledger.html" if path == "/ledger" else path[1:]
                 types = {"html": "text/html", "js": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "txt":"text/plain"}
                 ext = name.rsplit(".",1)[-1]
@@ -931,6 +939,16 @@ class Handler(BaseHTTPRequestHandler):
             rid=int(path.split('/')[4])
             EVENTS.publish(rid,lobby=False)
             return Reply(200,result)
+        if path.startswith('/api/blocade/'):
+            clock=time.time()
+            result=blocade.mutate(db,user,path.rsplit('/',1)[1],data,clock,received_at=self.received_at)
+            db.commit()
+            if result.pop('wallet_changed',False):EVENTS.publish()
+            with connect() as reader:
+                reader.execute('PRAGMA query_only=ON');reader.execute('BEGIN')
+                value={**result,'ok':True,'blocade':blocade.view(reader,user['id'],clock,result['room_id']),
+                       'wallet':wallet.view(reader,user['id'],clock),'server_time':clock}
+            return Reply(200,value)
         if path.startswith('/api/club/'):
             if not isinstance(data.get('operation_id'),str):raise RuleError('缺少操作編號。')
             result=online.mutate(db,path,data,user,time.time())

@@ -5567,3 +5567,9 @@ html[data-ui=current] #app .play-reminder :is(.reminder-readable,.reminder-track
  #app .lobby-services>a:not(.lottery-entry){gap:8px;padding:12px 10px;}
  #app .lobby-services>a:not(.lottery-entry)>span:last-child{display:none;}
 }
+
+/* Secondary facts stay available without competing with the bet controls. */
+.gate-probability-details { width:100%; min-width:0; }
+.gate-probability-details summary { min-height:44px; padding:12px; cursor:pointer; font-weight:600; }
+.gate-probability-details .gate-stats { margin-top:8px; }
+.market-sync-note { font-size:12px; line-height:1.5; color:var(--muted); margin-block:6px; }

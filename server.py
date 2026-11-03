@@ -39,7 +39,7 @@ import market_catalog
 import market_contracts
 import market_review
 import member_accounts
-from realtime import Hub, WriteQueue
+from realtime import Hub, WriteQueue, QueueBusy
 from dataclasses import dataclass
 from urllib.parse import parse_qs, urlsplit
 from poker_engine import RuleError
@@ -57,6 +57,7 @@ PUBLIC_ORIGIN = os.environ.get("POKER_PUBLIC_ORIGIN", "").rstrip("/")
 REQUIRE_INVITE = os.environ.get("POKER_REQUIRE_INVITE", "0") == "1"
 EVENTS = Hub()
 WRITES = WriteQueue()
+MAINTENANCE_HEARTBEAT = {'at': time.monotonic()}
 SNAPSHOTS = threading.Semaphore(1)
 LOBBY_SNAPSHOTS = threading.Semaphore(1)
 # Interactive replies must not queue behind every SSE viewer.
@@ -341,6 +342,13 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('PRAGMA query_only=ON');db.execute('BEGIN');user=self.user(db)
                     value=social.voice_state(db,int(query.get('room',['0'])[0]),user['id'],time.time())
                 self.reply(200,value)
+            elif path == '/api/health':
+                with connect() as db:
+                    db.execute('SELECT id FROM users LIMIT 1').fetchone()
+                age = time.monotonic()-MAINTENANCE_HEARTBEAT['at']
+                healthy = age < 30
+                self.reply(200 if healthy else 503, {'ok': healthy,
+                    'maintenance_age_seconds': round(age, 1), 'writes': WRITES.metrics()})
             elif path == "/api/bootstrap":
                 with connect() as db:
                     count = db.execute("SELECT count(*) FROM users").fetchone()[0]
@@ -488,6 +496,8 @@ class Handler(BaseHTTPRequestHandler):
                 raise Problem("页面不存在。", 404)
         except (club_admin.AdminError,transfers.TransferError,member_accounts.AccountError) as ex:
             self.reply(ex.status,{'error':ex.message,'reason':ex.reason})
+        except QueueBusy:
+            self.reply(503, {'error':'伺服器忙碌，請稍後用同一筆操作確認。','reason':'server_busy'})
         except RuleError as ex:
             self.reply(400, {"error": str(ex)})
         except Problem as ex:
@@ -656,6 +666,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(response.status,response.value,cookie=response.cookie)
         except (club_admin.AdminError,transfers.TransferError,member_accounts.AccountError) as ex:
             self.reply(ex.status,{'error':ex.message,'reason':ex.reason})
+        except QueueBusy:
+            self.reply(503, {'error':'伺服器忙碌，請稍後用同一筆操作確認。','reason':'server_busy'})
         except RuleError as ex:
             self.reply(400, {"error": str(ex),"reason":"invalid_action"})
         except Problem as ex:
@@ -1075,6 +1087,7 @@ def main():
                     with connect() as db:
                         db.execute("BEGIN IMMEDIATE")
                         changed = online.maintenance(db, due_at=admission.received_at)
+                MAINTENANCE_HEARTBEAT['at'] = time.monotonic()
                 if changed:
                     EVENTS.publish()
             except Exception as error:
@@ -1098,7 +1111,7 @@ def main():
                 if settled:EVENTS.publish()
             except Exception as error:print('Market clock:',provider,type(error).__name__,flush=True)
     if os.environ.get('POKER_MARKET_DATA','1')=='1':
-        for provider in ('FX','TW','US','CC','BARS'):
+        for provider in market_data.PROVIDERS:
             threading.Thread(target=market_clock,args=(provider,),daemon=True,name='market-'+provider).start()
 
     try:

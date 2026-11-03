@@ -10,6 +10,25 @@ TABLES = ('users', 'poker_hands', 'poker_results', 'poker_operations',
 IMMUTABLE = ('poker_hands', 'poker_results', 'wallet_ledger', 'cosmetic_items', 'milestone_claims')
 
 
+def market_audit(db):
+    """Allow live orders to settle, but preserve ownership and completed history."""
+    tables = {r[0] for r in db.execute("SELECT name FROM saved.sqlite_master WHERE type='table'")}
+    checks = {}
+    for table, active in (('market_orders', 'pending'), ('market_contract_orders', 'pending'),
+                          ('market_shorts', 'open'), ('market_contracts', 'open')):
+        if table not in tables:
+            continue  # Backups made before the exchange was introduced.
+        missing = db.execute('SELECT count(*) FROM saved.'+table+' b LEFT JOIN main.'+table+
+            ' a USING(id) WHERE a.id IS NULL OR a.user_id!=b.user_id OR a.symbol!=b.symbol').fetchone()[0]
+        changed = db.execute('SELECT count(*) FROM (SELECT * FROM saved.'+table+
+            ' WHERE status!=? EXCEPT SELECT * FROM main.'+table+')', (active,)).fetchone()[0]
+        checks[table] = dict(missing_or_reassigned=missing, changed_completed=changed)
+    if 'market_operations' in tables:
+        checks['market_operations'] = dict(changed=db.execute('SELECT count(*) FROM '
+            '(SELECT * FROM saved.market_operations EXCEPT SELECT * FROM main.market_operations)').fetchone()[0])
+    return checks
+
+
 def audit(database, backup):
     with closing(sqlite3.connect(Path(database).resolve().as_uri() + '?mode=ro', uri=True)) as db:
         db.execute('ATTACH DATABASE ? AS saved', (Path(backup).resolve().as_uri() + '?mode=ro',))
@@ -27,8 +46,10 @@ def audit(database, backup):
                       backup_integrity=db.execute('PRAGMA saved.quick_check').fetchone()[0], counts=counts,
                       old_record_differences=differences, missing_users=missing_users,
                       unexplained_wallet_changes=unexplained)
+        result['market'] = market_audit(db)
     result['passed'] = (result['integrity'] == result['backup_integrity'] == 'ok'
                         and not any(differences.values()) and not missing_users and not unexplained
+                        and not any(value for check in result['market'].values() for value in check.values())
                         and all(c['after'] >= c['before'] for c in counts.values()))
     return result
 

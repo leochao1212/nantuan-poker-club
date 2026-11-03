@@ -17,6 +17,7 @@ URLS={'TW':'https://mis.twse.com.tw/stock/api/getStockInfo.jsp',
       'CC':'https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD',
       'FX':'https://open.er-api.com/v6/latest/USD'}
 PERIODS={'TW':30,'US':30,'CC':10,'FX':86400,'BARS':60,'TW_CALENDAR':86400}
+PROVIDERS = tuple(PERIODS)
 
 
 def mis_rows(data,clock,instruments=None):
@@ -69,7 +70,7 @@ def due(db,clock):
     us=db.execute("SELECT status FROM market_providers WHERE name='US'").fetchone()
     old_us=db.execute("SELECT source FROM market_quotes WHERE symbol LIKE 'US:%' LIMIT 1").fetchone()
     if us and (us[0]=='missing_key' or values.get('US',0)>clock+300 and (not old_us or old_us[0] not in (market.US_SOURCE,market.TV_SOURCE))):values['US']=0
-    return [key for key in ('FX','TW','US','CC','BARS','TW_CALENDAR') if clock>=values.get(key,0)]
+    return [key for key in PROVIDERS if clock>=values.get(key,0)]
 
 
 def fx_state(db):

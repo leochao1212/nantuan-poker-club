@@ -22,6 +22,7 @@ assert Path('/app/economy.py').is_file()
 assert Path('/app/bank.py').is_file() and Path('/app/static/bank.js').is_file()
 assert all(Path('/app/'+name+'.py').is_file() for name in ('battle','battle_engine'))
 assert all(Path('/app/static/'+name+'.js').is_file() for name in ('battle','battle-scene','battle-motion','three.module','three.core'))
+assert json.load(urllib.request.urlopen('http://127.0.0.1:8765/api/health',timeout=2))['ok']
 with sqlite3.connect('file:/data/poker.sqlite3?mode=ro',uri=True) as db:
     assert db.execute('SELECT count(*) FROM market_shorts').fetchone()[0]==0
     assert db.execute('SELECT count(*) FROM market_orders').fetchone()[0]==0

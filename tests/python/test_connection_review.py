@@ -10,6 +10,25 @@ from .test_app import Client
 from .test_realtime import Stream
 
 class ReadOnlyStreams(unittest.TestCase):
+    def test_health_detects_stalled_background_maintenance(self):
+        with patch.dict(server.MAINTENANCE_HEARTBEAT, at=time.monotonic()):
+            status, value = self.clients[0].call('/api/health')
+            self.assertEqual(status, 200)
+            self.assertTrue(value['ok'])
+        with patch.dict(server.MAINTENANCE_HEARTBEAT, at=time.monotonic()-31):
+            status, value = self.clients[0].call('/api/health')
+            self.assertEqual(status, 503)
+            self.assertFalse(value['ok'])
+
+    def test_full_queue_returns_retryable_503_and_recovers(self):
+        queue = WriteQueue(max_pending=1)
+        with patch.object(server, 'WRITES', queue):
+            with queue.enter():
+                status, value = self.clients[0].call('/api/online/presence', {'room_id':self.rid})
+                self.assertEqual(status, 503)
+                self.assertEqual(value['reason'], 'server_busy')
+            self.assertEqual(self.clients[0].call('/api/online/presence', {'room_id':self.rid})[0], 200)
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.patches=[patch.object(server,'DB_PATH',Path(self.tmp.name)/'test.sqlite3'),patch.object(server,'EVENTS',Hub()),patch.object(server,'WRITES',WriteQueue()),patch.object(server,'SNAPSHOTS',threading.Semaphore(1))]

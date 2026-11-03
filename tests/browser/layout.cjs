@@ -42,7 +42,9 @@ async function freePort(){const s=net.createServer();await new Promise(r=>s.list
       const choices=page.locator('[data-gate-direction]:not(:disabled)');
       if(await choices.count())await choices.first().click();
       const expected=await page.evaluate(()=>{const q=room.hand.gate_quotes[room.hand.direction||((room.hand.gate_quotes||{}).between?'between':document.querySelector('[data-gate-direction][aria-pressed=true]')?.dataset.gateDirection)];return q?(100*(q.win_numerator??q.winning_cards)/(q.win_denominator??q.total_cards)).toFixed(1).replace(/\.0$/,'')+'%':'0%';});
+      await page.locator('.gate-probability-details > summary').click();
       assert.equal(await page.locator('#gate-chance').innerText(),expected);
+      await page.locator('.gate-probability-details > summary').click();
       assert.match(await page.locator('.gate-mode-note').allTextContents().then(a=>a.join(' ')),/本副牌第 2 局/);
      }
      if(name==='slot'&&engine==='chromium'&&mobile){

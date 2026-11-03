@@ -101,6 +101,9 @@ def public_check(sha):
         command(['git', 'fetch', '--no-tags', 'https://github.com/' + REPO + '.git', sha], timeout=120)
         result = command(git)
     parser = Assets(); parser.feed(result.stdout.decode('utf-8'))
+    # Route modules load on demand but must still match the selected release.
+    loader = command(['git', 'show', sha + ':static/game.js']).stdout.decode('utf-8')
+    parser.paths.update('/'+name for name in re.findall(r'"/([A-Za-z0-9_.-]+\.js)\?[^"\s]+"', loader))
     curl = 'curl.exe' if sys.platform == 'win32' else 'curl'
     for path in sorted(parser.paths):
         source = 'static/index.html' if path == '/' else 'static' + path

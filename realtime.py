@@ -3,6 +3,11 @@ from contextlib import contextmanager
 import threading
 import time
 from dataclasses import dataclass
+from collections import deque
+
+
+class QueueBusy(Exception):
+    """Admission was refused before any game transaction started."""
 
 
 @dataclass(frozen=True)
@@ -18,22 +23,38 @@ class WriteQueue:
     A later timeout can never overtake a previously admitted player action.
     Network writes must happen outside this context.
     """
-    def __init__(self):
+    def __init__(self, max_pending=64, wait_seconds=3):
         self.condition = threading.Condition()
         self.next_ticket = self.serving = 0
+        self.pending = deque()
+        self.max_pending = max_pending
+        self.wait_seconds = wait_seconds
+        self.rejected = 0
+
+    def metrics(self):
+        with self.condition:
+            return dict(pending=len(self.pending), capacity=self.max_pending, rejected=self.rejected)
 
     @contextmanager
     def enter(self):
         with self.condition:
+            if len(self.pending) >= self.max_pending:
+                self.rejected += 1
+                raise QueueBusy()
             ticket = self.next_ticket
             self.next_ticket += 1
+            self.pending.append(ticket)
             received_at, started = time.time(), time.monotonic()
-            self.condition.wait_for(lambda: ticket == self.serving)
+            if not self.condition.wait_for(lambda: self.pending[0] == ticket, timeout=self.wait_seconds):
+                self.pending.remove(ticket)
+                self.rejected += 1
+                raise QueueBusy()
         try:
             yield Admission(received_at, (time.monotonic()-started)*1000)
         finally:
             with self.condition:
-                self.serving += 1
+                self.pending.popleft()
+                self.serving = self.pending[0] if self.pending else self.next_ticket
                 self.condition.notify_all()
 
 

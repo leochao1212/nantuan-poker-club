@@ -1,0 +1,32 @@
+name: Read-only host diagnostics
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nantuan-production
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    runs-on: [nantuan-deploy]
+    timeout-minutes: 3
+    steps:
+      - name: Read host service and network status
+        shell: python
+        run: |
+          import subprocess,json,shutil,urllib.request
+          def call(args):
+              try:
+                  r=subprocess.run(args,capture_output=True,text=True,timeout=15)
+                  return {'exit':r.returncode,'stdout':r.stdout[:2500]}
+              except (OSError,subprocess.TimeoutExpired) as e:return {'error':type(e).__name__}
+          print('services',json.dumps(call(['systemctl','show','ssh','sshd','docker','tailscaled','cloudflared','--property=Id,LoadState,ActiveState,SubState'])))
+          print('disk',json.dumps(call(['df','-h','/'])))
+          ports=call(['ss','-ltn']);print('listening',json.dumps({'ssh22':':22 ' in ports.get('stdout',''),'app8765':':8765 ' in ports.get('stdout','')}))
+          try:
+              r=subprocess.run(['tailscale','status','--json'],capture_output=True,text=True,timeout=15);s=json.loads(r.stdout)
+              print('vpn',json.dumps({'state':s.get('BackendState'),'self_ips':s.get('Self',{}).get('TailscaleIPs'),'online':s.get('Self',{}).get('Online')}))
+          except Exception as e:print('vpn',type(e).__name__)
+          try:
+              with urllib.request.urlopen('http://127.0.0.1:8765/api/bootstrap',timeout=5) as r:print('local_app_http',r.status)
+          except Exception as e:print('local_app_http',type(e).__name__)

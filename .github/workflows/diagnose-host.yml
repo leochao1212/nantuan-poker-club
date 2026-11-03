@@ -39,6 +39,25 @@ jobs:
               print('vpn',json.dumps({'state':s.get('BackendState'),'self_ips':s.get('Self',{}).get('TailscaleIPs'),'online':s.get('Self',{}).get('Online')}))
           except Exception as e:print('vpn',type(e).__name__)
           try:
+              import socket,ipaddress
+              sock=socket.create_connection(('127.0.0.1',22),timeout=3);banner=sock.recv(100);sock.close()
+              print('local_ssh_banner_ok',banner.startswith(b'SSH-'))
+          except Exception:print('local_ssh_banner_ok',False)
+          try:
+              result=subprocess.run(['tailscale','debug','netmap'],capture_output=True,text=True,timeout=10)
+              netmap=json.loads(result.stdout);rules=netmap.get('PacketFilter',netmap.get('packetFilter'))
+              if not isinstance(rules,list):print('ssh_acl_from_laptop','unknown')
+              else:
+                  source=ipaddress.ip_address('100.125.186.46');destination=ipaddress.ip_address('100.100.156.25');allowed=False
+                  for rule in rules:
+                      srcs=rule.get('Srcs',[]);dsts=rule.get('Dsts',[]);protos=rule.get('IPProto',[6])
+                      src_ok=any(source in ipaddress.ip_network(x,strict=False) for x in srcs if isinstance(x,str))
+                      for dst in dsts:
+                          ports=dst.get('Ports',{});network=dst.get('Net')
+                          if src_ok and network and destination in ipaddress.ip_network(network,strict=False) and ports.get('First',0)<=22<=ports.get('Last',0) and (not protos or 6 in protos):allowed=True
+                  print('ssh_acl_from_laptop','allowed' if allowed else 'not_allowed')
+          except Exception:print('ssh_acl_from_laptop','unknown')
+          try:
               with urllib.request.urlopen('http://127.0.0.1:8765/api/bootstrap',timeout=5) as r:print('local_app_http',r.status)
           except Exception as e:print('local_app_http',type(e).__name__)
 

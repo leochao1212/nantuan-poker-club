@@ -42,6 +42,8 @@ def blocade_audit(db):
             LEFT JOIN main.blocade_entries a USING(room_id,user_id)
             WHERE a.user_id IS NULL OR a.stake!=b.stake OR a.joined_at!=b.joined_at
               OR (b.payout IS NOT NULL AND a.payout IS NOT b.payout)''').fetchone()[0])
+    if 'blocade_rematches' in tables:
+        checks['rematches'] = dict(changed=db.execute('SELECT count(*) FROM (SELECT * FROM saved.blocade_rematches EXCEPT SELECT * FROM main.blocade_rematches)').fetchone()[0])
     if 'blocade_operations' in tables:
         checks['operations'] = dict(changed=db.execute('SELECT count(*) FROM (SELECT * FROM saved.blocade_operations EXCEPT SELECT * FROM main.blocade_operations)').fetchone()[0])
     return checks

@@ -31,6 +31,7 @@ def initialize(db):
       fingerprint TEXT NOT NULL, room_id INTEGER NOT NULL REFERENCES blocade_rooms(id), created_at REAL NOT NULL,
       PRIMARY KEY(user_id,operation_id));
     ''')
+    db.execute('CREATE TABLE IF NOT EXISTS blocade_rematches(original_id INTEGER PRIMARY KEY REFERENCES blocade_rooms(id), next_id INTEGER NOT NULL UNIQUE REFERENCES blocade_rooms(id))')
     # This runs at server startup, not on requests. A stopped process must not
     # consume anyone's turn. Explicit deployment pauses resume in maintenance.
     clock = time.time()
@@ -94,6 +95,24 @@ def settle(db, room, clock, *, cancel=False, reason=''):
         db.execute('UPDATE blocade_entries SET payout=? WHERE room_id=? AND user_id=?', (amount, room['id'], row['user_id']))
 
 
+def create_room(db, user, data, clock):
+    uid = user['id']
+    capacity, stake, bots = data.get('capacity'), data.get('stake'), data.get('bots')
+    if type(capacity) is not int or capacity not in (2, 4): raise RuleError('請選擇 2 人或 4 人桌。')
+    if type(stake) is not int or not 0 <= stake <= MAX_STAKE: raise RuleError(f'每人入場請填 0–{MAX_STAKE:,} 點整數。')
+    if type(bots) is not bool: raise RuleError('請選擇是否允許機器人補位。')
+    if current(db, uid): raise RuleError('你已有棋桌，請先完成或離開原桌。')
+    if db.execute("SELECT count(*) FROM blocade_rooms WHERE status IN ('waiting','playing')").fetchone()[0] >= 30:
+        raise RuleError('目前棋桌已滿，請加入現有桌或稍後再開桌。')
+    room = dict(owner=uid, capacity=capacity, stake=stake, bots=bots, players=[], game=None,
+                expires=clock+WAIT_SECONDS, deadline=0, started_at=None, winner=None, reason='')
+    rid = db.execute('INSERT INTO blocade_rooms(owner_id,status,revision,state,created_at,updated_at) VALUES(?,\'waiting\',0,?,?,?)',
+                     (uid, json.dumps(room), clock, clock)).lastrowid
+    room.update(id=rid, status='waiting', revision=0)
+    join(db, room, user, clock)
+    return room
+
+
 def mutate(db, user, verb, data, clock, received_at=None):
     uid = user['id']; op = data.get('operation_id')
     if not isinstance(op, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,80}', op):
@@ -103,24 +122,31 @@ def mutate(db, user, verb, data, clock, received_at=None):
     if old:
         if old['fingerprint'] != fingerprint: raise RuleError('操作編號與內容不符。')
         return dict(room_id=old['room_id'], replayed=True)
-    if verb in ('create', 'join', 'start'):
+    if verb in ('create', 'join', 'start', 'rematch'):
         import online
         online.require_new_deal_allowed(db, clock)
         if not wallet.active(db): raise RuleError('點數制度尚未啟用。')
     if verb == 'create':
-        capacity, stake, bots = data.get('capacity'), data.get('stake'), data.get('bots')
-        if type(capacity) is not int or capacity not in (2, 4): raise RuleError('請選擇 2 人或 4 人桌。')
-        if type(stake) is not int or not 0 <= stake <= MAX_STAKE: raise RuleError(f'每人入場請填 0–{MAX_STAKE:,} 點整數。')
-        if type(bots) is not bool: raise RuleError('請選擇是否允許機器人補位。')
-        if current(db, uid): raise RuleError('你已有棋桌，請先完成或離開原桌。')
-        if db.execute("SELECT count(*) FROM blocade_rooms WHERE status IN ('waiting','playing')").fetchone()[0] >= 30:
-            raise RuleError('目前棋桌已滿，請加入現有桌或稍後再開桌。')
-        room = dict(owner=uid, capacity=capacity, stake=stake, bots=bots, players=[], game=None,
-                    expires=clock+WAIT_SECONDS, deadline=0, started_at=None, winner=None, reason='')
-        rid = db.execute('INSERT INTO blocade_rooms(owner_id,status,revision,state,created_at,updated_at) VALUES(?,\'waiting\',0,?,?,?)',
-                         (uid, json.dumps(room), clock, clock)).lastrowid
-        room.update(id=rid, status='waiting', revision=0)
-        join(db, room, user, clock)
+        room = create_room(db, user, data, clock)
+    elif verb == 'rematch':
+        original = get(db, data.get('room_id'))
+        if original['status'] not in ('finished', 'cancelled'):
+            raise RuleError('這局還未結束，請先完成棋局。')
+        if not any(p['uid'] == uid for p in original['players']):
+            raise RuleError('只有原桌玩家可以再來一局。')
+        link = db.execute('SELECT next_id FROM blocade_rematches WHERE original_id=?', (original['id'],)).fetchone()
+        if link:
+            room = get(db, link['next_id'])
+            if not any(p['uid'] == uid for p in room['players']):
+                if clock >= room['expires']: raise RuleError('下一局等候已逾時，請查看下一局。')
+                join(db, room, user, clock)
+            else:
+                # The same player can retry with a new receipt without another debit.
+                db.execute('INSERT INTO blocade_operations VALUES(?,?,?,?,?)', (uid, op, fingerprint, room['id'], clock))
+                return dict(room_id=room['id'], replayed=False, wallet_changed=False)
+        else:
+            room = create_room(db, user, original, clock)
+            db.execute('INSERT INTO blocade_rematches VALUES(?,?)', (original['id'], room['id']))
     else:
         room = get(db, data.get('room_id'))
         if verb == 'join':
@@ -173,7 +199,7 @@ def mutate(db, user, verb, data, clock, received_at=None):
     save(db, room, clock)
     db.execute('INSERT INTO blocade_operations VALUES(?,?,?,?,?)', (uid, op, fingerprint, room['id'], clock))
     return dict(room_id=room['id'], replayed=False,
-                wallet_changed=verb in ('create','join','leave') or room['status'] in ('finished','cancelled'))
+                wallet_changed=verb in ('create','join','leave','rematch') or room['status'] in ('finished','cancelled'))
 
 
 def maintenance(db, clock):
@@ -230,6 +256,11 @@ def view(db, uid, clock, rid=None):
         room['target_pot'] = room['stake']*room['capacity']
         import online
         room['paused'] = room.get('paused_at') is not None or online.deployment_paused(db, clock)
+        link = db.execute('SELECT next_id FROM blocade_rematches WHERE original_id=?', (rid,)).fetchone()
+        room['rematch'] = None
+        if link:
+            following = get(db, link['next_id'])
+            room['rematch'] = dict(id=following['id'], status=following['status'], count=len(following['players']), joined=any(p['uid']==uid for p in following['players']))
     tables = []
     for row in db.execute("SELECT * FROM blocade_rooms WHERE status IN ('waiting','playing') ORDER BY id DESC LIMIT 30"):
         r = decode(row)

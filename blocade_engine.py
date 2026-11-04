@@ -3,13 +3,17 @@ from collections import deque
 import random
 from poker_engine import RuleError
 
-SIZE = 9
 STARTS = ((8, 4), (4, 0), (0, 4), (4, 8))
 
 
 def new(players):
+    size = 9 if len(players) == 2 else 11
+    center = len(players) == 4
+    starts = ((size-1,size//2),(size//2,0),(0,size//2),(size//2,size-1))
     sides = (0, 2) if len(players) == 2 else (0, 1, 2, 3)
-    return dict(players=[dict(**p, side=side, pos=list(STARTS[side]),
+    return dict(size=size, target='center' if center else 'edge',
+                players=[dict(**p, side=side, pos=list(starts[side]), size=size,
+                              target='center' if center else 'edge',
                               walls=10 if len(players) == 2 else 5, out=False, misses=0)
                          for p, side in zip(players, sides)], walls=[], turn=0, ply=0,
                 winner=None, last=None)
@@ -17,7 +21,9 @@ def new(players):
 
 def goal(player, pos):
     row, col = pos
-    return (row == 0, col == 8, row == 8, col == 0)[player['side']]
+    size = player.get('size', 9)
+    if player.get('target') == 'center': return row == col == size//2
+    return (row == 0, col == size-1, row == size-1, col == 0)[player['side']]
 
 
 def blocked(walls):
@@ -30,10 +36,10 @@ def blocked(walls):
     return edges
 
 
-def neighbors(pos, edges):
+def neighbors(pos, edges, size=9):
     row, col = pos
     for other in ((row-1, col), (row+1, col), (row, col-1), (row, col+1)):
-        if all(0 <= n < SIZE for n in other) and (tuple(pos), other) not in edges:
+        if all(0 <= n < size for n in other) and (tuple(pos), other) not in edges:
             yield other
 
 
@@ -43,7 +49,7 @@ def distance(player, edges, pos=None):
     while queue:
         here, steps = queue.popleft()
         if goal(player, here): return steps
-        for nxt in neighbors(here, edges):
+        for nxt in neighbors(here, edges, player.get('size', 9)):
             if nxt not in seen:
                 seen.add(nxt); queue.append((nxt, steps+1))
     return 999
@@ -56,12 +62,12 @@ def moves(state, index=None):
     origin = tuple(player['pos']); edges = blocked(state['walls'])
     occupied = {tuple(p['pos']) for i, p in enumerate(state['players']) if i != index and not p['out']}
     result = set()
-    for nxt in neighbors(origin, edges):
+    for nxt in neighbors(origin, edges, state.get('size', 9)):
         if nxt not in occupied:
             result.add(nxt); continue
         direction = (nxt[0]-origin[0], nxt[1]-origin[1])
         beyond = (nxt[0]+direction[0], nxt[1]+direction[1])
-        options = set(neighbors(nxt, edges))
+        options = set(neighbors(nxt, edges, state.get('size', 9)))
         if beyond in options and beyond not in occupied:
             result.add(beyond)
         else:
@@ -73,9 +79,9 @@ def moves(state, index=None):
     return [list(p) for p in sorted(result)]
 
 
-def wall_shape_valid(walls, wall):
+def wall_shape_valid(walls, wall, size=9):
     axis, row, col = wall
-    if axis not in ('h', 'v') or any(type(n) is not int or not 0 <= n < 8 for n in (row, col)):
+    if axis not in ('h', 'v') or any(type(n) is not int or not 0 <= n < size-1 for n in (row, col)):
         return False
     for a, r, c in walls:
         if (r, c) == (row, col): return False  # crossing or identical
@@ -86,7 +92,7 @@ def wall_shape_valid(walls, wall):
 
 
 def wall_valid(state, wall):
-    if not wall_shape_valid(state['walls'], wall): return False
+    if not wall_shape_valid(state['walls'], wall, state.get('size', 9)): return False
     edges = blocked([*state['walls'], wall])
     return all(p['out'] or distance(p, edges) < 999 for p in state['players'])
 
@@ -149,21 +155,22 @@ def choose(state, *, walls=True):
     best_score = nearest-distance(player, edges, best_pos)
     # A wall spends a finite resource: require a meaningful gain over moving.
     best = move
-    candidates = [('h', r, c) for r in range(8) for c in range(8)] + [('v', r, c) for r in range(8) for c in range(8)]
+    size = state.get('size', 9)
+    candidates = [(axis, r, c) for axis in ('h','v') for r in range(size-1) for c in range(size-1)]
     random.shuffle(candidates)
     for wall in candidates:
-        if not wall_shape_valid(state['walls'], wall): continue
+        if not wall_shape_valid(state['walls'], wall, state.get('size', 9)): continue
         after = blocked([*state['walls'], wall])
-        graph = [[] for _ in range(81)]
-        for r in range(9):
-            for c in range(9):
-                graph[r*9+c] = [rr*9+cc for rr,cc in neighbors((r,c), after)]
+        graph = [[] for _ in range(size*size)]
+        for r in range(size):
+            for c in range(size):
+                graph[r*size+c] = [rr*size+cc for rr,cc in neighbors((r,c), after, size)]
         def length(p):
-            origin = p['pos'][0]*9+p['pos'][1]
-            queue = deque([(origin,0)]); seen = {origin}; side = p['side']
+            origin = p['pos'][0]*size+p['pos'][1]
+            queue = deque([(origin,0)]); seen = {origin}
             while queue:
                 cell, steps = queue.popleft()
-                if (cell < 9, cell%9 == 8, cell >= 72, cell%9 == 0)[side]: return steps
+                if goal(p, divmod(cell, size)): return steps
                 for nxt in graph[cell]:
                     if nxt not in seen: seen.add(nxt); queue.append((nxt,steps+1))
             return 999

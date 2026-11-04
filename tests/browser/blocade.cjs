@@ -73,6 +73,8 @@ const root=path.resolve(__dirname,'../..'),out=path.join(root,'artifacts/blocade
     await p.locator('[data-bc-back]').click();await p.locator('[name=capacity][value="4"]').check();await p.locator('[name=bots]').check();await p.locator('[data-bc-stake="500"]').click();
     await p.locator('[data-bc-create] button[type=submit]').click();await p.locator('[data-bc-start]').click();await p.waitForFunction(()=>document.querySelector('[data-bc-turn]')?.textContent.startsWith('輪到'));
     result=await api(c,'/api/blocade');rid=result.blocade.room.id;
+    assert.equal(result.blocade.room.game.size,11);assert.equal(result.blocade.room.game.target,'center');
+    assert.equal(await p.locator('.bc-cell').count(),121);assert.equal(await p.locator('.bc-goal-center').count(),1);
     assert.equal(result.blocade.room.game.players.filter(p=>p.bot).length,3);assert.equal(result.blocade.room.target_pot,2000);
     edit(rid,"s['game']['turn']=0;s['deadline']=time.time()+120");await p.reload();await p.locator('[data-bc-mode=move]:enabled').click();await p.locator('[data-bc-cell]:enabled').first().waitFor();
     await p.locator('[data-bc-cell]:enabled').first().click();

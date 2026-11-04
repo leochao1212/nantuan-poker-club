@@ -228,7 +228,7 @@ function patchApp(html){
   children.forEach((node,index)=>{if(app.childNodes[index])patchNode(app.childNodes[index],node);else app.appendChild(node.cloneNode(true));});
   while(app.childNodes.length>children.length)app.lastChild.remove();
 }
-const pageScripts={"blocade":["/blocade.js?v=board-rematch-20261103"],"bank": ["/bank.js?v=overdue-repay-20261030"], "lottery": ["/lottery.js?v=club-polish-20261030"], "market": ["/market-contracts.js?v=tw-rod-20261103", "/market-chart.js?v=mobile-simple-20261028", "/market.js?v=flow-20261103"], "admin": ["/bank.js?v=overdue-repay-20261030", "/market-review.js?v=review-fixes-20261030", "/admin.js?v=review-fixes-20261030"]};
+const pageScripts={"blocade":["/blocade.js?v=board-center-20261104"],"bank": ["/bank.js?v=overdue-repay-20261030"], "lottery": ["/lottery.js?v=club-polish-20261030"], "market": ["/market-contracts.js?v=tw-rod-20261103", "/market-chart.js?v=mobile-simple-20261028", "/market.js?v=flow-20261103"], "admin": ["/bank.js?v=overdue-repay-20261030", "/market-review.js?v=review-fixes-20261030", "/admin.js?v=review-fixes-20261030"]};
 const pageLoads=new Map(),scriptLoads=new Map();
 function loadPageScript(url){if(scriptLoads.has(url))return scriptLoads.get(url);const job=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=url;script.onload=resolve;script.onerror=()=>{script.remove();scriptLoads.delete(url);reject(new Error("load"));};document.head.append(script);});scriptLoads.set(url,job);return job;}
 function showPageLoading(page){if(document.querySelector('[data-page-loading]')?.dataset.pageLoading===page)return;patchApp(shell(`<section class="panel" role="status" data-page-loading="${page}"><p>正在開啟頁面…</p></section>`));bindShell();}

@@ -24,11 +24,29 @@ class BoardRules(unittest.TestCase):
             s=engine.new(players(count))
             self.assertEqual(len({tuple(p['pos']) for p in s['players']}),count)
             self.assertEqual([p['walls'] for p in s['players']],[10 if count==2 else 5]*count)
-            for i,p in enumerate(s['players']):
-                p['pos']=[1,3] if p['side']==0 else [3,7] if p['side']==1 else [7,3] if p['side']==2 else [3,1]
-                s['turn']=i;s['winner']=None
-                target=[0,3] if p['side']==0 else [3,8] if p['side']==1 else [8,3] if p['side']==2 else [3,0]
+            self.assertEqual(s['size'],9 if count==2 else 11)
+            for i in range(count):
+                s=engine.new(players(count));p=s['players'][i]
+                p['pos']=([6,5],[5,4],[4,5],[5,6])[i] if count==4 else [1,3] if p['side']==0 else [7,3]
+                s['turn']=i
+                target=[5,5] if count==4 else [0,3] if p['side']==0 else [8,3]
                 engine.act(s,dict(kind='move',pos=target));self.assertEqual(s['winner'],i)
+
+    def test_legacy_four_player_game_keeps_nine_square_edge_rules(self):
+        s=engine.new(players(4));s.pop('size');s.pop('target')
+        for p,pos in zip(s['players'],engine.STARTS):
+            p.pop('size');p.pop('target');p['pos']=list(pos)
+        s['players'][0]['pos']=[1,3]
+        engine.act(s,dict(kind='move',pos=[0,3]));self.assertEqual(s['winner'],0)
+
+    def test_center_paths_and_extended_boundaries(self):
+        s=engine.new(players(4))
+        self.assertIn([10,4],engine.moves(s));self.assertNotIn([11,5],engine.moves(s))
+        self.assertTrue(engine.wall_valid(s,['h',9,9]))
+        self.assertFalse(engine.wall_valid(s,['h',10,9]))
+        s['walls']=[['h',4,4],['h',5,5],['v',5,4]]
+        self.assertFalse(engine.wall_valid(s,['v',4,5]),'Cannot enclose the common center')
+        p=s['players'][0];self.assertFalse(engine.goal(p,[0,5]));self.assertTrue(engine.goal(p,[5,5]))
 
     def test_adjacent_jumps_and_wall_blocked_side_jumps(self):
         s=engine.new(players(2));s['players'][0]['pos']=[4,4];s['players'][1]['pos']=[3,4]
@@ -48,8 +66,8 @@ class BoardRules(unittest.TestCase):
         self.assertTrue(engine.wall_valid(s,['h',3,5]))
         s['players'][0]['pos']=[8,0];s['walls']=[['v',7,0]]
         self.assertFalse(engine.wall_valid(s,['h',7,0]))
-        s=engine.new(players(4));s['walls']=[['v',3,0],['h',4,0]]
-        self.assertFalse(engine.wall_valid(s,['h',2,0]),'Must preserve a route for all four players')
+        s=engine.new(players(4));s['walls']=[['v',4,0],['h',5,0]]
+        self.assertFalse(engine.wall_valid(s,['h',3,0]),'Must preserve a route for all four players')
 
     def test_bad_actions_do_not_mutate(self):
         s=engine.new(players(2));before=copy.deepcopy(s)
@@ -61,8 +79,8 @@ class BoardRules(unittest.TestCase):
 
     def test_temporarily_occupied_corridor_can_pass_without_cheating(self):
         s=engine.new(players(4))
-        for p,pos in zip(s['players'],([8,0],[7,0],[6,0],[7,1])):p['pos']=pos
-        s['walls']=[['v',7,0]]
+        for p,pos in zip(s['players'],([10,0],[9,0],[8,0],[9,1])):p['pos']=pos
+        s['walls']=[['v',9,0]]
         self.assertEqual(engine.moves(s),[])
         action=engine.choose(s);self.assertEqual(action,{'kind':'wait'})
         engine.act(s,action);self.assertEqual(s['turn'],1)
@@ -105,9 +123,9 @@ class Escrow(unittest.TestCase):
         if not bots:
             for uid in range(2,capacity+1):self.call(uid,'join',room_id=rid)
         self.call(1,'start',room_id=rid);room=game.get(self.db,rid)
-        room['game']['turn']=0;room['game']['players'][0]['pos']=[1,3]
+        room['game']['turn']=0;room['game']['players'][0]['pos']=[6,5] if capacity==4 else [1,3]
         game.save(self.db,room,self.clock);self.db.commit()
-        self.call(1,'act',room_id=rid,ply=room['game']['ply'],action=dict(kind='move',pos=[0,3]))
+        self.call(1,'act',room_id=rid,ply=room['game']['ply'],action=dict(kind='move',pos=[5,5] if capacity==4 else [0,3]))
         return rid
 
     def test_rematch_same_table_opt_in_retries_and_immutable_history(self):
@@ -164,8 +182,8 @@ class Escrow(unittest.TestCase):
         for uid in (2,3,4):self.call(uid,'join',room_id=rid)
         self.assertEqual(sum(wallet.in_play(self.db).values()),400)
         self.call(1,'start',room_id=rid);r=game.get(self.db,rid)
-        r['game']['turn']=0;r['game']['players'][0]['pos']=[1,3];game.save(self.db,r,self.clock);self.db.commit()
-        data=dict(room_id=rid,ply=r['game']['ply'],action={'kind':'move','pos':[0,3]},operation_id=uuid.uuid4().hex)
+        r['game']['turn']=0;r['game']['players'][0]['pos']=[6,5];game.save(self.db,r,self.clock);self.db.commit()
+        data=dict(room_id=rid,ply=r['game']['ply'],action={'kind':'move','pos':[5,5]},operation_id=uuid.uuid4().hex)
         self.call(1,'act',**data);self.call(1,'act',**data)
         game.maintenance(self.db,self.clock+100);self.assertEqual(self.balance(1),10300)
         self.assertEqual(sum(self.balance(i) for i in range(1,5)),initial)
@@ -176,8 +194,8 @@ class Escrow(unittest.TestCase):
     def test_bot_contribution_payout_and_no_rigging(self):
         rid=self.create(4);self.call(1,'start',room_id=rid);r=game.get(self.db,rid)
         self.assertEqual(sum(p['bot'] for p in r['players']),3)
-        r['game']['turn']=0;r['game']['players'][0]['pos']=[1,3];game.save(self.db,r,self.clock)
-        self.call(1,'act',room_id=rid,ply=r['game']['ply'],action={'kind':'move','pos':[0,3]})
+        r['game']['turn']=0;r['game']['players'][0]['pos']=[6,5];game.save(self.db,r,self.clock)
+        self.call(1,'act',room_id=rid,ply=r['game']['ply'],action={'kind':'move','pos':[5,5]})
         r=game.get(self.db,rid);self.assertEqual(r['system_stake'],300);self.assertEqual(self.balance(1),10300)
         second=self.create();self.call(1,'start',room_id=second);self.call(1,'leave',room_id=second)
         self.assertEqual(self.balance(1),10200);self.assertEqual(game.get(self.db,second)['system_payout'],200)
